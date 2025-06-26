@@ -1,0 +1,19 @@
+{
+    "name": "gutenberg-collaborative-editing",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "build": "wp-scripts build",
+        "start": "wp-scripts start",
+        "packages-update": "wp-scripts packages-update",
+        "wp-env": "wp-env"
+    },
+    "devDependencies": {
+        "@wordpress/env": "^9.5.0",
+        "@wordpress/scripts": "^27.9.0",
+        "@wordpress/components": "^29.12.0",
+        "@wordpress/dom-ready": "^4.26.0",
+        "@wordpress/i18n": "^5.26.0",
+        "@wordpress/plugins": "^7.26.0"
+    }
+}
