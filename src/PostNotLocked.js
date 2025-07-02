@@ -31,16 +31,18 @@ export const PostNotLocked = () => {
 		if (currentUserId === null) return;
 
 		if (isUserLockHolder) {
-			// User has the lock - remove notice and hide modal
+			// User has the lock - remove notice, hide modal, and remove body class
 			removeNotice('read-only-mode');
 			setShowModal(false);
+			document.body.classList.remove('gutenberg-collaborative-editing-readonly');
 		} else {
-			// User doesn't have the lock - show notice and modal
+			// User doesn't have the lock - show notice, add body class
 			createNotice('info', 'Read-only mode', {
 				isDismissible: false,
 				id: 'read-only-mode'
 			});
 			setShowModal(true);
+			document.body.classList.add('gutenberg-collaborative-editing-readonly');
 		}
 	}, [currentUserId, isUserLockHolder, createNotice, removeNotice]);
 
@@ -48,10 +50,11 @@ export const PostNotLocked = () => {
 	useEffect(() => {
 		return () => {
 			removeNotice('read-only-mode');
+			document.body.classList.remove('gutenberg-collaborative-editing-readonly');
 		};
 	}, [removeNotice]);
 
-	// Only render modal if user data is loaded and user doesn't have lock
+	// Don't render anything if user data not loaded or user has lock
 	if (currentUserId === null || isUserLockHolder) {
 		return null;
 	}
