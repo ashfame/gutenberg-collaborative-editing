@@ -1,7 +1,7 @@
 import { Modal, Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { select, subscribe, useSelect } from '@wordpress/data';
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect, useState, useRef } from '@wordpress/element';
 
 function whenEditorIsReady() {
 	return new Promise((resolve) => {
@@ -19,35 +19,68 @@ function whenEditorIsReady() {
 }
 
 export const PostNotLocked = () => {
-	const [currentUserId, setCurrentUserId] = useState(null);
-	const [lockAcquireeUserId, setLockAcquireeUserId] = useState(null);
+	const [userLockData, setUserLockData] = useState({
+		currentUserId: null,
+		lockAcquireeUserId: null
+	});
 	const [currentUserHasLock, setCurrentUserHasLock] = useState(false);
 	const [showROModal, setShowROModal] = useState(false);
-
-	whenEditorIsReady().then(() => {
-		const editorSelect = select( 'core/editor' );
-		const coreSelect = select( 'core' );
-
-		const activePostLock = editorSelect?.getActivePostLock?.();
-		const lockAcquireeUserId = activePostLock ? parseInt( activePostLock.split(':').pop() ) : null;
-		const currentUserId = coreSelect?.getCurrentUser?.()?.id;
-
-		setCurrentUserId(currentUserId);
-		setLockAcquireeUserId(lockAcquireeUserId);
-	});
+	const [dataLoaded, setDataLoaded] = useState(false);
+	const initialized = useRef(false);
 
 	useEffect(() => {
+		if (initialized.current) return;
+		
+		initialized.current = true;
+		whenEditorIsReady().then(() => {
+			const editorSelect = select( 'core/editor' );
+			const coreSelect = select( 'core' );
+
+			const activePostLock = editorSelect?.getActivePostLock?.();
+			console.log('DEBUG: activePostLock raw:', activePostLock);
+			const lockAcquireeUserId = activePostLock ? parseInt( activePostLock.split(':').pop() ) : null;
+			console.log('DEBUG: lockAcquireeUserId parsed:', lockAcquireeUserId);
+			
+			// Retry getting currentUserId until it's available
+			const getCurrentUserWithRetry = () => {
+				const currentUserId = coreSelect?.getCurrentUser?.()?.id;
+				console.log('DEBUG: currentUserId attempt:', currentUserId);
+				
+				if (currentUserId !== undefined) {
+					// We have the user ID, update state
+					setUserLockData({
+						currentUserId,
+						lockAcquireeUserId
+					});
+					setDataLoaded(true);
+				} else {
+					// Retry after a short delay
+					setTimeout(getCurrentUserWithRetry, 100);
+				}
+			};
+			
+			getCurrentUserWithRetry();
+		});
+	}, []);
+
+	useEffect(() => {
+		if (!dataLoaded) return; // Don't calculate until we have data
+		
+		const { currentUserId, lockAcquireeUserId } = userLockData;
 		const currentUserHasLock = lockAcquireeUserId != null && currentUserId === lockAcquireeUserId;
 		setCurrentUserHasLock( currentUserHasLock );
 		setShowROModal( ! currentUserHasLock );
-	}, [currentUserId, lockAcquireeUserId]);
+	}, [userLockData, dataLoaded]);
 
 	useEffect(() => {
+		const { currentUserId, lockAcquireeUserId } = userLockData;
 		console.log('currentUserId:', currentUserId,'lockAcquireeUserId:', lockAcquireeUserId,'currentUserHasLock:', currentUserHasLock,'showROModal:', showROModal);
-	}, [currentUserId, lockAcquireeUserId, currentUserHasLock, showROModal]);
+	}, [userLockData, currentUserHasLock, showROModal]);
 
 	// Create notice when user doesn't have the lock
 	useEffect(() => {
+		if (!dataLoaded) return; // Don't create notice until we have data
+		
 		if (currentUserHasLock) {
 			wp.data.dispatch('core/notices').removeNotice('read-only-mode');
 			return;
@@ -60,9 +93,9 @@ export const PostNotLocked = () => {
 				id: 'read-only-mode'
 			}
 		);
-	}, [currentUserHasLock]);
+	}, [currentUserHasLock, dataLoaded]);
 
-	if (showROModal) {
+	if (dataLoaded && showROModal) {
 		return (
 			<Modal
 				className="gutenberg-collaborative-editing-post-locked-modal"
