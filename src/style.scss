@@ -1,24 +1,7 @@
-//.components-modal__frame:not( .gutenberg-collaborative-editing-post-locked-modal ) {
-//	&[aria-label="Post locked"] {
-//		display: none;
-//	}
-//}
-//
-//.components-modal__screen-overlay:has(
-//	.components-modal__frame[aria-label='Post locked']:not(.gutenberg-collaborative-editing-post-locked-modal)
-//) {
-//	display: none;
-//}
-
-.components-modal__frame:not( .gutenberg-collaborative-editing-post-locked-modal ) {
-	& {
-		display: none;
-	}
-}
-
-.components-modal__screen-overlay:has(
-	.components-modal__frame:not(.gutenberg-collaborative-editing-post-locked-modal)
-) {
+.editor-post-locked-modal {
 	display: none;
 }
 
+.components-modal__screen-overlay:has(.editor-post-locked-modal) {
+	display: none;
+}
