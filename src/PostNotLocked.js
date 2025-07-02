@@ -25,7 +25,6 @@ export const PostNotLocked = () => {
 	});
 	const [currentUserHasLock, setCurrentUserHasLock] = useState(false);
 	const [showROModal, setShowROModal] = useState(false);
-	const [dataLoaded, setDataLoaded] = useState(false);
 	const initialized = useRef(false);
 
 	useEffect(() => {
@@ -52,7 +51,6 @@ export const PostNotLocked = () => {
 						currentUserId,
 						lockAcquireeUserId
 					});
-					setDataLoaded(true);
 				} else {
 					// Retry after a short delay
 					setTimeout(getCurrentUserWithRetry, 100);
@@ -64,13 +62,13 @@ export const PostNotLocked = () => {
 	}, []);
 
 	useEffect(() => {
-		if (!dataLoaded) return; // Don't calculate until we have data
+		if (userLockData.currentUserId === null) return; // wait until we have data
 		
 		const { currentUserId, lockAcquireeUserId } = userLockData;
 		const currentUserHasLock = lockAcquireeUserId != null && currentUserId === lockAcquireeUserId;
 		setCurrentUserHasLock( currentUserHasLock );
 		setShowROModal( ! currentUserHasLock );
-	}, [userLockData, dataLoaded]);
+	}, [userLockData]);
 
 	useEffect(() => {
 		const { currentUserId, lockAcquireeUserId } = userLockData;
@@ -79,7 +77,7 @@ export const PostNotLocked = () => {
 
 	// Create notice when user doesn't have the lock
 	useEffect(() => {
-		if (!dataLoaded) return; // Don't create notice until we have data
+		if (userLockData.currentUserId === null) return; // wait until we have data
 		
 		if (currentUserHasLock) {
 			wp.data.dispatch('core/notices').removeNotice('read-only-mode');
@@ -93,9 +91,9 @@ export const PostNotLocked = () => {
 				id: 'read-only-mode'
 			}
 		);
-	}, [currentUserHasLock, dataLoaded]);
+	}, [currentUserHasLock, userLockData.currentUserId]);
 
-	if (dataLoaded && showROModal) {
+	if (userLockData.currentUserId !== null && showROModal) {
 		return (
 			<Modal
 				className="gutenberg-collaborative-editing-post-locked-modal"
