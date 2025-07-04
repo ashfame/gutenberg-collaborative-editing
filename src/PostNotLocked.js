@@ -178,7 +178,7 @@ export const PostNotLocked = () => {
 		longPoll();
 	};
 
-	// Handle read-only mode when we have user data
+	// Handle read-only mode and modal display (separate from content changes)
 	useEffect(() => {
 		if (currentUserId === null) return;
 
@@ -198,9 +198,6 @@ export const PostNotLocked = () => {
 			setShowModal(false);
 			document.body.classList.remove('gutenberg-collaborative-editing-readonly');
 			shouldStopPolling.current = true; // Stop any ongoing polling
-			
-			// Start syncing content changes
-			handleContentChange();
 		} else {
 			// User doesn't have the lock - show notice, add body class, and prevent editing
 			createNotice('info', 'Read-only mode', {
@@ -276,7 +273,14 @@ export const PostNotLocked = () => {
 				editorElement.removeEventListener('touchend', preventEditing, true);
 			}
 		};
-	}, [currentUserId, isUserLockHolder, postId, currentContent, createNotice, removeNotice, editPost]);
+	}, [currentUserId, isUserLockHolder, postId, createNotice, removeNotice]);
+
+	// Handle content changes for lock holders (separate effect)
+	useEffect(() => {
+		if (isUserLockHolder && postId) {
+			handleContentChange();
+		}
+	}, [isUserLockHolder, postId, currentContent]);
 
 	// Cleanup
 	useEffect(() => {
