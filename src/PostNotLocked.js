@@ -53,6 +53,7 @@ export const PostNotLocked = () => {
 			});
 			setShowModal(true);
 			document.body.classList.add('gutenberg-collaborative-editing-readonly');
+			disableAutoSave();
 			
 			// Add event listeners to prevent editing
 			const editorElement = document.querySelector('.editor-visual-editor');
@@ -138,3 +139,11 @@ export const PostNotLocked = () => {
 		</Modal>
 	) : null;
 };
+
+function disableAutoSave() {
+	wp.data.dispatch('core/editor').updateEditorSettings({
+		autosaveInterval: 999999,
+		localAutosaveInterval: 999999,
+		__experimentalLocalAutosaveInterval: 999999
+	});
+}
