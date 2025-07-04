@@ -44,16 +44,15 @@ export const PostNotLocked = () => {
 		if (!window.gceSync || !postId) return;
 
 		try {
-			const response = await fetch(window.gceSync.syncUrl, {
+			const formData = new FormData();
+			formData.append('action', window.gceSync.syncAction);
+			formData.append('nonce', window.gceSync.nonce);
+			formData.append('post_id', postId);
+			formData.append('content', JSON.stringify(content));
+
+			const response = await fetch(window.gceSync.ajaxUrl, {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-Nonce': window.gceSync.nonce
-				},
-				body: JSON.stringify({
-					post_id: postId,
-					content: content
-				})
+				body: formData
 			});
 
 			if (!response.ok) {
@@ -61,7 +60,12 @@ export const PostNotLocked = () => {
 			}
 
 			const result = await response.json();
-			console.log('Content synced successfully:', result);
+			
+			if (result.success) {
+				console.log('Content synced successfully:', result.data);
+			} else {
+				console.error('Sync failed:', result.data);
+			}
 
 		} catch (error) {
 			console.error('Failed to sync content:', error);
@@ -70,27 +74,40 @@ export const PostNotLocked = () => {
 
 	// Poll for content updates (for non-lock holders)
 	const pollForUpdates = async () => {
-		if (isPolling.current || !window.gceSync || !postId) return;
+		if (isPolling.current || !window.gceSync || !postId) {
+			console.log('Skipping poll - already polling or missing data:', { 
+				isPolling: isPolling.current, 
+				hasGceSync: !!window.gceSync, 
+				postId 
+			});
+			return;
+		}
 
 		isPolling.current = true;
+		console.log('Starting poll request...');
 
 		try {
-			const url = new URL(window.gceSync.syncUrl);
+			const url = new URL(window.gceSync.ajaxUrl);
+			url.searchParams.append('action', window.gceSync.pollAction);
+			url.searchParams.append('nonce', window.gceSync.nonce);
 			url.searchParams.append('post_id', postId);
 			url.searchParams.append('last_timestamp', lastReceivedTimestamp.current);
 
+			console.log('Poll URL:', url.toString());
+
 			const response = await fetch(url.toString(), {
-				method: 'GET',
-				headers: {
-					'X-WP-Nonce': window.gceSync.nonce
-				}
+				method: 'GET'
 			});
+
+			console.log('Poll response:', response.status, response.statusText);
 
 			if (response.ok) {
 				const data = await response.json();
+				console.log('Poll data received:', data);
 				
-				if (data.success && data.has_update && data.content) {
-					const receivedContent = data.content;
+				if (data.success && data.data.has_update && data.data.content) {
+					const receivedContent = data.data.content;
+					console.log('Applying content update:', receivedContent);
 					
 					// Apply content to editor
 					if (receivedContent.content && receivedContent.content.html) {
@@ -107,7 +124,11 @@ export const PostNotLocked = () => {
 							isDismissible: true
 						});
 					}
+				} else {
+					console.log('No updates available');
 				}
+			} else {
+				console.error('Poll request failed:', response.status, response.statusText);
 			}
 
 		} catch (error) {
@@ -138,9 +159,15 @@ export const PostNotLocked = () => {
 
 	// Handle polling for non-lock holders
 	const startPolling = () => {
-		if (isUserLockHolder || !postId) return;
+		if (isUserLockHolder || !postId) {
+			console.log('Not starting polling - user has lock or no postId:', { isUserLockHolder, postId });
+			return;
+		}
+
+		console.log('Starting polling for post:', postId);
 
 		const poll = async () => {
+			console.log('Polling for updates...', { postId, lastTimestamp: lastReceivedTimestamp.current });
 			await pollForUpdates();
 			
 			// Schedule next poll

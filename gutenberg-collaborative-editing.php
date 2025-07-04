@@ -45,11 +45,12 @@ function gce_enqueue_editor_assets() {
         'gutenberg-collaborative-editing-editor-script',
         'gceSync',
         array(
-            'syncUrl' => plugins_url( 'sync.php', __FILE__ ),
-            'nonce' => wp_create_nonce( 'gutenberg_sync_nonce' ),
             'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+            'nonce' => wp_create_nonce( 'gutenberg_sync_nonce' ),
             'postId' => get_the_ID(),
             'currentUserId' => get_current_user_id(),
+            'syncAction' => 'gce_sync_content',
+            'pollAction' => 'gce_poll_content',
         )
     );
 
@@ -72,13 +73,13 @@ function gce_enqueue_editor_assets() {
 add_action( 'enqueue_block_editor_assets', 'gce_enqueue_editor_assets' );
 
 /**
- * AJAX handler for content sync (alternative to direct sync.php calls)
+ * AJAX handler for content sync from lock holders
  */
 function gce_handle_sync_content() {
     check_ajax_referer( 'gutenberg_sync_nonce', 'nonce' );
     
     $post_id = intval( $_POST['post_id'] ?? 0 );
-    $content = wp_unslash( $_POST['content'] ?? '' );
+    $content = json_decode( wp_unslash( $_POST['content'] ?? '{}' ), true );
     
     if ( ! $post_id || ! $content ) {
         wp_send_json_error( 'Invalid request data' );
@@ -97,7 +98,7 @@ function gce_handle_sync_content() {
         return;
     }
     
-    // Store content in transient
+    // Store content in transient (expires in 1 hour)
     $transient_key = "gce_sync_content_{$post_id}";
     $sync_data = array(
         'content' => $content,
@@ -108,6 +109,15 @@ function gce_handle_sync_content() {
     
     set_transient( $transient_key, $sync_data, HOUR_IN_SECONDS );
     
+    // Also store in a "latest updates" transient for polling
+    $updates_key = "gce_sync_updates_{$post_id}";
+    $existing_updates = get_transient( $updates_key ) ?: array();
+    $existing_updates[] = $sync_data;
+    
+    // Keep only last 10 updates
+    $existing_updates = array_slice( $existing_updates, -10 );
+    set_transient( $updates_key, $existing_updates, HOUR_IN_SECONDS );
+    
     wp_send_json_success( array(
         'timestamp' => time(),
         'message' => 'Content synced successfully'
@@ -116,37 +126,66 @@ function gce_handle_sync_content() {
 add_action( 'wp_ajax_gce_sync_content', 'gce_handle_sync_content' );
 
 /**
- * AJAX handler for content polling (alternative to direct sync.php calls)
+ * AJAX handler for content polling from non-lock holders
  */
 function gce_handle_poll_content() {
+    error_log('GCE: Poll request received with data: ' . print_r($_GET, true));
+    
     check_ajax_referer( 'gutenberg_sync_nonce', 'nonce' );
     
     $post_id = intval( $_GET['post_id'] ?? 0 );
     $last_timestamp = intval( $_GET['last_timestamp'] ?? 0 );
     
+    error_log("GCE: Polling for post_id: $post_id, last_timestamp: $last_timestamp");
+    
     if ( ! $post_id ) {
+        error_log('GCE: Missing post_id');
         wp_send_json_error( 'Missing post_id' );
         return;
     }
     
     if ( ! current_user_can( 'edit_post', $post_id ) ) {
+        error_log('GCE: Permission denied for user: ' . get_current_user_id());
         wp_send_json_error( 'Permission denied' );
         return;
     }
     
-    $transient_key = "gce_sync_content_{$post_id}";
-    $sync_data = get_transient( $transient_key );
+    // Long polling implementation
+    $max_wait = 30; // 30 seconds max wait
+    $check_interval = 1; // Check every 1 second
+    $start_time = time();
     
-    if ( $sync_data && $sync_data['timestamp'] > $last_timestamp ) {
-        wp_send_json_success( array(
-            'content' => $sync_data,
-            'has_update' => true
-        ) );
-    } else {
-        wp_send_json_success( array(
-            'content' => null,
-            'has_update' => false
-        ) );
+    error_log("GCE: Starting long poll, max_wait: $max_wait seconds");
+    
+    while ( ( time() - $start_time ) < $max_wait ) {
+        $transient_key = "gce_sync_content_{$post_id}";
+        $sync_data = get_transient( $transient_key );
+        
+        if ( $sync_data ) {
+            error_log("GCE: Found sync data with timestamp: " . $sync_data['timestamp']);
+            
+            if ( $sync_data['timestamp'] > $last_timestamp ) {
+                error_log('GCE: Sending update to client');
+                wp_send_json_success( array(
+                    'content' => $sync_data,
+                    'has_update' => true
+                ) );
+                return;
+            }
+        } else {
+            error_log('GCE: No sync data found in transient');
+        }
+        
+        // Sleep for check interval
+        sleep( $check_interval );
     }
+    
+    error_log('GCE: Poll timeout reached, no updates found');
+    
+    // No update found within timeout
+    wp_send_json_success( array(
+        'content' => null,
+        'has_update' => false
+    ) );
 }
 add_action( 'wp_ajax_gce_poll_content', 'gce_handle_poll_content' );
