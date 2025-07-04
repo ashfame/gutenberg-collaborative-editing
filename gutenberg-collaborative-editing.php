@@ -40,6 +40,19 @@ function gce_enqueue_editor_assets() {
         true
     );
 
+    // Localize script with sync data
+    wp_localize_script(
+        'gutenberg-collaborative-editing-editor-script',
+        'gceSync',
+        array(
+            'syncUrl' => plugins_url( 'sync.php', __FILE__ ),
+            'nonce' => wp_create_nonce( 'gutenberg_sync_nonce' ),
+            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+            'postId' => get_the_ID(),
+            'currentUserId' => get_current_user_id(),
+        )
+    );
+
     if ( is_rtl() ) {
         wp_enqueue_style(
             'gutenberg-collaborative-editing-editor-style',
@@ -57,3 +70,83 @@ function gce_enqueue_editor_assets() {
     }
 }
 add_action( 'enqueue_block_editor_assets', 'gce_enqueue_editor_assets' );
+
+/**
+ * AJAX handler for content sync (alternative to direct sync.php calls)
+ */
+function gce_handle_sync_content() {
+    check_ajax_referer( 'gutenberg_sync_nonce', 'nonce' );
+    
+    $post_id = intval( $_POST['post_id'] ?? 0 );
+    $content = wp_unslash( $_POST['content'] ?? '' );
+    
+    if ( ! $post_id || ! $content ) {
+        wp_send_json_error( 'Invalid request data' );
+        return;
+    }
+    
+    // Verify user has lock on this post
+    if ( ! current_user_can( 'edit_post', $post_id ) ) {
+        wp_send_json_error( 'Permission denied' );
+        return;
+    }
+    
+    $lock = wp_check_post_lock( $post_id );
+    if ( $lock ) {
+        wp_send_json_error( 'Post is locked by another user' );
+        return;
+    }
+    
+    // Store content in transient
+    $transient_key = "gce_sync_content_{$post_id}";
+    $sync_data = array(
+        'content' => $content,
+        'timestamp' => time(),
+        'post_id' => $post_id,
+        'user_id' => get_current_user_id()
+    );
+    
+    set_transient( $transient_key, $sync_data, HOUR_IN_SECONDS );
+    
+    wp_send_json_success( array(
+        'timestamp' => time(),
+        'message' => 'Content synced successfully'
+    ) );
+}
+add_action( 'wp_ajax_gce_sync_content', 'gce_handle_sync_content' );
+
+/**
+ * AJAX handler for content polling (alternative to direct sync.php calls)
+ */
+function gce_handle_poll_content() {
+    check_ajax_referer( 'gutenberg_sync_nonce', 'nonce' );
+    
+    $post_id = intval( $_GET['post_id'] ?? 0 );
+    $last_timestamp = intval( $_GET['last_timestamp'] ?? 0 );
+    
+    if ( ! $post_id ) {
+        wp_send_json_error( 'Missing post_id' );
+        return;
+    }
+    
+    if ( ! current_user_can( 'edit_post', $post_id ) ) {
+        wp_send_json_error( 'Permission denied' );
+        return;
+    }
+    
+    $transient_key = "gce_sync_content_{$post_id}";
+    $sync_data = get_transient( $transient_key );
+    
+    if ( $sync_data && $sync_data['timestamp'] > $last_timestamp ) {
+        wp_send_json_success( array(
+            'content' => $sync_data,
+            'has_update' => true
+        ) );
+    } else {
+        wp_send_json_success( array(
+            'content' => null,
+            'has_update' => false
+        ) );
+    }
+}
+add_action( 'wp_ajax_gce_poll_content', 'gce_handle_poll_content' );
