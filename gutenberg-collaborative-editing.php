@@ -146,10 +146,10 @@ function gce_handle_poll_content() {
     
     // Long polling implementation
     $max_wait = 30; // 30 seconds max wait
-    $check_interval = 1; // Check every 1 second
-    $start_time = time();
+    $check_interval = 0.1; // Check every 100ms for much faster response
+    $start_time = microtime(true); // Use microtime for better precision
     
-    while ( ( time() - $start_time ) < $max_wait ) {
+    while ( ( microtime(true) - $start_time ) < $max_wait ) {
         $transient_key = "gce_sync_content_{$post_id}";
         $sync_data = get_transient( $transient_key );
         
@@ -163,8 +163,8 @@ function gce_handle_poll_content() {
             }
         }
         
-        // Sleep for check interval
-        sleep( $check_interval );
+        // Sleep for check interval (100ms)
+        // usleep( $check_interval * 1000000 ); // usleep takes microseconds
     }
     
     // No update found within timeout
