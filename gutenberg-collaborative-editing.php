@@ -106,51 +106,12 @@ function gce_handle_sync_content() {
         'post_id' => $post_id,
         'user_id' => get_current_user_id()
     );
-    
-    // Force cache invalidation by deleting before setting
-    delete_transient( $transient_key );
-    
-    // Clear any object cache if present
-    if ( function_exists( 'wp_cache_delete' ) ) {
-        wp_cache_delete( $transient_key, 'transient' );
-    }
-    
     set_transient( $transient_key, $sync_data, HOUR_IN_SECONDS );
-    
-    // Also store in WordPress options as a fallback (less cached)
-    $option_key = "gce_sync_content_{$post_id}";
-    update_option( $option_key, $sync_data, false ); // false = don't autoload
-    
-    // Also store in a "latest updates" transient for polling
-    $updates_key = "gce_sync_updates_{$post_id}";
-    $existing_updates = get_transient( $updates_key ) ?: array();
-    $existing_updates[] = $sync_data;
-    
-    // Keep only last 10 updates
-    $existing_updates = array_slice( $existing_updates, -10 );
-    
-    // Force cache invalidation for updates too
-    delete_transient( $updates_key );
-    if ( function_exists( 'wp_cache_delete' ) ) {
-        wp_cache_delete( $updates_key, 'transient' );
-    }
-    
-    set_transient( $updates_key, $existing_updates, HOUR_IN_SECONDS );
     
     wp_send_json_success( array(
         'timestamp' => time(),
         'message' => 'Content synced successfully'
     ) );
-    
-    // Clean up old options (remove options older than 1 hour)
-    $cleanup_option_key = "gce_sync_content_{$post_id}";
-    $cleanup_data = get_option( $cleanup_option_key );
-    if ( $cleanup_data && isset( $cleanup_data['timestamp'] ) ) {
-        $age = time() - $cleanup_data['timestamp'];
-        if ( $age > HOUR_IN_SECONDS ) {
-            delete_option( $cleanup_option_key );
-        }
-    }
 }
 add_action( 'wp_ajax_gce_sync_content', 'gce_handle_sync_content' );
 
@@ -174,34 +135,20 @@ function gce_handle_poll_content() {
     }
     
     // Long polling implementation
-    $max_wait = 30; // 30 seconds max wait
+    $max_wait = 1; // 30 seconds max wait
     $check_interval = 0.1; // Check every 100ms for much faster response
     $start_time = microtime(true); // Use microtime for better precision
     
     while ( ( microtime(true) - $start_time ) < $max_wait ) {
         $transient_key = "gce_sync_content_{$post_id}";
-        
-        // Try to bypass cache by clearing it first
-        if ( function_exists( 'wp_cache_delete' ) ) {
-            wp_cache_delete( $transient_key, 'transient' );
-        }
-        
         $sync_data = get_transient( $transient_key );
         
-        // Fallback to WordPress options if transient is empty (less cached)
-        if ( ! $sync_data ) {
-            $option_key = "gce_sync_content_{$post_id}";
-            $sync_data = get_option( $option_key );
-        }
-        
-        if ( $sync_data ) {
-            if ( $sync_data['timestamp'] > $last_timestamp ) {
-                wp_send_json_success( array(
-                    'content' => $sync_data,
-                    'has_update' => true
-                ) );
-                return;
-            }
+        if ( $sync_data &&  $sync_data['timestamp'] > $last_timestamp ) {
+            wp_send_json_success( array(
+                'content' => $sync_data,
+                'has_update' => true
+            ) );
+            return;
         }
         
         // Sleep for check interval (100ms) to prevent excessive CPU usage
