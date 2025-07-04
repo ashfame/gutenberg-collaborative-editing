@@ -24,8 +24,14 @@ body.gutenberg-collaborative-editing-readonly .editor-visual-editor::before {
 	left: 0;
 	right: 0;
 	bottom: 0;
-	background: rgba(255, 255, 255, 0.7);
 	z-index: 999999;
 	pointer-events: none;
-	backdrop-filter: blur(1px);
+}
+
+body.gutenberg-collaborative-editing-readonly .block-editor-block-contextual-toolbar,
+body.gutenberg-collaborative-editing-readonly .block-editor-block-popover,
+body.gutenberg-collaborative-editing-readonly .editor-header__settings .interface-pinned-items,
+body.gutenberg-collaborative-editing-readonly .editor-header__toolbar,
+body.gutenberg-collaborative-editing-readonly .editor-post-publish-button {
+	display: none !important;
 }
