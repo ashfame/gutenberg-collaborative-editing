@@ -1,7 +1,7 @@
 import { Modal, Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useSelect, useDispatch } from '@wordpress/data';
-import { useEffect, useState, useRef } from '@wordpress/element';
+import { useEffect, useState, useRef, useMemo } from '@wordpress/element';
 
 export const PostNotLocked = () => {
 	const [showModal, setShowModal] = useState(false);
@@ -15,7 +15,7 @@ export const PostNotLocked = () => {
 	const { editPost } = useDispatch('core/editor');
 
 	// Get all required data in a single useSelect
-	const { currentUserId, isUserLockHolder, postId, currentContent } = useSelect((select) => {
+	const { currentUserId, isUserLockHolder, postId, editorContent } = useSelect((select) => {
 		const editorSelect = select('core/editor');
 		const coreSelect = select('core');
 
@@ -26,7 +26,9 @@ export const PostNotLocked = () => {
 		
 		const isUserLockHolder = lockAcquireeUserId != null && currentUserId === lockAcquireeUserId;
 		const postId = editorSelect?.getCurrentPostId?.() || window.gceSync?.postId || 0;
-		const currentContent = {
+		
+		// Return raw values instead of creating objects
+		const editorContent = {
 			html: editorSelect?.getEditedPostContent?.() || '',
 			title: editorSelect?.getEditedPostAttribute?.('title') || ''
 		};
@@ -35,9 +37,15 @@ export const PostNotLocked = () => {
 			currentUserId,
 			isUserLockHolder,
 			postId,
-			currentContent
+			editorContent
 		};
 	}, []);
+
+	// Memoize currentContent to prevent unnecessary re-renders
+	const currentContent = useMemo(() => ({
+		html: editorContent?.html || '',
+		title: editorContent?.title || ''
+	}), [editorContent?.html, editorContent?.title]);
 
 	// Sync content to server (for lock holders)
 	const syncContentToServer = async (content) => {
@@ -60,12 +68,6 @@ export const PostNotLocked = () => {
 			}
 
 			const result = await response.json();
-			
-			if (result.success) {
-				console.log('Content synced successfully:', result.data);
-			} else {
-				console.error('Sync failed:', result.data);
-			}
 
 		} catch (error) {
 			console.error('Failed to sync content:', error);
@@ -75,16 +77,10 @@ export const PostNotLocked = () => {
 	// Poll for content updates (for non-lock holders)
 	const pollForUpdates = async () => {
 		if (isPolling.current || !window.gceSync || !postId) {
-			console.log('Skipping poll - already polling or missing data:', { 
-				isPolling: isPolling.current, 
-				hasGceSync: !!window.gceSync, 
-				postId 
-			});
 			return;
 		}
 
 		isPolling.current = true;
-		console.log('Starting long poll request...');
 
 		try {
 			const url = new URL(window.gceSync.ajaxUrl);
@@ -92,8 +88,6 @@ export const PostNotLocked = () => {
 			url.searchParams.append('nonce', window.gceSync.nonce);
 			url.searchParams.append('post_id', postId);
 			url.searchParams.append('last_timestamp', lastReceivedTimestamp.current);
-
-			console.log('Long poll URL:', url.toString());
 
 			const response = await fetch(url.toString(), {
 				method: 'GET',
@@ -105,16 +99,12 @@ export const PostNotLocked = () => {
 				}
 			});
 
-			console.log('Long poll response:', response.status, response.statusText);
-
 			if (response.ok) {
 				const data = await response.json();
-				console.log('Long poll data received:', data);
 				
 				if (data.success) {
 					if (data.data && data.data.has_update && data.data.content) {
 						const receivedContent = data.data.content;
-						console.log('Applying content update:', receivedContent);
 						
 						// Apply content to editor
 						if (receivedContent.content && receivedContent.content.html) {
@@ -131,33 +121,12 @@ export const PostNotLocked = () => {
 								isDismissible: true
 							});
 						}
-					} else {
-						console.log('No updates available in long poll response');
 					}
-				} else {
-					console.error('Long poll response indicated failure:', data);
-				}
-			} else {
-				console.error('Long poll request failed:', response.status, response.statusText);
-				
-				// If it's a 4xx error, it might be a nonce issue, let's try to refresh
-				if (response.status >= 400 && response.status < 500) {
-					console.log('Client error detected, may need to refresh nonce');
 				}
 			}
 
 		} catch (error) {
 			console.error('Long polling error:', error);
-			
-			// Check if it's a network error
-			if (error.name === 'TypeError' && error.message.includes('fetch')) {
-				console.log('Network error detected, will retry');
-			} else if (error.name === 'AbortError') {
-				console.log('Request was aborted, will retry');
-			} else {
-				console.log('Unknown error during long polling:', error.name, error.message);
-			}
-			
 			// Don't throw the error, just log it and continue
 		} finally {
 			isPolling.current = false;
@@ -186,23 +155,18 @@ export const PostNotLocked = () => {
 	// Handle long polling for non-lock holders
 	const startLongPolling = () => {
 		if (isUserLockHolder || !postId) {
-			console.log('Not starting long polling - user has lock or no postId:', { isUserLockHolder, postId });
 			return;
 		}
 
-		console.log('Starting long polling for post:', postId);
 		shouldStopPolling.current = false;
 
 		// Recursive long polling function
 		const longPoll = async () => {
 			// Check if we should continue polling
 			if (shouldStopPolling.current || isUserLockHolder || !postId) {
-				console.log('Stopping long polling - conditions changed');
 				return;
 			}
 
-			console.log('Long polling for updates...', { postId, lastTimestamp: lastReceivedTimestamp.current });
-			
 			await pollForUpdates();
 			
 			// Immediately start the next long poll request

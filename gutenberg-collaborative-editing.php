@@ -129,23 +129,17 @@ add_action( 'wp_ajax_gce_sync_content', 'gce_handle_sync_content' );
  * AJAX handler for content polling from non-lock holders
  */
 function gce_handle_poll_content() {
-    error_log('GCE: Poll request received with data: ' . print_r($_GET, true));
-    
     check_ajax_referer( 'gutenberg_sync_nonce', 'nonce' );
     
     $post_id = intval( $_GET['post_id'] ?? 0 );
     $last_timestamp = intval( $_GET['last_timestamp'] ?? 0 );
     
-    error_log("GCE: Polling for post_id: $post_id, last_timestamp: $last_timestamp");
-    
     if ( ! $post_id ) {
-        error_log('GCE: Missing post_id');
         wp_send_json_error( 'Missing post_id' );
         return;
     }
     
     if ( ! current_user_can( 'edit_post', $post_id ) ) {
-        error_log('GCE: Permission denied for user: ' . get_current_user_id());
         wp_send_json_error( 'Permission denied' );
         return;
     }
@@ -155,32 +149,23 @@ function gce_handle_poll_content() {
     $check_interval = 1; // Check every 1 second
     $start_time = time();
     
-    error_log("GCE: Starting long poll, max_wait: $max_wait seconds");
-    
     while ( ( time() - $start_time ) < $max_wait ) {
         $transient_key = "gce_sync_content_{$post_id}";
         $sync_data = get_transient( $transient_key );
         
         if ( $sync_data ) {
-            error_log("GCE: Found sync data with timestamp: " . $sync_data['timestamp']);
-            
             if ( $sync_data['timestamp'] > $last_timestamp ) {
-                error_log('GCE: Sending update to client');
                 wp_send_json_success( array(
                     'content' => $sync_data,
                     'has_update' => true
                 ) );
                 return;
             }
-        } else {
-            error_log('GCE: No sync data found in transient');
         }
         
         // Sleep for check interval
         sleep( $check_interval );
     }
-    
-    error_log('GCE: Poll timeout reached, no updates found');
     
     // No update found within timeout
     wp_send_json_success( array(
