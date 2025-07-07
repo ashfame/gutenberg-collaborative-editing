@@ -147,8 +147,10 @@ export const PostNotLocked = () => {
 				clearTimeout(syncTimeoutRef.current);
 			}
 			
-			// Send immediately for continuous sync
-			syncContentToServer(currentContent);
+			// Schedule sync after 200ms delay
+			syncTimeoutRef.current = setTimeout(() => {
+				syncContentToServer(currentContent);
+			}, 200);
 		}
 	};
 
