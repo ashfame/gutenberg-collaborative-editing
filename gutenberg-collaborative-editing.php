@@ -135,15 +135,20 @@ function gce_handle_poll_content() {
     }
     
     // Long polling implementation
-    $max_wait = 1; // 30 seconds max wait
+    $max_wait = 30; // 30 seconds max wait
     $check_interval = 0.1; // Check every 100ms for much faster response
     $start_time = microtime(true); // Use microtime for better precision
     
     while ( ( microtime(true) - $start_time ) < $max_wait ) {
         $transient_key = "gce_sync_content_{$post_id}";
-        $sync_data = get_transient( $transient_key );
         
-        if ( $sync_data &&  $sync_data['timestamp'] > $last_timestamp ) {
+        // Directly query the database to bypass any caching layers.
+        global $wpdb;
+        $option_name = '_transient_' . $transient_key;
+        $value = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM $wpdb->options WHERE option_name = %s", $option_name ) );
+        $sync_data = $value ? unserialize( $value ) : false;
+    
+        if ( $sync_data && $sync_data['timestamp'] > $last_timestamp ) {
             wp_send_json_success( array(
                 'content' => $sync_data,
                 'has_update' => true
@@ -151,7 +156,7 @@ function gce_handle_poll_content() {
             return;
         }
         
-        // Sleep for check interval (100ms) to prevent excessive CPU usage
+        // Sleep for check interval to prevent excessive CPU usage
         usleep( $check_interval * 1000000 ); // usleep takes microseconds
     }
     
