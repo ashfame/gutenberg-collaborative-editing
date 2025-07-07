@@ -167,3 +167,48 @@ function gce_handle_poll_content() {
     ) );
 }
 add_action( 'wp_ajax_gce_poll_content', 'gce_handle_poll_content' );
+
+/**
+ * Cleanup expired transients.
+ *
+ * This function is designed to be run on a cron schedule. It fetches all transients
+ * created by this plugin and lets WordPress's native `get_transient` function
+ * handle the deletion of any that have expired.
+ */
+function gce_cleanup_expired_transients() {
+	global $wpdb;
+
+	// Find our transients that have expired.
+	$sql = "SELECT REPLACE(option_name, '_transient_timeout_', '') as option_name FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_gce_sync_content_%' AND option_value < " . intval( time() );
+	$transients = $wpdb->get_col( $sql );
+
+	if ( empty( $transients ) ) {
+		return;
+	}
+
+	foreach ( $transients as $transient_option_name ) {
+		get_transient( $transient_key ); // Calling get_transient() on an expired transient will cause WordPress to delete it.
+	}
+}
+add_action( 'gce_cleanup_transients_cron', 'gce_cleanup_expired_transients' );
+
+/**
+ * Schedule the cron job on plugin activation.
+ */
+function gce_schedule_cron() {
+	if ( ! wp_next_scheduled( 'gce_cleanup_transients_cron' ) ) {
+		wp_schedule_event( time(), 'daily', 'gce_cleanup_transients_cron' );
+	}
+}
+register_activation_hook( __FILE__, 'gce_schedule_cron' );
+
+/**
+ * Unschedule the cron job on plugin deactivation.
+ */
+function gce_unschedule_cron() {
+	$timestamp = wp_next_scheduled( 'gce_cleanup_transients_cron' );
+	if ( $timestamp ) {
+		wp_unschedule_event( $timestamp, 'gce_cleanup_transients_cron' );
+	}
+}
+register_deactivation_hook( __FILE__, 'gce_unschedule_cron' );
