@@ -3,6 +3,16 @@ import { __ } from '@wordpress/i18n';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useEffect, useState, useRef, useMemo } from '@wordpress/element';
 
+const preventEditing = (e) => {
+	// Allow scrolling events
+	if (e.type === 'wheel' || e.type === 'scroll') return;
+	
+	// Prevent all editing interactions
+	e.preventDefault();
+	e.stopPropagation();
+	return false;
+};
+
 export const PostNotLocked = () => {
 	const [showModal, setShowModal] = useState(false);
 	const syncTimeoutRef = useRef(null);
@@ -180,85 +190,75 @@ export const PostNotLocked = () => {
 		longPoll();
 	};
 
-	// Handle read-only mode and modal display (separate from content changes)
+	// Manage the read-only notice
 	useEffect(() => {
 		if (currentUserId === null) return;
 
-		const preventEditing = (e) => {
-			// Allow scrolling events
-			if (e.type === 'wheel' || e.type === 'scroll') return;
-			
-			// Prevent all editing interactions
-			e.preventDefault();
-			e.stopPropagation();
-			return false;
-		};
-
 		if (isUserLockHolder) {
-			// User has the lock - remove notice, hide modal, and remove body class
 			removeNotice('read-only-mode');
-			setShowModal(false);
-			document.body.classList.remove('gutenberg-collaborative-editing-readonly');
-			shouldStopPolling.current = true; // Stop any ongoing polling
 		} else {
-			// User doesn't have the lock - show notice, add body class, and prevent editing
 			createNotice('info', 'Read-only mode', {
 				isDismissible: false,
 				id: 'read-only-mode'
 			});
+		}
+
+		return () => {
+			removeNotice('read-only-mode');
+		};
+	}, [currentUserId, isUserLockHolder, createNotice, removeNotice]);
+
+	// Manage long polling
+	useEffect(() => {
+		if (currentUserId === null) return;
+
+		if (!isUserLockHolder && postId) {
+			startLongPolling();
+		}
+
+		return () => {
+			shouldStopPolling.current = true;
+		};
+	}, [currentUserId, isUserLockHolder, postId]);
+
+	// Manage editor read-only state (DOM listeners, CSS class, modal)
+	useEffect(() => {
+		if (currentUserId === null) return;
+
+		const editorElement = document.querySelector('.editor-visual-editor');
+
+		if (isUserLockHolder) {
+			setShowModal(false);
+			document.body.classList.remove('gutenberg-collaborative-editing-readonly');
+		} else {
 			setShowModal(true);
 			document.body.classList.add('gutenberg-collaborative-editing-readonly');
 			disableAutoSave();
 			
-			// Start long polling for updates
-			startLongPolling();
-			
-			// Add event listeners to prevent editing
-			const editorElement = document.querySelector('.editor-visual-editor');
 			if (editorElement) {
-				// Mouse events
+				// Add event listeners to prevent editing
 				editorElement.addEventListener('click', preventEditing, true);
 				editorElement.addEventListener('mousedown', preventEditing, true);
 				editorElement.addEventListener('mouseup', preventEditing, true);
 				editorElement.addEventListener('dblclick', preventEditing, true);
-				
-				// Keyboard events
 				editorElement.addEventListener('keydown', preventEditing, true);
 				editorElement.addEventListener('keypress', preventEditing, true);
 				editorElement.addEventListener('keyup', preventEditing, true);
-				
-				// Input events
 				editorElement.addEventListener('input', preventEditing, true);
 				editorElement.addEventListener('change', preventEditing, true);
 				editorElement.addEventListener('paste', preventEditing, true);
 				editorElement.addEventListener('cut', preventEditing, true);
-				editorElement.addEventListener('copy', preventEditing, true);
-				
-				// Focus events
+				editorElement.addEventListener('copy', preventEditing, true,);
 				editorElement.addEventListener('focus', preventEditing, true);
 				editorElement.addEventListener('focusin', preventEditing, true);
-				
-				// Touch events for mobile
 				editorElement.addEventListener('touchstart', preventEditing, true);
 				editorElement.addEventListener('touchend', preventEditing, true);
 			}
 		}
 
-		// Cleanup
 		return () => {
-			// Stop long polling
-			shouldStopPolling.current = true;
-			
-			// Clear timeouts
-			if (syncTimeoutRef.current) {
-				clearTimeout(syncTimeoutRef.current);
-			}
-
-			// Ensure notice and body class are removed on cleanup
-			removeNotice('read-only-mode');
 			document.body.classList.remove('gutenberg-collaborative-editing-readonly');
-			
-			const editorElement = document.querySelector('.editor-visual-editor');
+
 			if (editorElement) {
 				// Remove all event listeners
 				editorElement.removeEventListener('click', preventEditing, true);
@@ -272,14 +272,14 @@ export const PostNotLocked = () => {
 				editorElement.removeEventListener('change', preventEditing, true);
 				editorElement.removeEventListener('paste', preventEditing, true);
 				editorElement.removeEventListener('cut', preventEditing, true);
-				editorElement.removeEventListener('copy', preventEditing, true);
+				editorElement.removeEventListener('copy', preventEditing, true,);
 				editorElement.removeEventListener('focus', preventEditing, true);
 				editorElement.removeEventListener('focusin', preventEditing, true);
 				editorElement.removeEventListener('touchstart', preventEditing, true);
 				editorElement.removeEventListener('touchend', preventEditing, true);
 			}
 		};
-	}, [currentUserId, isUserLockHolder, postId, createNotice, removeNotice]);
+	}, [currentUserId, isUserLockHolder]);
 
 	// Handle content changes for lock holders (separate effect)
 	useEffect(() => {
@@ -287,6 +287,15 @@ export const PostNotLocked = () => {
 			handleContentChange();
 		}
 	}, [isUserLockHolder, postId, currentContent]);
+
+	// Cleanup timeouts on unmount
+	useEffect(() => {
+		return () => {
+			if (syncTimeoutRef.current) {
+				clearTimeout(syncTimeoutRef.current);
+			}
+		};
+	}, []);
 
 	// Don't render anything if user data not loaded or user has lock
 	if (currentUserId === null || isUserLockHolder) {
