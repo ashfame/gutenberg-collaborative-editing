@@ -82,20 +82,20 @@ function gce_handle_sync_content() {
     $content = json_decode( wp_unslash( $_POST['content'] ?? '{}' ), true );
     
     if ( ! $post_id || ! $content ) {
-        wp_send_json_error( 'Invalid request data' );
-        return;
+        wp_send_json_error( array( 'message' => 'Invalid request data' ) );
+        return; // unreachable since we die() in wp_send_json_error(), just added for readability
     }
     
     // Verify user has lock on this post
     if ( ! current_user_can( 'edit_post', $post_id ) ) {
-        wp_send_json_error( 'Permission denied' );
-        return;
+        wp_send_json_error( array( 'message' => 'Permission denied' ) );
+        return; // unreachable since we die() in wp_send_json_error(), just added for readability
     }
     
     $lock = wp_check_post_lock( $post_id );
     if ( $lock ) {
-        wp_send_json_error( 'Post is locked by another user' );
-        return;
+        wp_send_json_error( array( 'message' => 'Post is locked by another user' ) );
+        return; // unreachable since we die() in wp_send_json_error(), just added for readability
     }
     
     // Store content in transient (expires in 1 hour)
@@ -125,13 +125,13 @@ function gce_handle_poll_content() {
     $last_timestamp = intval( $_GET['last_timestamp'] ?? 0 );
     
     if ( ! $post_id ) {
-        wp_send_json_error( 'Missing post_id' );
-        return;
+        wp_send_json_error( array( 'message' => 'Missing post_id' ) );
+        return; // unreachable since we die() in wp_send_json_error(), just added for readability
     }
     
     if ( ! current_user_can( 'edit_post', $post_id ) ) {
-        wp_send_json_error( 'Permission denied' );
-        return;
+        wp_send_json_error( array( 'message' => 'Permission denied' ) );
+        return; // unreachable since we die() in wp_send_json_error(), just added for readability
     }
     
     // Long polling implementation
@@ -153,14 +153,14 @@ function gce_handle_poll_content() {
                 'content' => $sync_data,
                 'has_update' => true
             ) );
-            return;
+            return; // unreachable since we die() in wp_send_json_success(), just added for readability
         }
         
         // Sleep for check interval to prevent excessive CPU usage
         usleep( $check_interval * 1000000 ); // usleep takes microseconds
     }
     
-    // No update found within timeout
+    // No update found within timeout window
     wp_send_json_success( array(
         'content' => null,
         'has_update' => false
@@ -187,7 +187,7 @@ function gce_cleanup_expired_transients() {
 	}
 
 	foreach ( $transients as $transient_option_name ) {
-		get_transient( $transient_key ); // Calling get_transient() on an expired transient will cause WordPress to delete it.
+		delete_transient( $transient_key );
 	}
 }
 add_action( 'gce_cleanup_transients_cron', 'gce_cleanup_expired_transients' );

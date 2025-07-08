@@ -78,6 +78,9 @@ export const PostNotLocked = () => {
 			}
 
 			const result = await response.json();
+			if ( !result.success ) {
+				throw new Error(result.data.message);
+			}
 
 		} catch (error) {
 			console.error('Failed to sync content:', error);
