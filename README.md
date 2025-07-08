@@ -12,7 +12,7 @@
 Enable collaborative editing in Gutenberg
 
 ## Description
-Enable collaborative editing in Gutenberg
+Enable collaborative editing in Gutenberg.
 
 ## Screenshots
 ![Example](.wporg/screenshot-1.png)
@@ -23,11 +23,10 @@ Enable collaborative editing in Gutenberg
 Install this plugin and have more than one user edit the same post or page.
 
 ### Can I programmatically control what post or page have this enabled?
-Yes. <TODO: Add filter details here>
+Not yet. I need to figure out a good way to enable that. But eventually I would like it to be configurable as follows:
 
 ~~~php
 // functions.php
-
 add_filter( 'gutenberg_collabrative_editing_enabled', function ( $post, $user_ids_collaborating, $user_id_initiating_collaboration ) {
     // Add logic here
 	return $true;
