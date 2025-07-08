@@ -253,6 +253,10 @@ export const PostNotLocked = () => {
 			if (syncTimeoutRef.current) {
 				clearTimeout(syncTimeoutRef.current);
 			}
+
+			// Ensure notice and body class are removed on cleanup
+			removeNotice('read-only-mode');
+			document.body.classList.remove('gutenberg-collaborative-editing-readonly');
 			
 			const editorElement = document.querySelector('.editor-visual-editor');
 			if (editorElement) {
@@ -283,22 +287,6 @@ export const PostNotLocked = () => {
 			handleContentChange();
 		}
 	}, [isUserLockHolder, postId, currentContent]);
-
-	// Cleanup
-	useEffect(() => {
-		return () => {
-			removeNotice('read-only-mode');
-			document.body.classList.remove('gutenberg-collaborative-editing-readonly');
-			
-			// Stop long polling
-			shouldStopPolling.current = true;
-			
-			// Clear all timeouts
-			if (syncTimeoutRef.current) {
-				clearTimeout(syncTimeoutRef.current);
-			}
-		};
-	}, [removeNotice]);
 
 	// Don't render anything if user data not loaded or user has lock
 	if (currentUserId === null || isUserLockHolder) {
