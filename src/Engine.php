@@ -2,6 +2,7 @@
 namespace DotOrg\GCE;
 
 class Engine {
+
 	public function __construct() {
 		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_editor_assets' ] );
 	}
@@ -24,11 +25,12 @@ class Engine {
 			'gceSync',
 			array(
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'nonce' => wp_create_nonce( 'gutenberg_sync_nonce' ),
+				'nonce' => wp_create_nonce( 'gce_long_poll' ), // TODO: Check if this would stop working after certain amount of time, whatever time nonce is valid for
 				'postId' => get_the_ID(),
 				'currentUserId' => get_current_user_id(),
+				'gce_enabled' => true, // TODO: Introduce a filter here as per note in README
 				'syncAction' => 'gce_sync_content',
-				'pollAction' => 'gce_poll_content',
+				'pollAction' => 'gce_poll_updates',
 			)
 		);
 
@@ -45,6 +47,5 @@ class Engine {
 				[], $asset_file['version']
 			);
 		}
-
 	}
 }

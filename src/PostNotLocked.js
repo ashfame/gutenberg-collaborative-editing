@@ -116,7 +116,7 @@ export const PostNotLocked = () => {
 				const data = await response.json();
 				
 				if (data.success) {
-					if (data.data && data.data.has_update && data.data.content) {
+					if (data.data && data.data.modified && data.data.content) {
 						const receivedContent = data.data.content;
 						
 						// Apply content to editor

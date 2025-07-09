@@ -2,14 +2,15 @@
 namespace DotOrg\GCE;
 
 class Sync {
+
 	public function __construct() {
 		add_action( 'wp_ajax_gce_sync_content', [ $this, 'handle_sync' ] );
-		add_action( 'wp_ajax_gce_poll_content', [ $this, 'poll_content' ] );
+		add_action( 'wp_ajax_gce_poll_updates', [ $this, 'poll_updates' ] );
 		add_action( 'gce_cleanup_transients_cron', [ $this, 'cron_cleanup' ] );
 	}
 
 	public function handle_sync() {
-		check_ajax_referer( 'gutenberg_sync_nonce', 'nonce' );
+		check_ajax_referer( 'gce_long_poll', 'nonce' );
 
 		$post_id = intval( $_POST['post_id'] ?? 0 );
 		$content = json_decode( wp_unslash( $_POST['content'] ?? '{}' ), true );
@@ -47,8 +48,8 @@ class Sync {
 		) );
 	}
 
-	public function poll_content() {
-		check_ajax_referer( 'gutenberg_sync_nonce', 'nonce' );
+	public function poll_updates() {
+		check_ajax_referer( 'gce_long_poll', 'nonce' );
 
 		$post_id = intval( $_GET['post_id'] ?? 0 );
 		$last_timestamp = intval( $_GET['last_timestamp'] ?? 0 );
@@ -80,7 +81,7 @@ class Sync {
 			if ( $sync_data && $sync_data['timestamp'] > $last_timestamp ) {
 				wp_send_json_success( array(
 					'content' => $sync_data,
-					'has_update' => true
+					'modified' => true
 				) );
 				return; // unreachable since we die() in wp_send_json_success(), just added for readability
 			}
@@ -92,7 +93,7 @@ class Sync {
 		// No update found within timeout window
 		wp_send_json_success( array(
 			'content' => null,
-			'has_update' => false
+			'modified' => false
 		) );
 	}
 
@@ -100,12 +101,8 @@ class Sync {
 		global $wpdb;
 
 		// Find our transients that have expired.
-		$sql = "SELECT REPLACE(option_name, '_transient_timeout_', '') as option_name FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_gce_sync_content_%' AND option_value < " . intval( time() );
+		$sql = "SELECT REPLACE(option_name, '_transient_timeout_', '') as transient_key FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_gce_sync_content_%' AND option_value < " . intval( time() );
 		$transients = $wpdb->get_col( $sql );
-
-		if ( empty( $transients ) ) {
-			return;
-		}
 
 		foreach ( $transients as $transient_key ) {
 			delete_transient( $transient_key );
