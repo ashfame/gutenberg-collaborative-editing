@@ -6,7 +6,7 @@ import { useEffect, useState, useRef, useMemo } from '@wordpress/element';
 const preventEditing = (e) => {
 	// Allow scrolling events
 	if (e.type === 'wheel' || e.type === 'scroll') return;
-	
+
 	// Prevent all editing interactions
 	e.preventDefault();
 	e.stopPropagation();
@@ -17,6 +17,8 @@ export const PostNotLocked = () => {
 	const [showModal, setShowModal] = useState(false);
 	const syncTimeoutRef = useRef(null);
 	const lastSyncContent = useRef('');
+	const awarenessStateRef = useRef(null);
+	const lastAwarenessData = useRef(null); // this is for broadcasting own's awareness data
 	const lastReceivedTimestamp = useRef(0);
 	const isPolling = useRef(false);
 	const shouldStopPolling = useRef(false);
@@ -33,10 +35,10 @@ export const PostNotLocked = () => {
 		const currentUser = coreSelect?.getCurrentUser?.();
 		const currentUserId = currentUser?.id || null;
 		const lockAcquireeUserId = activePostLock ? parseInt(activePostLock.split(':').pop()) : null;
-		
+
 		const isUserLockHolder = lockAcquireeUserId != null && currentUserId === lockAcquireeUserId;
-		const postId = editorSelect?.getCurrentPostId?.() || window.gceSync?.postId || 0;
-		
+		const postId = editorSelect?.getCurrentPostId?.() || window.gce?.postId || 0;
+
 		// Return raw values instead of creating objects
 		const editorContent = {
 			html: editorSelect?.getEditedPostContent?.() || '',
@@ -59,16 +61,16 @@ export const PostNotLocked = () => {
 
 	// Sync content to server (for lock holders)
 	const syncContentToServer = async (content) => {
-		if (!window.gceSync || !postId) return;
+		if (!window.gce || !postId) return;
 
 		try {
 			const formData = new FormData();
-			formData.append('action', window.gceSync.syncAction);
-			formData.append('nonce', window.gceSync.nonce);
+			formData.append('action', window.gce.syncContentAction);
+			formData.append('nonce', window.gce.syncContentNonce);
 			formData.append('post_id', postId);
 			formData.append('content', JSON.stringify(content));
 
-			const response = await fetch(window.gceSync.ajaxUrl, {
+			const response = await fetch(window.gce.ajaxUrl, {
 				method: 'POST',
 				body: formData
 			});
@@ -87,20 +89,85 @@ export const PostNotLocked = () => {
 		}
 	};
 
+	// Sync Awareness
+	const syncAwareness = async () => {
+		if (!window.gce || !postId) return;
+
+		const selection = window.wp?.data?.select('core/block-editor')?.getSelectionStart();
+		if ( !selection.offset ) {
+			return;
+		}
+
+		const cursorPos = selection.offset;
+
+		// Only sync if awareness data has changed.
+		if (cursorPos === lastAwarenessData.current) {
+			return;
+		}
+
+		try {
+			console.log('sending awareness',cursorPos);
+			const formData = new FormData();
+			formData.append('action', window.gce.syncAwarenessAction);
+			formData.append('nonce', window.gce.syncAwarenessNonce);
+			formData.append('post_id', postId);
+			formData.append('cursor_pos', cursorPos);
+
+			const response = await fetch(window.gce.ajaxUrl, {
+				method: 'POST',
+				body: formData
+			});
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+
+			const result = await response.json();
+			if ( !result.success ) {
+				throw new Error(result.data.message);
+			}
+
+			lastAwarenessData.current = cursorPos;
+		} catch (error) {
+			console.error('Failed to sync awareness:', error);
+		}
+	};
+
+	// Manage awareness data synchronization
+	useEffect(() => {
+		if (currentUserId === null || !postId) {
+			return;
+		}
+
+		// Sync awareness data at different intervals depending on whether the user
+		// is the lock holder or not.
+		const interval = isUserLockHolder ? 1000 : 3000; // 1 second for editor, 3 for viewer
+
+		const awarenessIntervalId = setInterval(() => {
+			syncAwareness();
+		}, interval);
+
+		// Clean up the interval on component unmount or when dependencies change.
+		return () => {
+			clearInterval(awarenessIntervalId);
+		};
+	}, [currentUserId, isUserLockHolder, postId]);
+
 	// Poll for content updates (for non-lock holders)
 	const pollForUpdates = async () => {
-		if (isPolling.current || !window.gceSync || !postId) {
+		if (isPolling.current || !window.gce || !postId) {
 			return;
 		}
 
 		isPolling.current = true;
 
 		try {
-			const url = new URL(window.gceSync.ajaxUrl);
-			url.searchParams.append('action', window.gceSync.pollAction);
-			url.searchParams.append('nonce', window.gceSync.nonce);
+			const url = new URL(window.gce.ajaxUrl);
+			url.searchParams.append('action', window.gce.pollAction);
+			url.searchParams.append('nonce', window.gce.pollNonce);
 			url.searchParams.append('post_id', postId);
-			url.searchParams.append('last_timestamp', lastReceivedTimestamp.current);
+			url.searchParams.append('last_timestamp', lastReceivedTimestamp.current); // this is used only for content modification check
+			url.searchParams.append('awareness', JSON.stringify(awarenessStateRef.current));
 
 			const response = await fetch(url.toString(), {
 				method: 'GET',
@@ -114,33 +181,47 @@ export const PostNotLocked = () => {
 
 			if (response.ok) {
 				const data = await response.json();
-				
+				console.log(data.data.awareness[1]);
+
+				// TODO: Simplify this data structure
 				if (data.success) {
 					if (data.data && data.data.modified && data.data.content) {
 						const receivedContent = data.data.content;
-						
+
 						// Apply content to editor
 						if (receivedContent.content && receivedContent.content.html) {
 							editPost({
 								content: receivedContent.content.html,
 								title: receivedContent.content.title || ''
 							});
-							
+
 							lastReceivedTimestamp.current = receivedContent.timestamp;
-							
-							// Show notification
+
 							createNotice('info', 'Content updated from collaborator', {
 								type: 'snackbar',
 								isDismissible: true
 							});
 						}
 					}
+
+					if (data.data && data.data.awareness) {
+						console.log('setting awareness');
+						awarenessStateRef.current = data.data.awareness;
+						for (const usedId in data.data.awareness) {
+							// Note: this might not be a good idea, but let's try;
+							// I also think min() would be conservative and might provide no loss of receiving updates
+							lastAwarenessData.current = Math.max(lastAwarenessData.current, data.data.awareness[usedId]);
+						}
+					}
 				}
 			}
 
 		} catch (error) {
+			createNotice('error', 'Long polling error', {
+				type: 'snackbar',
+				isDismissible: true
+			});
 			console.error('Long polling error:', error);
-			// Don't throw the error, just log it and continue
 		} finally {
 			isPolling.current = false;
 		}
@@ -151,15 +232,15 @@ export const PostNotLocked = () => {
 		if (!isUserLockHolder || !postId) return;
 
 		const contentStr = JSON.stringify(currentContent);
-		
+
 		if (contentStr !== lastSyncContent.current) {
 			lastSyncContent.current = contentStr;
-			
+
 			// Clear existing timeout
 			if (syncTimeoutRef.current) {
 				clearTimeout(syncTimeoutRef.current);
 			}
-			
+
 			// Schedule sync after 200ms delay
 			syncTimeoutRef.current = setTimeout(() => {
 				syncContentToServer(currentContent);
@@ -183,7 +264,7 @@ export const PostNotLocked = () => {
 			}
 
 			await pollForUpdates();
-			
+
 			// Immediately start the next long poll request
 			// Add a small delay to prevent overwhelming the server in case of immediate failures
 			setTimeout(longPoll, 100);
@@ -237,7 +318,7 @@ export const PostNotLocked = () => {
 			setShowModal(true);
 			document.body.classList.add('gutenberg-collaborative-editing-readonly');
 			disableAutoSave();
-			
+
 			if (editorElement) {
 				// Add event listeners to prevent editing
 				editorElement.addEventListener('click', preventEditing, true);
