@@ -17,9 +17,9 @@ export const PostNotLocked = () => {
 	const [showModal, setShowModal] = useState(false);
 	const syncTimeoutRef = useRef(null);
 	const lastSyncContent = useRef('');
-	const awarenessStateRef = useRef(null);
-	const lastAwarenessData = useRef(null); // this is for broadcasting own's awareness data
 	const lastReceivedTimestamp = useRef(0);
+	const awarenessStateRef = useRef(null);
+	const lastSelfCursorState = useRef(null);
 	const isPolling = useRef(false);
 	const shouldStopPolling = useRef(false);
 
@@ -93,25 +93,23 @@ export const PostNotLocked = () => {
 	const syncAwareness = async () => {
 		if (!window.gce || !postId) return;
 
-		const selection = window.wp?.data?.select('core/block-editor')?.getSelectionStart();
-		if ( !selection.offset ) {
+		const cursorState = getCursorState();
+		if ( !cursorState ) {
 			return;
 		}
 
-		const cursorPos = selection.offset;
-
 		// Only sync if awareness data has changed.
-		if (cursorPos === lastAwarenessData.current) {
+		if ( !needCursorStateBroadcast(cursorState, lastSelfCursorState.current) ) {
 			return;
 		}
 
 		try {
-			console.log('sending awareness',cursorPos);
+			console.log('sending awareness',cursorState);
 			const formData = new FormData();
 			formData.append('action', window.gce.syncAwarenessAction);
 			formData.append('nonce', window.gce.syncAwarenessNonce);
 			formData.append('post_id', postId);
-			formData.append('cursor_pos', cursorPos);
+			formData.append('cursor_state', JSON.stringify(cursorState));
 
 			const response = await fetch(window.gce.ajaxUrl, {
 				method: 'POST',
@@ -127,7 +125,7 @@ export const PostNotLocked = () => {
 				throw new Error(result.data.message);
 			}
 
-			lastAwarenessData.current = cursorPos;
+			lastSelfCursorState.current = cursorState;
 		} catch (error) {
 			console.error('Failed to sync awareness:', error);
 		}
@@ -210,7 +208,7 @@ export const PostNotLocked = () => {
 						for (const usedId in data.data.awareness) {
 							// Note: this might not be a good idea, but let's try;
 							// I also think min() would be conservative and might provide no loss of receiving updates
-							lastAwarenessData.current = Math.max(lastAwarenessData.current, data.data.awareness[usedId]);
+							lastSelfCursorState.current = Math.max(lastSelfCursorState.current, data.data.awareness[usedId]);
 						}
 					}
 				}
@@ -409,3 +407,73 @@ function disableAutoSave() {
 		__experimentalLocalAutosaveInterval: 999999
 	});
 }
+
+const getCursorState = () => {
+	const blocks = window.wp?.data?.select('core/block-editor').getBlockOrder();
+	const selectionStart = window.wp?.data?.select('core/block-editor').getSelectionStart();
+	const selectionEnd = window.wp?.data?.select('core/block-editor').getSelectionEnd();
+
+	if ( ! selectionStart.clientId ) {
+		return null;
+	}
+
+	/**
+	 * Three possible states:
+	 *
+	 * 1) User cursor sitting in one of the blocks
+	 * 2) User cursor highlighting some text within the block
+	 * 3) User cursor highlighting some text across blocks
+	 */
+
+	const sameBlock = selectionStart.clientId === selectionEnd.clientId;
+
+	if ( sameBlock ) {
+		const blockIndex = blocks.indexOf(selectionStart.clientId);
+		if ( selectionStart.offset === selectionEnd.offset ) {
+			return {
+				'blockIndex': blockIndex,
+				'cursorPos': selectionStart.offset
+			};
+		} else {
+			return {
+				'blockIndex': blockIndex,
+				'cursorPosStart': selectionStart.offset,
+				'cursorPosEnd': selectionEnd.offset
+			};
+		}
+	} else {
+		const blockIndexStart = blocks.indexOf(selectionStart.clientId);
+		const blockIndexEnd = blocks.indexOf(selectionEnd.clientId);
+		return {
+			'blockIndexStart': blockIndexStart,
+			'blockIndexEnd': blockIndexEnd,
+			'cursorPosStart': selectionStart.offset,
+			'cursorPosEnd': selectionEnd.offset
+		};
+	}
+};
+
+const needCursorStateBroadcast = (cursorStateCurrent, cursorStateBroadcasted) => {
+	if (cursorStateCurrent === cursorStateBroadcasted) {
+		return false;
+	}
+
+	if (!cursorStateCurrent || !cursorStateBroadcasted) {
+		return true;
+	}
+
+	const keysA = Object.keys(cursorStateCurrent);
+	const keysB = Object.keys(cursorStateBroadcasted);
+
+	if (keysA.length !== keysB.length) {
+		return true;
+	}
+
+	for (const key of keysA) {
+		if (!keysB.includes(key) || cursorStateCurrent[key] !== cursorStateBroadcasted[key]) {
+			return true;
+		}
+	}
+
+	return false;
+};

@@ -85,17 +85,17 @@ class Sync {
 			$this->return_error_response( array( 'message' => 'Invalid request data' ) );
 		}
 
-		$cursor_pos = $_POST['cursor_pos'];
+		$cursor_state = $_POST['cursor_state'];
 		$awareness_state = get_post_meta( $post_id, 'gce_awareness', true );
 		if ( ! is_array( $awareness_state ) ) {
 			$awareness_state = [];
 		}
 		$awareness_state[ get_current_user_id() ] = [
-			'cursor_pos'  => $cursor_pos,
+			'cursor_state'  => $cursor_state,
 			'ts' => time()
 		];
 		update_post_meta( $post_id, 'gce_awareness', $awareness_state );
-		
+
 		$this->return_success_response();
 	}
 
