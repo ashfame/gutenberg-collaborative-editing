@@ -246,9 +246,9 @@ export const PostNotLocked = () => {
 		}
 	};
 
-	// Handle long polling for non-lock holders
+	// Poll for updates: content and awareness updates for non-lock holders and just awareness updates for lock holders
 	const startLongPolling = () => {
-		if (isUserLockHolder || !postId) {
+		if (!postId) {
 			return;
 		}
 
@@ -257,7 +257,7 @@ export const PostNotLocked = () => {
 		// Recursive long polling function
 		const longPoll = async () => {
 			// Check if we should continue polling
-			if (shouldStopPolling.current || isUserLockHolder || !postId) {
+			if (shouldStopPolling.current || !postId) {
 				return;
 			}
 
@@ -294,7 +294,7 @@ export const PostNotLocked = () => {
 	useEffect(() => {
 		if (currentUserId === null) return;
 
-		if (!isUserLockHolder && postId) {
+		if (postId) {
 			startLongPolling();
 		}
 

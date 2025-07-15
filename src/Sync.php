@@ -104,6 +104,8 @@ class Sync {
 
 		$post_id = intval( $_GET['post_id'] ?? 0 );
 		$last_timestamp = intval( $_GET['last_timestamp'] ?? 0 );
+		$lock_owner = ! wp_check_post_lock( $post_id );
+
 		$awareness_user = [];
 		if ( isset( $_GET['awareness'] ) ) {
 			$awareness_json = wp_unslash( $_GET['awareness'] );
@@ -129,21 +131,23 @@ class Sync {
 		$start_time = microtime(true); // Use microtime for better precision
 
 		while ( ( microtime(true) - $start_time ) < $max_wait ) {
-			wp_cache_delete( $post_id, 'post_meta' ); // for Awareness
-			$transient_key = "gce_sync_content_{$post_id}";
+			if ( ! $lock_owner ) {
+				wp_cache_delete( $post_id, 'post_meta' ); // for Awareness
+				$transient_key = "gce_sync_content_{$post_id}";
 
-			// Directly query the database to bypass any caching layers.
-			global $wpdb;
-			$option_name = '_transient_' . $transient_key;
-			$value = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM $wpdb->options WHERE option_name = %s", $option_name ) );
-			$sync_data = $value ? unserialize( $value ) : false;
+				// Directly query the database to bypass any caching layers.
+				global $wpdb;
+				$option_name = '_transient_' . $transient_key;
+				$value = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM $wpdb->options WHERE option_name = %s", $option_name ) );
+				$sync_data = $value ? unserialize( $value ) : false;
 
-			if ( $sync_data && $sync_data['timestamp'] > $last_timestamp ) {
-				$this->return_success_response( array(
-					'modified' => true,
-					'content' => $sync_data,
-					'awareness' => $this->get_latest_awareness_state( $post_id )
-				) );
+				if ( $sync_data && $sync_data['timestamp'] > $last_timestamp ) {
+					$this->return_success_response( array(
+						'modified' => true,
+						'content' => $sync_data,
+						'awareness' => $this->get_latest_awareness_state( $post_id )
+					) );
+				}
 			}
 
 			// let's see if there is just awareness update that we can respond with
