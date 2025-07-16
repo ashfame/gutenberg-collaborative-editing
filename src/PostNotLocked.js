@@ -178,13 +178,14 @@ export const PostNotLocked = () => {
 			});
 
 			if (response.ok) {
-				const data = await response.json();
-				console.log(data.data.awareness[1]);
+				if (response.status === 204) {
+					return;
+				}
 
-				// TODO: Simplify this data structure
-				if (data.success) {
-					if (data.data && data.data.modified && data.data.content) {
-						const receivedContent = data.data.content;
+				const result = await response.json();
+				if (result.success) {
+					if (result.data && result.data.modified && result.data.content) {
+						const receivedContent = result.data.content;
 
 						// Apply content to editor
 						if (receivedContent.content && receivedContent.content.html) {
@@ -202,13 +203,13 @@ export const PostNotLocked = () => {
 						}
 					}
 
-					if (data.data && data.data.awareness) {
+					if (result.data && result.data.awareness) {
 						console.log('setting awareness');
-						awarenessStateRef.current = data.data.awareness;
-						for (const usedId in data.data.awareness) {
+						awarenessStateRef.current = result.data.awareness;
+						for (const usedId in result.data.awareness) {
 							// Note: this might not be a good idea, but let's try;
 							// I also think min() would be conservative and might provide no loss of receiving updates
-							lastSelfCursorState.current = Math.max(lastSelfCursorState.current, data.data.awareness[usedId]);
+							lastSelfCursorState.current = Math.max(lastSelfCursorState.current, result.data.awareness[usedId]);
 						}
 					}
 				}

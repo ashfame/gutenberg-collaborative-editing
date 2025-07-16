@@ -33,8 +33,8 @@ class Sync {
 		return $awareness_user !== $awareness_sys;
 	}
 
-	private function return_success_response( $data = null ) {
-		wp_send_json_success( $data );
+	private function return_success_response( $data = null, $status_code = null ) {
+		wp_send_json_success( $data, $status_code );
 		return; // unreachable since we die() in wp_send_json_success(), just added for readability
 	}
 
@@ -81,11 +81,15 @@ class Sync {
 		check_ajax_referer( 'gce_sync_awareness', 'nonce' );
 
 		$post_id = intval( $_POST['post_id'] ?? 0 );
-		if ( ! $post_id ) {
+		if ( ! $post_id || ! isset( $_POST['cursor_state'] ) ) {
 			$this->return_error_response( array( 'message' => 'Invalid request data' ) );
 		}
 
-		$cursor_state = $_POST['cursor_state'];
+		$cursor_state = json_decode( wp_unslash( $_POST['cursor_state'] ), true );
+		if ( JSON_ERROR_NONE !== json_last_error() ) {
+			$this->return_error_response( array( 'message' => 'Malformed awareness data: ' . json_last_error_msg() ) );
+		}
+
 		$awareness_state = get_post_meta( $post_id, 'gce_awareness', true );
 		if ( ! is_array( $awareness_state ) ) {
 			$awareness_state = [];
@@ -163,10 +167,6 @@ class Sync {
 		}
 
 		// No update found within timeout window, let client re-connect
-		$this->return_success_response( array(
-			'modified' => false,
-			'content' => null,
-			'awareness' => $this->get_latest_awareness_state( $post_id )
-		) );
+		$this->return_success_response( null, 204 );
 	}
 }
