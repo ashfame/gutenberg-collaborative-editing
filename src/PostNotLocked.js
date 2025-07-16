@@ -141,7 +141,7 @@ export const PostNotLocked = () => {
 
 		// Sync awareness data at different intervals depending on whether the user
 		// is the lock holder or not.
-		const interval = isUserLockHolder ? 1000 : 3000; // 1 second for editor, 3 for viewer
+		const interval = isUserLockHolder ? 1000 : 1000; // Eg: 1 second for editor, 3 for viewer
 
 		const awarenessIntervalId = setInterval(() => {
 			syncAwareness();
