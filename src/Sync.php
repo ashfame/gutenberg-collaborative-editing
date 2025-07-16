@@ -135,8 +135,8 @@ class Sync {
 		$start_time = microtime(true); // Use microtime for better precision
 
 		while ( ( microtime(true) - $start_time ) < $max_wait ) {
+			wp_cache_delete( $post_id, 'post_meta' ); // for Awareness
 			if ( ! $lock_owner ) {
-				wp_cache_delete( $post_id, 'post_meta' ); // for Awareness
 				$transient_key = "gce_sync_content_{$post_id}";
 
 				// Directly query the database to bypass any caching layers.

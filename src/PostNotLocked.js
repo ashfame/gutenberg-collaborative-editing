@@ -212,11 +212,6 @@ export const PostNotLocked = () => {
 						if (updateAwarenessState) {
 							updateAwarenessState(result.data.awareness);
 						}
-						for (const usedId in result.data.awareness) {
-							// Note: this might not be a good idea, but let's try;
-							// I also think min() would be conservative and might provide no loss of receiving updates
-							lastSelfCursorState.current = Math.max(lastSelfCursorState.current, result.data.awareness[usedId]);
-						}
 					}
 				}
 			}
