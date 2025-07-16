@@ -2,6 +2,7 @@ import { Modal, Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useEffect, useState, useRef, useMemo } from '@wordpress/element';
+import { useMultiCursor } from './useMultiCursor';
 
 const preventEditing = (e) => {
 	// Allow scrolling events
@@ -52,6 +53,8 @@ export const PostNotLocked = () => {
 			editorContent
 		};
 	}, []);
+
+	const { updateAwarenessState } = useMultiCursor(currentUserId);
 
 	// Memoize currentContent to prevent unnecessary re-renders
 	const currentContent = useMemo(() => ({
@@ -206,6 +209,9 @@ export const PostNotLocked = () => {
 					if (result.data && result.data.awareness) {
 						console.log('setting awareness');
 						awarenessStateRef.current = result.data.awareness;
+						if (updateAwarenessState) {
+							updateAwarenessState(result.data.awareness);
+						}
 						for (const usedId in result.data.awareness) {
 							// Note: this might not be a good idea, but let's try;
 							// I also think min() would be conservative and might provide no loss of receiving updates
