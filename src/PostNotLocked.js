@@ -107,7 +107,6 @@ export const PostNotLocked = () => {
 		}
 
 		try {
-			console.log('sending awareness',cursorState);
 			const formData = new FormData();
 			formData.append('action', window.gce.syncAwarenessAction);
 			formData.append('nonce', window.gce.syncAwarenessNonce);
@@ -207,7 +206,6 @@ export const PostNotLocked = () => {
 					}
 
 					if (result.data && result.data.awareness) {
-						console.log('setting awareness');
 						awarenessStateRef.current = result.data.awareness;
 						if (updateAwarenessState) {
 							updateAwarenessState(result.data.awareness);

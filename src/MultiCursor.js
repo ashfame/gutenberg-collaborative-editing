@@ -90,7 +90,6 @@ export class MultiCursor {
 	}
 
 	getCoordinatesForCursor(blockIndex, cursorPos) {
-		console.log('getCoordinatesForCursor', blockIndex, cursorPos);
 		const blocks = window.wp?.data?.select('core/block-editor').getBlockOrder();
 		if (!blocks || blockIndex >= blocks.length) return null;
 
@@ -105,7 +104,6 @@ export class MultiCursor {
 	}
 
 	getCoordinatesForSelection(blockIndexStart, cursorPosStart, blockIndexEnd, cursorPosEnd) {
-		console.log('getCoordinatesForSelection: start', { blockIndexStart, cursorPosStart, blockIndexEnd, cursorPosEnd });
 		if (
 			blockIndexStart > blockIndexEnd ||
 			(blockIndexStart === blockIndexEnd && cursorPosStart > cursorPosEnd)
@@ -128,9 +126,7 @@ export class MultiCursor {
 		const startBlockEl = getBlockEl(startClientId);
 		const endBlockEl = getBlockEl(endClientId);
 
-		console.log('getCoordinatesForSelection: blocks', { startBlockEl, endBlockEl });
 		if (!startBlockEl || !endBlockEl) {
-			console.log('getCoordinatesForSelection: returning null, block not found');
 			return null;
 		}
 
@@ -138,9 +134,7 @@ export class MultiCursor {
 		const rects = [];
 
 		const addRects = (range) => {
-			console.log('getCoordinatesForSelection: addRects range', range);
 			const clientRects = range.getClientRects();
-			console.log('getCoordinatesForSelection: addRects clientRects', clientRects);
 			for (const rect of clientRects) {
 				rects.push({
 					x: rect.left - overlayRect.left,
@@ -149,20 +143,16 @@ export class MultiCursor {
 					height: rect.height,
 				});
 			}
-			console.log('getCoordinatesForSelection: addRects rects', rects);
 		};
 
 		if (blockIndexStart === blockIndexEnd) {
-			console.log('getCoordinatesForSelection: single block selection');
 			const range = this.document.createRange();
 			const startPos = this.findTextPosition(startBlockEl, cursorPosStart);
 			const endPos = this.findTextPosition(endBlockEl, cursorPosEnd);
-			console.log('getCoordinatesForSelection: positions', { startPos, endPos });
 			if (startPos.node && endPos.node) {
 				try {
 					range.setStart(startPos.node, startPos.offset);
 					range.setEnd(endPos.node, endPos.offset);
-					console.log('getCoordinatesForSelection: range created', range);
 					addRects(range);
 				} catch (e) {
 					console.error('Failed to create range', e, startPos, endPos);
@@ -197,9 +187,7 @@ export class MultiCursor {
 			addRects(endRange);
 		}
 
-		console.log('getCoordinatesForSelection: final rects', rects);
 		const result = rects.length > 0 ? { rects, isSelection: true } : null;
-		console.log('getCoordinatesForSelection: result', result);
 		return result;
 	}
 
@@ -222,7 +210,6 @@ export class MultiCursor {
 	}
 
 	renderCursors(awarenessData) {
-		console.log('renderCursors', awarenessData);
 		if (!awarenessData) {
 			return;
 		}
