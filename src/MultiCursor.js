@@ -105,6 +105,7 @@ export class MultiCursor {
 	}
 
 	getCoordinatesForSelection(blockIndexStart, cursorPosStart, blockIndexEnd, cursorPosEnd) {
+		console.log('getCoordinatesForSelection: start', { blockIndexStart, cursorPosStart, blockIndexEnd, cursorPosEnd });
 		if (
 			blockIndexStart > blockIndexEnd ||
 			(blockIndexStart === blockIndexEnd && cursorPosStart > cursorPosEnd)
@@ -127,13 +128,20 @@ export class MultiCursor {
 		const startBlockEl = getBlockEl(startClientId);
 		const endBlockEl = getBlockEl(endClientId);
 
-		if (!startBlockEl || !endBlockEl) return null;
+		console.log('getCoordinatesForSelection: blocks', { startBlockEl, endBlockEl });
+		if (!startBlockEl || !endBlockEl) {
+			console.log('getCoordinatesForSelection: returning null, block not found');
+			return null;
+		}
 
 		const overlayRect = this.overlay.getBoundingClientRect();
 		const rects = [];
 
 		const addRects = (range) => {
-			for (const rect of range.getClientRects()) {
+			console.log('getCoordinatesForSelection: addRects range', range);
+			const clientRects = range.getClientRects();
+			console.log('getCoordinatesForSelection: addRects clientRects', clientRects);
+			for (const rect of clientRects) {
 				rects.push({
 					x: rect.left - overlayRect.left,
 					y: rect.top - overlayRect.top,
@@ -141,15 +149,25 @@ export class MultiCursor {
 					height: rect.height,
 				});
 			}
+			console.log('getCoordinatesForSelection: addRects rects', rects);
 		};
 
 		if (blockIndexStart === blockIndexEnd) {
+			console.log('getCoordinatesForSelection: single block selection');
 			const range = this.document.createRange();
 			const startPos = this.findTextPosition(startBlockEl, cursorPosStart);
-			const endPos = this.findTextPosition(startBlockEl, cursorPosEnd);
-			range.setStart(startPos.node, startPos.offset);
-			range.setEnd(endPos.node, endPos.offset);
-			addRects(range);
+			const endPos = this.findTextPosition(endBlockEl, cursorPosEnd);
+			console.log('getCoordinatesForSelection: positions', { startPos, endPos });
+			if (startPos.node && endPos.node) {
+				try {
+					range.setStart(startPos.node, startPos.offset);
+					range.setEnd(endPos.node, endPos.offset);
+					console.log('getCoordinatesForSelection: range created', range);
+					addRects(range);
+				} catch (e) {
+					console.error('Failed to create range', e, startPos, endPos);
+				}
+			}
 		} else {
 			// Multi-block selection
 			// 1. Rects for the start block
@@ -179,22 +197,25 @@ export class MultiCursor {
 			addRects(endRange);
 		}
 
-		return rects.length > 0 ? { rects, isSelection: true } : null;
+		console.log('getCoordinatesForSelection: final rects', rects);
+		const result = rects.length > 0 ? { rects, isSelection: true } : null;
+		console.log('getCoordinatesForSelection: result', result);
+		return result;
 	}
 
 	getCoordinatesFromCursorState(cursorState) {
-		console.log('getCoordinatesFromCursorState', cursorState);
 		const { blockIndex, cursorPos, blockIndexStart, blockIndexEnd, cursorPosStart, cursorPosEnd } = cursorState;
 
-		if (blockIndexStart !== undefined) {
-			return this.getCoordinatesForSelection(blockIndexStart, cursorPosStart, blockIndexEnd, cursorPosEnd);
+		// This handles both single-block and multi-block selections.
+		if (cursorPosStart !== undefined) {
+			const startBlock = blockIndexStart !== undefined ? blockIndexStart : blockIndex;
+			const endBlock = blockIndexEnd !== undefined ? blockIndexEnd : blockIndex;
+			return this.getCoordinatesForSelection(startBlock, cursorPosStart, endBlock, cursorPosEnd);
 		}
 
-		if (blockIndex !== undefined) {
-			const x = this.getCoordinatesForCursor(blockIndex, cursorPos);
-			console.log('getCoordinatesFromCursorState', x);
-			return x;
-			// return this.getCoordinatesForCursor(blockIndex, cursorPos);
+		// This handles a simple cursor (no selection).
+		if (cursorPos !== undefined) {
+			return this.getCoordinatesForCursor(blockIndex, cursorPos);
 		}
 
 		return null;
