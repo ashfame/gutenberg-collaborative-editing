@@ -9,3 +9,10 @@ domReady( () => {
 		icon: null,
 	} );
 } );
+
+// Heartbeat for user presence.
+if ( window.gce && window.gce.postId ) {
+	jQuery( document ).on( 'heartbeat-send', function ( event, data ) {
+		data.gce_post_id = window.gce.postId;
+	} );
+}

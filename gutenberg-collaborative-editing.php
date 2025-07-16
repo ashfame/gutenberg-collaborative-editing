@@ -20,11 +20,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Autoload or require the classes.
 require_once __DIR__ . '/src/Engine.php';
 require_once __DIR__ . '/src/Sync.php';
+require_once __DIR__ . '/src/State.php';
 
 // Initialize the plugin engine and sync handler.
 add_action( 'plugins_loaded', function() {
     new \DotOrg\GCE\Engine();
     new \DotOrg\GCE\Sync();
+    new \DotOrg\GCE\State();
 } );
 
 register_activation_hook( __FILE__, function() {

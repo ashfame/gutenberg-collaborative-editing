@@ -14,10 +14,14 @@ class Engine {
 			return;
 		}
 		$asset_file = include $asset_file_path;
+		$dependencies = $asset_file['dependencies'];
+		if ( ! in_array( 'heartbeat', $dependencies, true ) ) {
+			$dependencies[] = 'heartbeat';
+		}
 		wp_enqueue_script(
 			'gutenberg-collaborative-editing-editor-script',
 			plugins_url( 'build/index.js', __DIR__ ),
-			$asset_file['dependencies'],
+			$dependencies,
 			$asset_file['version'],
 			true
 		);
