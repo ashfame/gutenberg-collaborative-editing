@@ -8,6 +8,28 @@ export class MultiCursor {
 		this.userColorMap = new Map();
 	}
 
+	findTextPosition(root, offset) {
+		const walker = this.document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+		let currentOffset = 0;
+		let node;
+		let lastTextNode = null;
+
+		while ((node = walker.nextNode())) {
+			const len = node.nodeValue.length;
+			if (currentOffset + len >= offset) {
+				return { node, offset: offset - currentOffset };
+			}
+			currentOffset += len;
+			lastTextNode = node;
+		}
+
+		if (lastTextNode) {
+			return { node: lastTextNode, offset: lastTextNode.nodeValue.length };
+		}
+
+		return { node: root, offset: 0 };
+	}
+
 	updateUser(userId, cursorState) {
 		if (parseInt(userId, 10) === this.currentUserId) {
 			return;
@@ -25,29 +47,7 @@ export class MultiCursor {
 	}
 
 	getPos(blockEl, charOffset) {
-		const findTextPosition = (root, offset) => {
-			const walker = this.document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-			let currentOffset = 0;
-			let node;
-			let lastTextNode = null;
-
-			while ((node = walker.nextNode())) {
-				const len = node.nodeValue.length;
-				if (currentOffset + len >= offset) {
-					return { node, offset: offset - currentOffset };
-				}
-				currentOffset += len;
-				lastTextNode = node;
-			}
-
-			if (lastTextNode) {
-				return { node: lastTextNode, offset: lastTextNode.nodeValue.length };
-			}
-
-			return { node: root, offset: 0 };
-		};
-
-		const pos = findTextPosition(blockEl, charOffset);
+		const pos = this.findTextPosition(blockEl, charOffset);
 
 		if (!pos.node) {
 			return null;
@@ -105,29 +105,81 @@ export class MultiCursor {
 	}
 
 	getCoordinatesForSelection(blockIndexStart, cursorPosStart, blockIndexEnd, cursorPosEnd) {
+		if (
+			blockIndexStart > blockIndexEnd ||
+			(blockIndexStart === blockIndexEnd && cursorPosStart > cursorPosEnd)
+		) {
+			[blockIndexStart, blockIndexEnd] = [blockIndexEnd, blockIndexStart];
+			[cursorPosStart, cursorPosEnd] = [cursorPosEnd, cursorPosStart];
+		}
+
 		const blocks = window.wp?.data?.select('core/block-editor').getBlockOrder();
 		if (!blocks || blockIndexStart >= blocks.length || blockIndexEnd >= blocks.length) return null;
 
 		const startClientId = blocks[blockIndexStart];
 		const endClientId = blocks[blockIndexEnd];
 
-		const startBlockEl = this.document.querySelector(`[data-block="${startClientId}"] .rich-text`) ||
-			this.document.querySelector(`[data-block="${startClientId}"] .block-editor-rich-text__editable`) ||
-			this.document.querySelector(`[data-block="${startClientId}"]`);
+		const getBlockEl = (clientId) =>
+			this.document.querySelector(`[data-block="${clientId}"] .rich-text`) ||
+			this.document.querySelector(`[data-block="${clientId}"] .block-editor-rich-text__editable`) ||
+			this.document.querySelector(`[data-block="${clientId}"]`);
 
-		const endBlockEl = this.document.querySelector(`[data-block="${endClientId}"] .rich-text`) ||
-			this.document.querySelector(`[data-block="${endClientId}"] .block-editor-rich-text__editable`) ||
-			this.document.querySelector(`[data-block="${endClientId}"]`);
+		const startBlockEl = getBlockEl(startClientId);
+		const endBlockEl = getBlockEl(endClientId);
 
 		if (!startBlockEl || !endBlockEl) return null;
 
-		const startCoords = this.getPos(startBlockEl, cursorPosStart);
-		const endCoords = this.getPos(endBlockEl, cursorPosEnd);
+		const overlayRect = this.overlay.getBoundingClientRect();
+		const rects = [];
 
-		if (startCoords && endCoords) {
-			return { startCoords, endCoords, isSelection: true };
+		const addRects = (range) => {
+			for (const rect of range.getClientRects()) {
+				rects.push({
+					x: rect.left - overlayRect.left,
+					y: rect.top - overlayRect.top,
+					width: rect.width,
+					height: rect.height,
+				});
+			}
+		};
+
+		if (blockIndexStart === blockIndexEnd) {
+			const range = this.document.createRange();
+			const startPos = this.findTextPosition(startBlockEl, cursorPosStart);
+			const endPos = this.findTextPosition(startBlockEl, cursorPosEnd);
+			range.setStart(startPos.node, startPos.offset);
+			range.setEnd(endPos.node, endPos.offset);
+			addRects(range);
+		} else {
+			// Multi-block selection
+			// 1. Rects for the start block
+			const startRange = this.document.createRange();
+			const startPos = this.findTextPosition(startBlockEl, cursorPosStart);
+			const endOfStartBlock = this.findTextPosition(startBlockEl, startBlockEl.textContent.length);
+			startRange.setStart(startPos.node, startPos.offset);
+			startRange.setEnd(endOfStartBlock.node, endOfStartBlock.offset);
+			addRects(startRange);
+
+			// 2. Rects for intermediate blocks
+			for (let i = blockIndexStart + 1; i < blockIndexEnd; i++) {
+				const intermediateBlockEl = getBlockEl(blocks[i]);
+				if (intermediateBlockEl) {
+					const intermediateRange = this.document.createRange();
+					intermediateRange.selectNodeContents(intermediateBlockEl);
+					addRects(intermediateRange);
+				}
+			}
+
+			// 3. Rects for the end block
+			const endRange = this.document.createRange();
+			const startOfEndBlock = this.findTextPosition(endBlockEl, 0);
+			const endPos = this.findTextPosition(endBlockEl, cursorPosEnd);
+			endRange.setStart(startOfEndBlock.node, startOfEndBlock.offset);
+			endRange.setEnd(endPos.node, endPos.offset);
+			addRects(endRange);
 		}
-		return null;
+
+		return rects.length > 0 ? { rects, isSelection: true } : null;
 	}
 
 	getCoordinatesFromCursorState(cursorState) {
@@ -179,15 +231,34 @@ export class MultiCursor {
 
 			if (result.isSelection) {
 				// Render selection
-				const selection = this.document.createElement('div');
-				selection.className = 'remote-selection';
-				const { startCoords, endCoords } = result;
-				selection.style.left = `${startCoords.x}px`;
-				selection.style.top = `${startCoords.y}px`;
-				selection.style.width = `${endCoords.x - startCoords.x}px`;
-				selection.style.height = `${startCoords.height}px`; // Assuming single line selection for now
-				selection.style.backgroundColor = color;
-				this.overlay.appendChild(selection);
+				const { rects } = result;
+				rects.forEach(rect => {
+					const selection = this.document.createElement('div');
+					selection.className = 'remote-selection';
+					selection.style.left = `${rect.x}px`;
+					selection.style.top = `${rect.y}px`;
+					selection.style.width = `${rect.width}px`;
+					selection.style.height = `${rect.height}px`;
+					selection.style.backgroundColor = color;
+					this.overlay.appendChild(selection);
+				});
+
+				const cursor = this.document.createElement('div');
+				cursor.className = 'remote-cursor';
+				const lastRect = rects[rects.length - 1];
+				cursor.style.left = `${lastRect.x + lastRect.width}px`;
+				cursor.style.top = `${lastRect.y}px`;
+				cursor.style.backgroundColor = color;
+				if (lastRect.height) {
+					cursor.style.height = `${lastRect.height}px`;
+				}
+				const label = this.document.createElement('div');
+				label.className = 'cursor-label';
+				label.textContent = `User ${userId}`; // In a real app, you'd fetch the user's name
+				label.style.backgroundColor = color;
+
+				cursor.appendChild(label);
+				this.overlay.appendChild(cursor);
 			} else {
 				// Create cursor element
 				const cursor = this.document.createElement('div');
