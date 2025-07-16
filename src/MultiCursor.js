@@ -25,24 +25,66 @@ export class MultiCursor {
 	}
 
 	getPos(blockEl, charOffset) {
-		const textContent = blockEl.textContent || '';
-		const probe = this.document.createElement('span');
-		probe.textContent = textContent.substring(0, charOffset);
-		probe.style.whiteSpace = 'pre-wrap';
-		probe.style.display = 'inline';
+		const findTextPosition = (root, offset) => {
+			const walker = this.document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+			let currentOffset = 0;
+			let node;
+			let lastTextNode = null;
 
-		blockEl.appendChild(probe);
-		const y = probe.offsetTop;
-		const x = probe.offsetLeft + probe.offsetWidth;
-		const height = probe.offsetHeight;
-		blockEl.removeChild(probe);
+			while ((node = walker.nextNode())) {
+				const len = node.nodeValue.length;
+				if (currentOffset + len >= offset) {
+					return { node, offset: offset - currentOffset };
+				}
+				currentOffset += len;
+				lastTextNode = node;
+			}
 
+			if (lastTextNode) {
+				return { node: lastTextNode, offset: lastTextNode.nodeValue.length };
+			}
+
+			return { node: root, offset: 0 };
+		};
+
+		const pos = findTextPosition(blockEl, charOffset);
+
+		if (!pos.node) {
+			return null;
+		}
+
+		const range = this.document.createRange();
+		try {
+			range.setStart(pos.node, pos.offset);
+		} catch (e) {
+			console.error('Failed to set range start', e, pos);
+			return null;
+		}
+		range.collapse(true);
+
+		const rect = range.getBoundingClientRect();
 		const overlayRect = this.overlay.getBoundingClientRect();
 		const blockRect = blockEl.getBoundingClientRect();
 
+		let x;
+		let y;
+		if (rect.x === 0 && rect.y === 0 && rect.width === 0 && rect.height === 0) {
+			// This can happen for empty blocks.
+			x = blockRect.left - overlayRect.left;
+			y = blockRect.top - overlayRect.top;
+		} else {
+			x = rect.left - overlayRect.left;
+			y = rect.top - overlayRect.top;
+		}
+
+		let height = rect.height;
+		if (height === 0) {
+			height = parseInt(window.getComputedStyle(blockEl).lineHeight, 10) || blockRect.height;
+		}
+
 		return {
-			x: blockRect.left - overlayRect.left + x,
-			y: blockRect.top - overlayRect.top + y,
+			x,
+			y,
 			height,
 		};
 	}
