@@ -9,11 +9,18 @@ class State {
 	const META_KEY_ACTIVE_USERS = 'gce_active_users';
 	const INACTIVE_TIMEOUT = 240; // seconds
 
-	/**
-	 * Constructor.
-	 */
 	public function __construct() {
 		add_filter( 'heartbeat_received', [ $this, 'handle_heartbeat' ], 10, 2 );
+	}
+
+	private function filter_inactive_users( $users ) {
+		foreach ( $users as $user_id => $time ) {
+			if ( $time + self::INACTIVE_TIMEOUT < time() ) {
+				unset( $users[ $user_id ] );
+			}
+		}
+
+		return $users;
 	}
 
 	/**
@@ -33,35 +40,24 @@ class State {
 			return $response;
 		}
 
-		$user_id = get_current_user_id();
-		$active_users = get_post_meta( $post_id, self::META_KEY_ACTIVE_USERS, true );
-		if ( ! is_array( $active_users ) ) {
-			$active_users = [];
-		}
-
-		$active_users[ $user_id ] = time();
-
-		// cleanup inactive users
-		foreach ( $active_users as $user_id => $time ) {
-			if ( $time + self::INACTIVE_TIMEOUT < time() ) {
-				unset( $active_users[ $user_id ] );
-			}
-		}
-
+		$active_users = $this->get_active_users( $post_id );
+		$active_users[ get_current_user_id() ] = time();
 		update_post_meta( $post_id, self::META_KEY_ACTIVE_USERS, $active_users );
+
+		$response['gce_awareness'] = $active_users; // Note: currently unused, but we would most likely rely on this after some code improvements
 
 		return $response;
 	}
 
 	/**
-	 * Gets the users currently engaged on a particular post.
+	 * Gets the users currently engaged in collaborative editing on a particular post.
 	 *
 	 * @param int $post_id The ID of the post.
 	 * @return array An associative array of user_id => timestamp.
 	 */
 	public function get_active_users( $post_id ) {
 		$users = get_post_meta( $post_id, self::META_KEY_ACTIVE_USERS, true );
-		return is_array( $users ) ? $users : [];
+		return is_array( $users ) ? $this->filter_inactive_users( $users ) : [];
 	}
 
 	/**
@@ -71,17 +67,8 @@ class State {
 	 * @return bool True if more than one user is active, false otherwise.
 	 */
 	public function is_collaborative_editing( $post_id ) {
-		$engaged_users_count = 0;
 		$users = $this->get_active_users( $post_id );
-		foreach ( $users as $user_id => $time ) {
-			if ( $time + self::INACTIVE_TIMEOUT > time() ) {
-				$engaged_users_count++;
-				if ( $engaged_users_count > 1 ) {
-					return true;
-				}
-			}
-		}
-		return false;
+		return count( $users ) > 1;
 	}
 
 	/**
