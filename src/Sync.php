@@ -72,7 +72,7 @@ class Sync {
 		set_transient( $transient_key, $sync_data, HOUR_IN_SECONDS );
 
 		$this->return_success_response( array(
-			'timestamp' => time(),
+			'timestamp' => $sync_data['timestamp'],
 			'message' => 'Content synced successfully'
 		) );
 	}
