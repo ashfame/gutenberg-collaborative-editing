@@ -17,26 +17,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-// Autoload or require the classes.
-require_once __DIR__ . '/src/Engine.php';
-require_once __DIR__ . '/src/Sync.php';
-require_once __DIR__ . '/src/State.php';
+require_once __DIR__ . '/src/Plugin.php';
 
-// Initialize the plugin engine and sync handler.
+// Initialize the plugin.
 add_action( 'plugins_loaded', function() {
-    new \DotOrg\GCE\Engine();
-    new \DotOrg\GCE\Sync();
-    new \DotOrg\GCE\State();
+	new \DotOrg\GCE\Plugin();
 } );
 
 register_activation_hook( __FILE__, function() {
-	if ( ! wp_next_scheduled( 'gce_cleanup_transients_cron' ) ) {
-		wp_schedule_event( time(), 'daily', 'gce_cleanup_transients_cron' );
-	}
+	$cron = new \DotOrg\GCE\Cron\Cron();
+	$cron->schedule_events();
 } );
 register_deactivation_hook( __FILE__, function() {
-    $timestamp = wp_next_scheduled( 'gce_cleanup_transients_cron' );
-    if ( $timestamp ) {
-        wp_unschedule_event( $timestamp, 'gce_cleanup_transients_cron' );
-    }
+	$cron = new \DotOrg\GCE\Cron\Cron();
+	$cron->unschedule_events();
 } );

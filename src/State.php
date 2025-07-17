@@ -1,20 +1,25 @@
 <?php
 namespace DotOrg\GCE;
 
+use DotOrg\GCE\Persistence\AwarenessStateRepository;
+
 /**
  * Manages the state of collaborative editing sessions.
  */
 class State {
-
-	const POSTMETA_KEY_AWARENESS = 'gce_awareness';
 	const INACTIVE_TIMEOUT = 240; // seconds
 
+	/**
+	 * @var AwarenessStateRepository
+	 */
+	private $awareness_repo;
+
 	public function __construct() {
-		add_filter( 'heartbeat_received', [ $this, 'handle_heartbeat' ], 10, 2 );
+		$this->awareness_repo = new AwarenessStateRepository();
 	}
 
 	public function get_inactive_timeout_value() {
-		return apply_filter( 'gce_awareness_inactive_timeout', self::INACTIVE_TIMEOUT ); // TODO: add filter
+		return apply_filters( '', self::INACTIVE_TIMEOUT ); // TODO: add filter
 	}
 
 	/**
@@ -33,45 +38,13 @@ class State {
 	}
 
 	/**
-	 * Handles the heartbeat request to update the user's active status.
-	 *
-	 * @param array $response The Heartbeat response.
-	 * @param array $data     The data received from the front end.
-	 * @return array The modified Heartbeat response.
-	 */
-	public function handle_heartbeat( $response, $data ) : array {
-		if ( empty( $data['gce_post_id'] ) ) {
-			return $response;
-		}
-
-		$post_id = intval( $data['gce_post_id'] );
-		if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
-			return $response;
-		}
-
-		$awareness_state = get_post_meta( $post_id, self::POSTMETA_KEY_AWARENESS, true );
-		$user_id = get_current_user_id();
-
-		if ( ! isset( $awareness_state[ $user_id ] ) ) {
-			$awareness_state[ $user_id ] = [];
-		}
-		$awareness_state[ $user_id ][ 'heartbeat_ts' ] = time();
-
-		update_post_meta( $post_id, self::POSTMETA_KEY_AWARENESS, $awareness_state );
-
-		$response['gce_awareness'] = $awareness_state; // Note: currently unused, but we would most likely rely on this after some code improvements
-
-		return $response;
-	}
-
-	/**
 	 * Gets the users currently engaged in collaborative editing on a particular post.
 	 *
 	 * @param int $post_id The ID of the post.
 	 * @return array An associative array of user_id => timestamp.
 	 */
 	public function get_active_users( $post_id ) {
-		$awareness_state = get_post_meta( $post_id, self::POSTMETA_KEY_AWARENESS, true );
+		$awareness_state = $this->awareness_repo->get_awareness_state_for_post( $post_id );
 		return is_array( $awareness_state ) ? $this->filter_inactive_users( $awareness_state ) : [];
 	}
 
@@ -94,26 +67,6 @@ class State {
 	 * @return int[] An array of post IDs.
 	 */
 	public function get_collaborative_posts() : array {
-		$collaborative_posts = [];
-		$args = [
-			'post_type'      => 'any',
-			'posts_per_page' => -1,
-			'fields'         => 'ids',
-			'meta_query'     => [
-				[
-					'key'     => self::POSTMETA_KEY_AWARENESS,
-					'compare' => 'EXISTS',
-				],
-			],
-		];
-		$query = new \WP_Query( $args );
-
-		foreach ( $query->posts as $post_id ) {
-			if ( $this->is_collaborative_editing( $post_id ) ) {
-				$collaborative_posts[] = $post_id;
-			}
-		}
-
-		return $collaborative_posts;
+		return $this->awareness_repo->get_collaborative_posts();
 	}
 } 
