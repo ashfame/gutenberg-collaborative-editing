@@ -18,7 +18,9 @@ Enable collaborative editing in Gutenberg.
 ![Example](.wporg/screenshot-1.png)
 
 ## How to run this locally?
-- After cloning the GIT repo locally, run `nvm use`, `npm install` and then `npm run wp-env start` (you will need docker running).
+- After cloning the GIT repo locally, run `nvm use`, `npm install`
+- Run `npm run build` once or can also run `npm run start`
+- Run `npm run wp-env start` (you will need docker running).
 - Login into WordPress ([http://localhost:8888/wp-admin](http://localhost:8888/wp-admin)) with username `admin` and password as `password`
 - Create one or more users & login from these user accounts in separate browser instances.
 - Edit the same post for editing. First user will get edit access as usual and other users would be able to follow along in a read-only manner.
