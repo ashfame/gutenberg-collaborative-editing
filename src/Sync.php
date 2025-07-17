@@ -94,9 +94,11 @@ class Sync {
 		if ( ! is_array( $awareness_state ) ) {
 			$awareness_state = [];
 		}
+		$ts = time();
 		$awareness_state[ get_current_user_id() ] = [
 			'cursor_state'  => $cursor_state,
-			'ts' => time()
+			'cursor_ts' => $ts,
+			'heartbeat_ts' => $ts,
 		];
 		update_post_meta( $post_id, 'gce_awareness', $awareness_state );
 

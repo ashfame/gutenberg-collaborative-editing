@@ -6,21 +6,30 @@ namespace DotOrg\GCE;
  */
 class State {
 
-	const META_KEY_ACTIVE_USERS = 'gce_active_users';
+	const POSTMETA_KEY_AWARENESS = 'gce_awareness';
 	const INACTIVE_TIMEOUT = 240; // seconds
 
 	public function __construct() {
 		add_filter( 'heartbeat_received', [ $this, 'handle_heartbeat' ], 10, 2 );
 	}
 
-	private function filter_inactive_users( $users ) {
-		foreach ( $users as $user_id => $time ) {
-			if ( $time + self::INACTIVE_TIMEOUT < time() ) {
-				unset( $users[ $user_id ] );
+	public function get_inactive_timeout_value() {
+		return apply_filter( 'gce_awareness_inactive_timeout', self::INACTIVE_TIMEOUT ); // TODO: add filter
+	}
+
+	/**
+	 * @param array $awareness_state
+	 * @return array Awareness state containing only active users
+	 */
+	private function filter_inactive_users( array $awareness_state ) : array {
+		foreach ( $awareness_state as $user_id => $user_state ) {
+			$active_threshold = $user_state['heartbeat_ts'] + $this->get_inactive_timeout_value();
+			if ( $active_threshold < time() ) {
+				unset( $awareness_state[ $user_id ] );
 			}
 		}
 
-		return $users;
+		return $awareness_state;
 	}
 
 	/**
@@ -30,7 +39,7 @@ class State {
 	 * @param array $data     The data received from the front end.
 	 * @return array The modified Heartbeat response.
 	 */
-	public function handle_heartbeat( $response, $data ) {
+	public function handle_heartbeat( $response, $data ) : array {
 		if ( empty( $data['gce_post_id'] ) ) {
 			return $response;
 		}
@@ -40,11 +49,17 @@ class State {
 			return $response;
 		}
 
-		$active_users = $this->get_active_users( $post_id );
-		$active_users[ get_current_user_id() ] = time();
-		update_post_meta( $post_id, self::META_KEY_ACTIVE_USERS, $active_users );
+		$awareness_state = get_post_meta( $post_id, self::POSTMETA_KEY_AWARENESS, true );
+		$user_id = get_current_user_id();
 
-		$response['gce_awareness'] = $active_users; // Note: currently unused, but we would most likely rely on this after some code improvements
+		if ( ! isset( $awareness_state[ $user_id ] ) ) {
+			$awareness_state[ $user_id ] = [];
+		}
+		$awareness_state[ $user_id ][ 'heartbeat_ts' ] = time();
+
+		update_post_meta( $post_id, self::POSTMETA_KEY_AWARENESS, $awareness_state );
+
+		$response['gce_awareness'] = $awareness_state; // Note: currently unused, but we would most likely rely on this after some code improvements
 
 		return $response;
 	}
@@ -56,8 +71,8 @@ class State {
 	 * @return array An associative array of user_id => timestamp.
 	 */
 	public function get_active_users( $post_id ) {
-		$users = get_post_meta( $post_id, self::META_KEY_ACTIVE_USERS, true );
-		return is_array( $users ) ? $this->filter_inactive_users( $users ) : [];
+		$awareness_state = get_post_meta( $post_id, self::POSTMETA_KEY_AWARENESS, true );
+		return is_array( $awareness_state ) ? $this->filter_inactive_users( $awareness_state ) : [];
 	}
 
 	/**
@@ -66,7 +81,7 @@ class State {
 	 * @param int $post_id The ID of the post.
 	 * @return bool True if more than one user is active, false otherwise.
 	 */
-	public function is_collaborative_editing( $post_id ) {
+	public function is_collaborative_editing( $post_id ) : bool {
 		$users = $this->get_active_users( $post_id );
 		return count( $users ) > 1;
 	}
@@ -78,7 +93,7 @@ class State {
 	 *
 	 * @return int[] An array of post IDs.
 	 */
-	public function get_collaborative_posts() {
+	public function get_collaborative_posts() : array {
 		$collaborative_posts = [];
 		$args = [
 			'post_type'      => 'any',
@@ -86,7 +101,7 @@ class State {
 			'fields'         => 'ids',
 			'meta_query'     => [
 				[
-					'key'     => self::META_KEY_ACTIVE_USERS,
+					'key'     => self::POSTMETA_KEY_AWARENESS,
 					'compare' => 'EXISTS',
 				],
 			],
