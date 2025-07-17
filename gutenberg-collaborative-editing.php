@@ -34,10 +34,8 @@ add_action( 'init', function() {
 } );
 
 register_activation_hook( __FILE__, function() {
-	$cron = new \DotOrg\GCE\Cron();
-	$cron->schedule_events();
+	\DotOrg\GCE\Cron::schedule_events();
 } );
 register_deactivation_hook( __FILE__, function() {
-	$cron = new \DotOrg\GCE\Cron();
-	$cron->unschedule_events();
+	\DotOrg\GCE\Cron::unschedule_events();
 } );

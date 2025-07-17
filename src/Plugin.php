@@ -9,5 +9,6 @@ class Plugin {
 		new AjaxRegistry();
 		new EditorAssets();
 		new HeartbeatListener();
+		new Cron();
 	}
 }
