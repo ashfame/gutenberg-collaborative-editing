@@ -3,7 +3,7 @@
 - Contributors: wordpressdotorg, ashfame
 - Tags: gutenberg, collaborative-editing
 - Requires at least: 6.0
-- Tested up to: 6.8.1
+- Tested up to: 6.8.2
 - Requires PHP: 7.4
 - License: [GPLv2](http://www.gnu.org/licenses/gpl-2.0.html)
 - Stable tag: 0.0.1
