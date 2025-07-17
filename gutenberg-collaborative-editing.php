@@ -20,15 +20,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once __DIR__ . '/src/Plugin.php';
 
 // Initialize the plugin.
-add_action( 'plugins_loaded', function() {
+add_action( 'init', function() {
 	new \DotOrg\GCE\Plugin();
 } );
 
 register_activation_hook( __FILE__, function() {
-	$cron = new \DotOrg\GCE\Cron\Cron();
+	$cron = new \DotOrg\GCE\Cron();
 	$cron->schedule_events();
 } );
 register_deactivation_hook( __FILE__, function() {
-	$cron = new \DotOrg\GCE\Cron\Cron();
+	$cron = new \DotOrg\GCE\Cron();
 	$cron->unschedule_events();
 } );

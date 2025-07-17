@@ -1,5 +1,6 @@
 <?php
-namespace DotOrg\GCE\Cron;
+
+namespace DotOrg\GCE;
 
 use DotOrg\GCE\Persistence\ContentRepository;
 
@@ -23,6 +24,6 @@ class Cron {
 
 	public function cleanup() {
 		$repo = new ContentRepository();
-		$repo->cleanup_expired_transients();
+		$repo->cleanup();
 	}
-} 
+}

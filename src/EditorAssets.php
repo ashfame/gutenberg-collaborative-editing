@@ -1,4 +1,5 @@
 <?php
+
 namespace DotOrg\GCE;
 
 class EditorAssets {

@@ -1,4 +1,5 @@
 <?php
+
 namespace DotOrg\GCE;
 
 use DotOrg\GCE\Ajax\AjaxRegistry;
@@ -17,15 +18,13 @@ class Plugin {
 		require_once __DIR__ . '/Ajax/PollingHandler.php';
 		require_once __DIR__ . '/Ajax/AjaxRegistry.php';
 		require_once __DIR__ . '/EditorAssets.php';
-		require_once __DIR__ . '/Cron/Cron.php';
+		require_once __DIR__ . '/Cron.php';
 		require_once __DIR__ . '/HeartbeatListener.php';
-		require_once __DIR__ . '/State.php';
 	}
 
 	public function init() {
 		new AjaxRegistry();
 		new EditorAssets();
 		new HeartbeatListener();
-		new State();
 	}
 }

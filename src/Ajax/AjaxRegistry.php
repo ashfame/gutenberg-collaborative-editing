@@ -1,4 +1,5 @@
 <?php
+
 namespace DotOrg\GCE\Ajax;
 
 class AjaxRegistry {
@@ -8,4 +9,4 @@ class AjaxRegistry {
 		add_action( 'wp_ajax_gce_sync_awareness', [ new AwarenessSyncHandler(), 'handle' ] );
 		add_action( 'wp_ajax_gce_poll', [ new PollingHandler(), 'handle' ] );
 	}
-} 
+}
