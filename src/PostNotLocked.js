@@ -16,13 +16,19 @@ const preventEditing = (e) => {
 
 export const PostNotLocked = () => {
 	const [showModal, setShowModal] = useState(false);
-	const syncTimeoutRef = useRef(null);
-	const lastSyncContent = useRef('');
-	const lastReceivedTimestamp = useRef(0);
-	const awarenessStateRef = useRef(null);
-	const lastSelfCursorState = useRef(null);
-	const isPolling = useRef(false);
-	const shouldStopPolling = useRef(false);
+	const syncState = useRef({
+		timeoutId: null,
+		lastContent: '',
+	});
+	const pollingState = useRef({
+		isPolling: false,
+		shouldStop: false,
+		lastReceivedTimestamp: 0,
+	});
+	const awarenessState = useRef({
+		all: null, // represents the state of all users
+		self: null, // represents the last broadcasted cursor state for the current user
+	});
 
 	const { createNotice, removeNotice } = useDispatch('core/notices');
 	const { editPost } = useDispatch('core/editor');
@@ -102,7 +108,7 @@ export const PostNotLocked = () => {
 		}
 
 		// Only sync if awareness data has changed.
-		if ( !needCursorStateBroadcast(cursorState, lastSelfCursorState.current) ) {
+		if ( !needCursorStateBroadcast(cursorState, awarenessState.current.self) ) {
 			return;
 		}
 
@@ -127,7 +133,7 @@ export const PostNotLocked = () => {
 				throw new Error(result.data.message);
 			}
 
-			lastSelfCursorState.current = cursorState;
+			awarenessState.current.self = cursorState;
 		} catch (error) {
 			console.error('Failed to sync awareness:', error);
 		}
@@ -155,19 +161,19 @@ export const PostNotLocked = () => {
 
 	// Poll for content updates (for non-lock holders)
 	const pollForUpdates = async () => {
-		if (isPolling.current || !window.gce || !postId) {
+		if (pollingState.current.isPolling || !window.gce || !postId) {
 			return;
 		}
 
-		isPolling.current = true;
+		pollingState.current.isPolling = true;
 
 		try {
 			const url = new URL(window.gce.ajaxUrl);
 			url.searchParams.append('action', window.gce.pollAction);
 			url.searchParams.append('nonce', window.gce.pollNonce);
 			url.searchParams.append('post_id', postId);
-			url.searchParams.append('last_timestamp', lastReceivedTimestamp.current); // this is used only for content modification check
-			url.searchParams.append('awareness', JSON.stringify(awarenessStateRef.current));
+			url.searchParams.append('last_timestamp', pollingState.current.lastReceivedTimestamp); // this is used only for content modification check
+			url.searchParams.append('awareness', JSON.stringify(awarenessState.current.all));
 
 			const response = await fetch(url.toString(), {
 				method: 'GET',
@@ -196,7 +202,7 @@ export const PostNotLocked = () => {
 								title: receivedContent.content.title || ''
 							});
 
-							lastReceivedTimestamp.current = receivedContent.timestamp;
+							pollingState.current.lastReceivedTimestamp = receivedContent.timestamp;
 
 							createNotice('info', 'Content updated from collaborator', {
 								type: 'snackbar',
@@ -206,7 +212,7 @@ export const PostNotLocked = () => {
 					}
 
 					if (result.data && result.data.awareness) {
-						awarenessStateRef.current = result.data.awareness;
+						awarenessState.current.all = result.data.awareness;
 						if (updateAwarenessState) {
 							updateAwarenessState(result.data.awareness);
 						}
@@ -221,7 +227,7 @@ export const PostNotLocked = () => {
 			});
 			console.error('Long polling error:', error);
 		} finally {
-			isPolling.current = false;
+			pollingState.current.isPolling = false;
 		}
 	};
 
@@ -231,16 +237,16 @@ export const PostNotLocked = () => {
 
 		const contentStr = JSON.stringify(currentContent);
 
-		if (contentStr !== lastSyncContent.current) {
-			lastSyncContent.current = contentStr;
+		if (contentStr !== syncState.current.lastContent) {
+			syncState.current.lastContent = contentStr;
 
 			// Clear existing timeout
-			if (syncTimeoutRef.current) {
-				clearTimeout(syncTimeoutRef.current);
+			if (syncState.current.timeoutId) {
+				clearTimeout(syncState.current.timeoutId);
 			}
 
 			// Schedule sync after 200ms delay
-			syncTimeoutRef.current = setTimeout(() => {
+			syncState.current.timeoutId = setTimeout(() => {
 				syncContentToServer(currentContent);
 			}, 200);
 		}
@@ -252,12 +258,12 @@ export const PostNotLocked = () => {
 			return;
 		}
 
-		shouldStopPolling.current = false;
+		pollingState.current.shouldStop = false;
 
 		// Recursive long polling function
 		const longPoll = async () => {
 			// Check if we should continue polling
-			if (shouldStopPolling.current || !postId) {
+			if (pollingState.current.shouldStop || !postId) {
 				return;
 			}
 
@@ -299,7 +305,7 @@ export const PostNotLocked = () => {
 		}
 
 		return () => {
-			shouldStopPolling.current = true;
+			pollingState.current.shouldStop = true;
 		};
 	}, [currentUserId, isUserLockHolder, postId]);
 
@@ -373,8 +379,8 @@ export const PostNotLocked = () => {
 	// Cleanup timeouts on unmount
 	useEffect(() => {
 		return () => {
-			if (syncTimeoutRef.current) {
-				clearTimeout(syncTimeoutRef.current);
+			if (syncState.current.timeoutId) {
+				clearTimeout(syncState.current.timeoutId);
 			}
 		};
 	}, []);
