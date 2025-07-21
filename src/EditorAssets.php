@@ -2,6 +2,8 @@
 
 namespace DotOrg\GCE;
 
+use DotOrg\GCE\Persistence\AwarenessStateRepository;
+
 class EditorAssets {
 
 	public function __construct() {
@@ -40,6 +42,7 @@ class EditorAssets {
 				'syncContentAction'   => 'gce_sync_content',
 				'syncAwarenessAction' => 'gce_sync_awareness',
 				'pollAction'          => 'gce_poll',
+				'awarenessTimeout'    => AwarenessStateRepository::ACTIVITY_TIMEOUT,
 			]
 		);
 

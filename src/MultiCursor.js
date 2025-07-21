@@ -289,4 +289,4 @@ export class MultiCursor {
 			}
 		});
 	}
-} 
+}

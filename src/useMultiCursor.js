@@ -51,7 +51,12 @@ export const useMultiCursor = (currentUserId) => {
 		
 		// We have everything we need, render the cursors.
 		if (multiCursorRef.current) {
-			multiCursorRef.current.renderCursors(awarenessData);
+			// remove inactive cursors based on user's heartbeat_ts (user active/inactive) and not their cursor_ts (cursor position decay)
+			multiCursorRef.current.renderCursors(Object.fromEntries(
+				Object.entries(awarenessData).filter(([userId, user]) => {
+					return user.heartbeat_ts + parseInt( window.gce.awarenessTimeout ) > Math.floor(Date.now()/1000);
+				})
+			));
 		}
 
 		// Cleanup on unmount.
@@ -66,4 +71,4 @@ export const useMultiCursor = (currentUserId) => {
 	}, [awarenessData, blockCount, currentUserId]);
 
 	return { updateAwarenessState };
-}; 
+};
