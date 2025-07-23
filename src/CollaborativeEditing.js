@@ -381,18 +381,25 @@ export const CollaborativeEditing = () => {
 		return null;
 	}
 
-	return showModal ? (
+	if (!showModal) {
+		return null;
+	}
+
+	return (
 		<Modal
 			className="gutenberg-collaborative-editing-read-only-modal"
-			title={__('READ_ONLY', 'gutenberg-collaborative-editing')}
+			title={__('Read-Only Mode', 'gutenberg-collaborative-editing')}
 			onRequestClose={() => setShowModal(false)}
 		>
 			<p>
-				Someone else is editing this post right now. So, for now, you only have read-only access to this post.
+				{ __(
+					'Someone else is currently editing this post. You can only view the post content.',
+					'gutenberg-collaborative-editing'
+				) }
 			</p>
 			<Button variant="primary" onClick={() => setShowModal(false)}>
 				Okay
 			</Button>
 		</Modal>
-	) : null;
+	)
 };
