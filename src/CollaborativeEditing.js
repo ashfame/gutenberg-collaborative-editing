@@ -25,7 +25,7 @@ export const CollaborativeEditing = () => {
 	const { editPost } = useDispatch('core/editor');
 
 	// Get all required data in a single useSelect
-	const { currentUserId, isUserLockHolder, postId, editorContent } = useSelect((select) => {
+	const { currentUserId, isUserLockHolder, postId, editorContentHTML, editorContentTitle } = useSelect((select) => {
 		const editorSelect = select('core/editor');
 		const coreSelect = select('core');
 
@@ -38,16 +38,15 @@ export const CollaborativeEditing = () => {
 		const postId = editorSelect?.getCurrentPostId?.() || window.gce?.postId || 0;
 
 		// Return raw values instead of creating objects
-		const editorContent = {
-			html: editorSelect?.getEditedPostContent?.() || '',
-			title: editorSelect?.getEditedPostAttribute?.('title') || ''
-		};
+		const editorContentHTML = editorSelect?.getEditedPostContent?.() || '';
+		const editorContentTitle = editorSelect?.getEditedPostAttribute?.('title') || '';
 
 		return {
 			currentUserId,
 			isUserLockHolder,
 			postId,
-			editorContent
+			editorContentHTML,
+			editorContentTitle,
 		};
 	}, []);
 
@@ -55,9 +54,9 @@ export const CollaborativeEditing = () => {
 
 	// Memoize currentContent to prevent unnecessary re-renders
 	const currentContent = useMemo(() => ({
-		html: editorContent?.html || '',
-		title: editorContent?.title || ''
-	}), [editorContent?.html, editorContent?.title]);
+		html: editorContentHTML || '',
+		title: editorContentTitle || ''
+	}), [editorContentHTML, editorContentTitle]);
 
 	// Sync content to server (for lock holders)
 	const syncContentToServer = async (content) => {
