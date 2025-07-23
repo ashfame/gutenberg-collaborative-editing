@@ -59,7 +59,7 @@ export const CollaborativeEditing = () => {
 	}), [editorContentHTML, editorContentTitle]);
 
 	// Sync content to server (for lock holders)
-	const syncContentToServer = async (content) => {
+	const syncContent = async (content) => {
 		if (!window.gce || !postId) return;
 
 		try {
@@ -237,7 +237,7 @@ export const CollaborativeEditing = () => {
 
 			// Schedule sync after 200ms delay
 			syncState.current.timeoutId = setTimeout(() => {
-				syncContentToServer(currentContent);
+				syncContent(currentContent);
 			}, 200);
 		}
 	};
