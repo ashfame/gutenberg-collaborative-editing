@@ -1,11 +1,11 @@
 import { registerPlugin } from '@wordpress/plugins';
-import { PostNotLocked } from './PostNotLocked';
+import { CollaborativeEditing } from './CollaborativeEditing';
 import './style.scss';
 import domReady from '@wordpress/dom-ready';
 
 domReady( () => {
-	registerPlugin( 'gutenberg-collaborative-editing', {
-		render: PostNotLocked,
+	registerPlugin( 'collaborative-editing', {
+		render: CollaborativeEditing,
 		icon: null,
 	} );
 } );

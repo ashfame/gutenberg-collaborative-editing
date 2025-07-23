@@ -14,7 +14,7 @@ const preventEditing = (e) => {
 	return false;
 };
 
-export const PostNotLocked = () => {
+export const CollaborativeEditing = () => {
 	const [showModal, setShowModal] = useState(false);
 	const syncState = useRef({
 		timeoutId: null,
