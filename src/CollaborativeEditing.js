@@ -2,7 +2,8 @@ import { Modal, Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useCollaborativeEditingData } from './hooks/useCollaborativeEditingData';
 import { useContentSync } from './hooks/useContentSync';
-import { useAwarenessAndPolling } from './hooks/useAwarenessAndPolling';
+import { useAwarenessSync } from './hooks/useAwarenessSync';
+import { usePollingForUpdates } from './hooks/usePollingForUpdates';
 import { useReadOnlyUI } from './hooks/useReadOnlyUI';
 
 export const CollaborativeEditing = () => {
@@ -10,7 +11,8 @@ export const CollaborativeEditing = () => {
 		useCollaborativeEditingData();
 
 	useContentSync(postId, currentContent, isUserLockHolder);
-	useAwarenessAndPolling(postId, currentUserId, isUserLockHolder);
+	useAwarenessSync(postId, currentUserId, isUserLockHolder);
+	usePollingForUpdates(postId, currentUserId);
 	const { showModal, setShowModal } = useReadOnlyUI(
 		isUserLockHolder,
 		currentUserId
@@ -41,5 +43,5 @@ export const CollaborativeEditing = () => {
 				Okay
 			</Button>
 		</Modal>
-	)
+	);
 };
