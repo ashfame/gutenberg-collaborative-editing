@@ -3,7 +3,8 @@ import { __ } from '@wordpress/i18n';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useEffect, useState, useRef, useMemo } from '@wordpress/element';
 import { useMultiCursor } from './useMultiCursor';
-import { preventEditing, disableAutoSave, getCursorState, needCursorStateBroadcast } from './utils';
+import { preventEditing, disableAutoSave } from './utils';
+import { syncContent, syncAwareness, pollForUpdates } from './api';
 
 export const CollaborativeEditing = () => {
 	const [showModal, setShowModal] = useState(false);
@@ -58,90 +59,28 @@ export const CollaborativeEditing = () => {
 		title: editorContentTitle || ''
 	}), [editorContentHTML, editorContentTitle]);
 
-	// Sync content to server (for lock holders)
-	const syncContent = async (content) => {
-		if (!window.gce || !postId) return;
-
-		try {
-			const formData = new FormData();
-			formData.append('action', window.gce.syncContentAction);
-			formData.append('nonce', window.gce.syncContentNonce);
-			formData.append('post_id', postId);
-			formData.append('content', JSON.stringify(content));
-
-			const response = await fetch(window.gce.ajaxUrl, {
-				method: 'POST',
-				body: formData
-			});
-
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
-			}
-
-			const result = await response.json();
-			if ( !result.success ) {
-				throw new Error(result.data.message);
-			}
-
-		} catch (error) {
-			console.error('Failed to sync content:', error);
-		}
-	};
-
-	// Sync Awareness
-	const syncAwareness = async () => {
-		if (!window.gce || !postId) return;
-
-		const cursorState = getCursorState();
-		if ( !cursorState ) {
-			return;
-		}
-
-		// Only sync if awareness data has changed.
-		if ( !needCursorStateBroadcast(cursorState, awarenessState.current.self) ) {
-			return;
-		}
-
-		try {
-			const formData = new FormData();
-			formData.append('action', window.gce.syncAwarenessAction);
-			formData.append('nonce', window.gce.syncAwarenessNonce);
-			formData.append('post_id', postId);
-			formData.append('cursor_state', JSON.stringify(cursorState));
-
-			const response = await fetch(window.gce.ajaxUrl, {
-				method: 'POST',
-				body: formData
-			});
-
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
-			}
-
-			const result = await response.json();
-			if ( !result.success ) {
-				throw new Error(result.data.message);
-			}
-
-			awarenessState.current.self = cursorState;
-		} catch (error) {
-			console.error('Failed to sync awareness:', error);
-		}
-	};
-
 	// Manage awareness data synchronization
 	useEffect(() => {
 		if (currentUserId === null || !postId) {
 			return;
 		}
 
+		const doSync = async () => {
+			try {
+				const newState = await syncAwareness(postId, awarenessState.current.self);
+				if (newState) {
+					awarenessState.current.self = newState;
+				}
+			} catch (error) {
+				// The error is already logged in the syncAwareness function.
+			}
+		};
+
 		// Sync awareness data at different intervals depending on whether the user
 		// is the lock holder or not.
 		const interval = isUserLockHolder ? 1000 : 1000; // Eg: 1 second for editor, 3 for viewer
 
-		const awarenessIntervalId = setInterval(() => {
-			syncAwareness();
-		}, interval);
+		const awarenessIntervalId = setInterval(doSync, interval);
 
 		// Clean up the interval on component unmount or when dependencies change.
 		return () => {
@@ -149,41 +88,28 @@ export const CollaborativeEditing = () => {
 		};
 	}, [currentUserId, isUserLockHolder, postId]);
 
-	// Poll for content updates (for non-lock holders)
-	const pollForUpdates = async () => {
+	// Poll for updates: content and awareness updates for non-lock holders and just awareness updates for lock holders
+	const startLongPolling = () => {
 		if (pollingState.current.isPolling || !window.gce || !postId) {
 			return;
 		}
 
 		pollingState.current.isPolling = true;
 
-		try {
-			const url = new URL(window.gce.ajaxUrl);
-			url.searchParams.append('action', window.gce.pollAction);
-			url.searchParams.append('nonce', window.gce.pollNonce);
-			url.searchParams.append('post_id', postId);
-			url.searchParams.append('last_timestamp', pollingState.current.lastReceivedTimestamp); // this is used only for content modification check
-			url.searchParams.append('awareness', JSON.stringify(awarenessState.current.all));
+		// Recursive long polling function
+		const longPoll = async () => {
+			// Check if we should continue polling
+			if (pollingState.current.shouldStop || !postId) {
+				pollingState.current.isPolling = false;
+				return;
+			}
 
-			const response = await fetch(url.toString(), {
-				method: 'GET',
-				// Add timeout and other options for better error handling
-				cache: 'no-cache',
-				headers: {
-					'Cache-Control': 'no-cache',
-					'Pragma': 'no-cache'
-				}
-			});
+			try {
+				const data = await pollForUpdates(postId, pollingState.current.lastReceivedTimestamp, awarenessState.current.all);
 
-			if (response.ok) {
-				if (response.status === 204) {
-					return;
-				}
-
-				const result = await response.json();
-				if (result.success) {
-					if (result.data && result.data.modified && result.data.content) {
-						const receivedContent = result.data.content;
+				if (data) {
+					if (data.modified && data.content) {
+						const receivedContent = data.content;
 
 						// Apply content to editor
 						if (receivedContent.content && receivedContent.content.html) {
@@ -201,24 +127,28 @@ export const CollaborativeEditing = () => {
 						}
 					}
 
-					if (result.data && result.data.awareness) {
-						awarenessState.current.all = result.data.awareness;
+					if (data.awareness) {
+						awarenessState.current.all = data.awareness;
 						if (updateAwarenessState) {
-							updateAwarenessState(result.data.awareness);
+							updateAwarenessState(data.awareness);
 						}
 					}
 				}
+			} catch (error) {
+				createNotice('error', 'Long polling error', {
+					type: 'snackbar',
+					isDismissible: true
+				});
+				// Error is already logged in pollForUpdates
+			} finally {
+				// Immediately start the next long poll request
+				// Add a small delay to prevent overwhelming the server in case of immediate failures
+				setTimeout(longPoll, 100);
 			}
+		};
 
-		} catch (error) {
-			createNotice('error', 'Long polling error', {
-				type: 'snackbar',
-				isDismissible: true
-			});
-			console.error('Long polling error:', error);
-		} finally {
-			pollingState.current.isPolling = false;
-		}
+		// Start the long polling loop
+		longPoll();
 	};
 
 	// Handle content changes for lock holders
@@ -237,54 +167,10 @@ export const CollaborativeEditing = () => {
 
 			// Schedule sync after 200ms delay
 			syncState.current.timeoutId = setTimeout(() => {
-				syncContent(currentContent);
+				syncContent(postId, currentContent);
 			}, 200);
 		}
 	};
-
-	// Poll for updates: content and awareness updates for non-lock holders and just awareness updates for lock holders
-	const startLongPolling = () => {
-		if (!postId) {
-			return;
-		}
-
-		pollingState.current.shouldStop = false;
-
-		// Recursive long polling function
-		const longPoll = async () => {
-			// Check if we should continue polling
-			if (pollingState.current.shouldStop || !postId) {
-				return;
-			}
-
-			await pollForUpdates();
-
-			// Immediately start the next long poll request
-			// Add a small delay to prevent overwhelming the server in case of immediate failures
-			setTimeout(longPoll, 100);
-		};
-
-		// Start the long polling loop
-		longPoll();
-	};
-
-	// Manage the read-only notice
-	useEffect(() => {
-		if (currentUserId === null) return;
-
-		if (isUserLockHolder) {
-			removeNotice('read-only-mode');
-		} else {
-			createNotice('info', 'Read-only mode', {
-				isDismissible: false,
-				id: 'read-only-mode'
-			});
-		}
-
-		return () => {
-			removeNotice('read-only-mode');
-		};
-	}, [currentUserId, isUserLockHolder, createNotice, removeNotice]);
 
 	// Manage long polling
 	useEffect(() => {

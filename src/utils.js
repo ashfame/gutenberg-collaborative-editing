@@ -1,3 +1,13 @@
+/**
+ * @typedef {Object} CursorState
+ * @property {number} [blockIndex]        - The index of the block where the cursor is.
+ * @property {number} [cursorPos]         - The cursor position within the block.
+ * @property {number} [cursorPosStart]    - The start position of the selection.
+ * @property {number} [cursorPosEnd]      - The end position of the selection.
+ * @property {number} [blockIndexStart]   - The start block index of the selection.
+ * @property {number} [blockIndexEnd]     - The end block index of the selection.
+ */
+
 export const preventEditing = (e) => {
 	// Allow scrolling events
 	if (e.type === 'wheel' || e.type === 'scroll') return;
@@ -16,6 +26,11 @@ export function disableAutoSave() {
 	});
 }
 
+/**
+ * Retrieves the current cursor state from the editor.
+ *
+ * @returns {CursorState|null} The current cursor state, or null if no selection exists.
+ */
 export const getCursorState = () => {
 	const blocks = window.wp?.data?.select('core/block-editor').getBlockOrder();
 	const selectionStart = window.wp?.data?.select('core/block-editor').getSelectionStart();
@@ -61,6 +76,13 @@ export const getCursorState = () => {
 	}
 };
 
+/**
+ * Determines if the cursor state needs to be broadcasted.
+ *
+ * @param {CursorState|null} cursorStateCurrent     The current cursor state.
+ * @param {CursorState|null} cursorStateBroadcasted The last broadcasted cursor state.
+ * @returns {boolean} Whether the cursor state needs to be broadcasted.
+ */
 export const needCursorStateBroadcast = (cursorStateCurrent, cursorStateBroadcasted) => {
 	if (cursorStateCurrent === cursorStateBroadcasted) {
 		return false;
