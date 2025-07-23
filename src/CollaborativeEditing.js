@@ -3,16 +3,7 @@ import { __ } from '@wordpress/i18n';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useEffect, useState, useRef, useMemo } from '@wordpress/element';
 import { useMultiCursor } from './useMultiCursor';
-
-const preventEditing = (e) => {
-	// Allow scrolling events
-	if (e.type === 'wheel' || e.type === 'scroll') return;
-
-	// Prevent all editing interactions
-	e.preventDefault();
-	e.stopPropagation();
-	return false;
-};
+import { preventEditing, disableAutoSave, getCursorState, needCursorStateBroadcast } from './utils';
 
 export const CollaborativeEditing = () => {
 	const [showModal, setShowModal] = useState(false);
@@ -404,82 +395,4 @@ export const CollaborativeEditing = () => {
 			</Button>
 		</Modal>
 	) : null;
-};
-
-function disableAutoSave() {
-	wp.data.dispatch('core/editor').updateEditorSettings({
-		autosaveInterval: 999999,
-		localAutosaveInterval: 999999,
-		__experimentalLocalAutosaveInterval: 999999
-	});
-}
-
-const getCursorState = () => {
-	const blocks = window.wp?.data?.select('core/block-editor').getBlockOrder();
-	const selectionStart = window.wp?.data?.select('core/block-editor').getSelectionStart();
-	const selectionEnd = window.wp?.data?.select('core/block-editor').getSelectionEnd();
-
-	if ( ! selectionStart.clientId ) {
-		return null;
-	}
-
-	/**
-	 * Three possible states:
-	 *
-	 * 1) User cursor sitting in one of the blocks
-	 * 2) User cursor highlighting some text within the block
-	 * 3) User cursor highlighting some text across blocks
-	 */
-
-	const sameBlock = selectionStart.clientId === selectionEnd.clientId;
-
-	if ( sameBlock ) {
-		const blockIndex = blocks.indexOf(selectionStart.clientId);
-		if ( selectionStart.offset === selectionEnd.offset ) {
-			return {
-				'blockIndex': blockIndex,
-				'cursorPos': selectionStart.offset
-			};
-		} else {
-			return {
-				'blockIndex': blockIndex,
-				'cursorPosStart': selectionStart.offset,
-				'cursorPosEnd': selectionEnd.offset
-			};
-		}
-	} else {
-		const blockIndexStart = blocks.indexOf(selectionStart.clientId);
-		const blockIndexEnd = blocks.indexOf(selectionEnd.clientId);
-		return {
-			'blockIndexStart': blockIndexStart,
-			'blockIndexEnd': blockIndexEnd,
-			'cursorPosStart': selectionStart.offset,
-			'cursorPosEnd': selectionEnd.offset
-		};
-	}
-};
-
-const needCursorStateBroadcast = (cursorStateCurrent, cursorStateBroadcasted) => {
-	if (cursorStateCurrent === cursorStateBroadcasted) {
-		return false;
-	}
-
-	if (!cursorStateCurrent || !cursorStateBroadcasted) {
-		return true;
-	}
-
-	const keysA = Object.keys(cursorStateCurrent);
-	const keysB = Object.keys(cursorStateBroadcasted);
-
-	if (keysA.length !== keysB.length) {
-		return true;
-	}
-
-	for (const key of keysA) {
-		if (!keysB.includes(key) || cursorStateCurrent[key] !== cursorStateBroadcasted[key]) {
-			return true;
-		}
-	}
-
-	return false;
 };
