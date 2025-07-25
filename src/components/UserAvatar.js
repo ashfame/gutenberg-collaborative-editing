@@ -1,17 +1,14 @@
-import { __ } from '@wordpress/i18n';
-import { Popover } from '@wordpress/components';
-
 const UserAvatar = ( { user } ) => {
-	if ( ! user || ! user.name || ! user.avatar_url ) {
+	if ( ! user || ! user.name ) {
 		return null;
 	}
 
-	const { name, avatar_url: avatarUrl } = user;
+	const { name, avatar } = user;
 
 	return (
 		<li className="gce-user-avatar">
 			<img
-				src={ avatarUrl }
+				src={ avatar }
 				alt={ name }
 				className="avatar"
 				title={ name }
@@ -20,4 +17,4 @@ const UserAvatar = ( { user } ) => {
 	);
 };
 
-export default UserAvatar; 
+export default UserAvatar;

@@ -5,8 +5,19 @@ const AvatarList = ( { users } ) => {
 	const visibleUsers = users.slice( 0, MAX_VISIBLE_AVATARS );
 	const hiddenUsersCount = users.length - visibleUsers.length;
 
+	// TODO: Filter current user out of display
+	// const otherUsers = Object.values( awarenessData ).filter(
+	// 	( awarenessState ) =>
+	// 		awarenessState.user?.id &&
+	// 		awarenessState.user?.id !== currentUserId
+	// );
+	//
+	// if ( otherUsers.length === 0 ) {
+	// 	return null;
+	// }
+
 	return (
-		<div className="gce-avatar-list">
+		<ul className="gce-avatar-list">
 			{ visibleUsers.map( ( awarenessState, index ) => {
 				return <UserAvatar key={ index } user={ awarenessState.user } />;
 			} ) }
@@ -15,8 +26,8 @@ const AvatarList = ( { users } ) => {
 					+{ hiddenUsersCount }
 				</div>
 			) }
-		</div>
+		</ul>
 	);
 };
 
-export default AvatarList; 
+export default AvatarList;

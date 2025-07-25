@@ -22,8 +22,16 @@ class AwarenessStateRepository {
 	}
 
 	public function get( $post_id, $active_users_only = false ) {
-		$awareness_state = get_post_meta( $post_id, self::POSTMETA_KEY_AWARENESS, true ) ?? [];
-		return $active_users_only ? $this->filter_inactive_users( $awareness_state ) : $awareness_state;
+		$stored = get_post_meta( $post_id, self::POSTMETA_KEY_AWARENESS, true ) ?? [];
+		$state = $active_users_only ? $this->filter_inactive_users( $stored ) : $stored;
+		foreach ( $state as $user_id => $user_state ) {
+			$user = get_userdata( $user_id );
+			$state[ $user_id ]['user'] = [
+				'name' => $user->display_name ?: $user->user_login,
+				'avatar' => get_avatar_url( $user_id, [ 'size' => 64, 'default' => 'mystery' ] ),
+			];
+		}
+		return $state;
 	}
 
 	private function filter_inactive_users( array $awareness_state ) : array {
