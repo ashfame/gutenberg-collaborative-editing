@@ -1,0 +1,32 @@
+import React from 'react';
+import { createPortal } from 'react-dom';
+import { useSelect } from '@wordpress/data';
+import { useMultiCursor } from '../useMultiCursor';
+import AvatarList from './AvatarList';
+
+/**
+ * A container for presence-related UI components.
+ *
+ * @param {object} props The props for the component.
+ * @param {import('../hooks/types').CollaborativeState['awareness']} props.awarenessState The awareness state.
+ * @param {(awareness: any) => void} props.syncAwareness A function to sync the awareness state.
+ * @returns {React.ReactElement} The rendered component.
+ */
+export const PresenceUI = ( { awarenessState, syncAwareness } ) => {
+	const headerTarget = document.querySelector( '.editor-header__center' );
+	const { currentUserId } = useSelect( ( select ) => ( {
+		currentUserId: select( 'core' )?.getCurrentUser()?.id,
+	} ), [] );
+
+	useMultiCursor( currentUserId, awarenessState, syncAwareness );
+
+	// The users are the values of the awarenessState object.
+	const users = Object.values( awarenessState || {} );
+
+	return (
+		<>
+			{ headerTarget &&
+				createPortal( <AvatarList users={ users } />, headerTarget ) }
+		</>
+	);
+};

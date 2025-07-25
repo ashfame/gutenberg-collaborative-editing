@@ -175,10 +175,10 @@ A transport is an object that conforms to the following interface:
 interface ITransport {
     /**
      * Initializes the connection to the server.
-     * @param onDataReceived A callback function that the transport will invoke with new data from the server.
+     * @param onData A callback function that the transport will invoke with new data from the server.
      * @param initialData Any data needed to start the connection (e.g., post ID, user token).
      */
-    connect(onDataReceived: (data: any) => void, initialData: any): void;
+    connect(onData: (data: any) => void, initialData: any): void;
 
     /**
      * Sends data to the server.
