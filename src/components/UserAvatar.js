@@ -1,19 +1,18 @@
 import { Tooltip } from '@wordpress/components';
 
-const UserAvatar = ( { user } ) => {
+const UserAvatar = ( { user, ringColor } ) => {
 	if ( ! user || ! user.name ) {
 		return null;
 	}
 
-	const { name, avatar } = user;
-
 	return (
-		<Tooltip text={ name }>
+		<Tooltip text={ user.name }>
 			<li className="gce-user-avatar">
 				<img
-					src={ avatar }
-					alt={ name }
+					src={ user.avatar }
+					alt={ user.name }
 					className="avatar"
+					style={ { borderColor: ringColor } }
 				/>
 			</li>
 		</Tooltip>

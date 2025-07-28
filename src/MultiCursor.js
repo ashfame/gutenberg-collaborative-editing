@@ -4,8 +4,6 @@ export class MultiCursor {
 		this.overlay = overlayElement;
 		this.currentUserId = currentUserId;
 		this.users = new Map();
-		this.colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#feca57', '#c56cf0', '#ff9f43', '#2e86de'];
-		this.userColorMap = new Map();
 	}
 
 	findTextPosition(root, offset) {
@@ -30,21 +28,21 @@ export class MultiCursor {
 		return { node: root, offset: 0 };
 	}
 
-	updateUser(userId, userData) {
+	updateUser(userId, user) {
 		// Additional check of filtering out the current user
 		if (parseInt(userId, 10) === this.currentUserId) {
 			return;
 		}
 		try {
-			this.users.set(userId, { cursor: userData.cursor_state, user: userData.user });
+			console.log('Updating user', userId, user);
+			this.users.set(userId, { cursor: user.cursor_state, user: user.user_data, ring_color: user.color });
 		} catch (e) {
-			console.error('Failed to parse cursor state for user', userId, userData, e);
+			console.error('Failed to parse cursor state for user', userId, user, e);
 		}
 	}
 
 	removeUser(userId) {
 		this.users.delete(userId);
-		this.userColorMap.delete(userId);
 	}
 
 	getPos(blockEl, charOffset) {
@@ -232,11 +230,8 @@ export class MultiCursor {
 			if (!result) {
 				return;
 			}
-			
-			if (!this.userColorMap.has(userId)) {
-				this.userColorMap.set(userId, this.colors[this.userColorMap.size % this.colors.length]);
-			}
-			const color = this.userColorMap.get(userId);
+
+			const color = user.ring_color;
 
 			if (result.isSelection) {
 				// Render selection
@@ -284,7 +279,7 @@ export class MultiCursor {
 				label.className = 'cursor-label';
 				label.textContent = user.user?.name || `User ${userId}`;
 				label.style.backgroundColor = color;
-				
+
 				cursor.appendChild(label);
 				this.overlay.appendChild(cursor);
 			}
