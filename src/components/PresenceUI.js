@@ -20,8 +20,12 @@ export const PresenceUI = ( { awarenessState, syncAwareness } ) => {
 
 	useMultiCursor( currentUserId, awarenessState, syncAwareness );
 
+	if ( ! awarenessState || Object.keys( awarenessState ).length === 0 ) {
+		return null;
+	}
+
 	// The users are the values of the awarenessState object.
-	const users = Object.values( awarenessState || {} );
+	const users = Object.values( awarenessState );
 
 	return (
 		<>
