@@ -2,7 +2,7 @@ import UserAvatar from './UserAvatar';
 
 const AvatarList = ( { users } ) => {
 	const MAX_VISIBLE_AVATARS = 5;
-	const INACTIVITY_TIMEOUT = 300; // seconds
+	const INACTIVITY_TIMEOUT = 240; // seconds
 
 	// Filter out stale presence based on INACTIVITY_TIMEOUT defined above
 	const activeUsers = Object.fromEntries(
@@ -16,7 +16,7 @@ const AvatarList = ( { users } ) => {
 	const visibleUsers = Object.fromEntries(
 		Object.entries(activeUsers).slice(0, MAX_VISIBLE_AVATARS)
 	);
-	const hiddenUsersCount = activeUsers.length - visibleUsers.length;
+	const hiddenUsersCount = Object.keys(activeUsers).length - Object.keys(visibleUsers).length;
 
 	return (
 		<ul className="gce-avatar-list">
