@@ -13,7 +13,6 @@ import AvatarList from './AvatarList';
  * @returns {React.ReactElement} The rendered component.
  */
 export const PresenceUI = ( { awarenessState, syncAwareness } ) => {
-	const headerTarget = document.querySelector( '.editor-header__center' );
 	const { currentUserId } = useSelect( ( select ) => ( {
 		currentUserId: select( 'core' )?.getCurrentUser()?.id,
 	} ), [] );
@@ -24,13 +23,11 @@ export const PresenceUI = ( { awarenessState, syncAwareness } ) => {
 		return null;
 	}
 
-	// The users are the values of the awarenessState object.
-	const users = Object.values( awarenessState );
-
+	const headerTarget = document.querySelector( '.editor-header__center' );
 	return (
 		<>
 			{ headerTarget &&
-				createPortal( <AvatarList users={ users } />, headerTarget ) }
+				createPortal( <AvatarList users={ Object.values( awarenessState ) } />, headerTarget ) }
 		</>
 	);
 };
