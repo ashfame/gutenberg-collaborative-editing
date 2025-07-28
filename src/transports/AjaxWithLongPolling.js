@@ -29,7 +29,6 @@ export const AjaxWithLongPollingTransport = ( { postId } ) => {
 			);
 
 			if ( data ) {
-				console.log('long poll response',data);
 				state.onDataReceived( data );
 
 				// Update local state for later calls
@@ -68,7 +67,6 @@ export const AjaxWithLongPollingTransport = ( { postId } ) => {
 		 * @param {import('./types').TransportAction} action
 		 */
 		send: async ( action ) => {
-			console.info('send',action);
 			switch ( action.type ) {
 				case 'content':
 					return syncContent( postId, action.payload );

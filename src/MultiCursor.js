@@ -34,7 +34,6 @@ export class MultiCursor {
 			return;
 		}
 		try {
-			console.log('Updating user', userId, user);
 			this.users.set(userId, { cursor: user.cursor_state, user: user.user_data, ring_color: user.color });
 		} catch (e) {
 			console.error('Failed to parse cursor state for user', userId, user, e);
