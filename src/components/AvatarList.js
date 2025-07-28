@@ -21,8 +21,9 @@ const AvatarList = ( { users } ) => {
 	return (
 		<ul className="gce-avatar-list">
 			{ Object.values( visibleUsers ).map( ( visibleUser, index ) => {
-				return <UserAvatar key={ index } user={ visibleUser.user_data }
-								   ringColor={ visibleUser.ring_color } />;
+				return <UserAvatar key={ index }
+								   user={ visibleUser.user_data }
+								   ringColor={ visibleUser.color } />;
 			} ) }
 			{ hiddenUsersCount > 0 && (
 				<div className="gce-avatar-list__more">

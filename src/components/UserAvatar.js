@@ -6,13 +6,15 @@ const UserAvatar = ( { user, ringColor } ) => {
 	}
 
 	return (
-		<Tooltip text={ user.name }>
-			<li className="gce-user-avatar">
+		<Tooltip text={ user.name } delay="100">
+			<li
+				className="gce-user-avatar"
+				style={ { '--gce-ring-color': ringColor } }
+			>
 				<img
 					src={ user.avatar }
 					alt={ user.name }
 					className="avatar"
-					style={ { borderColor: ringColor } }
 				/>
 			</li>
 		</Tooltip>
