@@ -2,24 +2,26 @@ import UserAvatar from './UserAvatar';
 
 const AvatarList = ( { users } ) => {
 	const MAX_VISIBLE_AVATARS = 5;
-	const visibleUsers = users.slice( 0, MAX_VISIBLE_AVATARS );
-	const hiddenUsersCount = users.length - visibleUsers.length;
+	const INACTIVITY_TIMEOUT = 300; // seconds
 
-	// TODO: Filter current user out of display
-	// const otherUsers = Object.values( awarenessData ).filter(
-	// 	( awarenessState ) =>
-	// 		awarenessState.user?.id &&
-	// 		awarenessState.user?.id !== currentUserId
-	// );
-	//
-	// if ( otherUsers.length === 0 ) {
-	// 	return null;
-	// }
+	// Filter out stale presence based on INACTIVITY_TIMEOUT defined above
+	const activeUsers = Object.fromEntries(
+		Object.entries( users ).filter( ( [ _, userData]) => {
+			const heartbeatAge = (Date.now() / 1000) - userData.heartbeat_ts;
+			return heartbeatAge < INACTIVITY_TIMEOUT;
+		})
+	);
+
+	// Filter out excessive users beyond the defined limit in MAX_VISIBLE_AVATARS
+	const visibleUsers = Object.fromEntries(
+		Object.entries(activeUsers).slice(0, MAX_VISIBLE_AVATARS)
+	);
+	const hiddenUsersCount = activeUsers.length - visibleUsers.length;
 
 	return (
 		<ul className="gce-avatar-list">
-			{ visibleUsers.map( ( awarenessState, index ) => {
-				return <UserAvatar key={ index } user={ awarenessState.user } />;
+			{ Object.values( visibleUsers ).map( ( visibleUser, index ) => {
+				return <UserAvatar key={ index } user={ visibleUser.user } />;
 			} ) }
 			{ hiddenUsersCount > 0 && (
 				<div className="gce-avatar-list__more">

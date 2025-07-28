@@ -31,6 +31,7 @@ export class MultiCursor {
 	}
 
 	updateUser(userId, cursorState) {
+		// Additional check of filtering out the current user
 		if (parseInt(userId, 10) === this.currentUserId) {
 			return;
 		}

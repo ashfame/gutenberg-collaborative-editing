@@ -17,6 +17,9 @@ export const PresenceUI = ( { awarenessState, syncAwareness } ) => {
 		currentUserId: select( 'core' )?.getCurrentUser()?.id,
 	} ), [] );
 
+	// Modify awareness state to exclude current user
+	delete awarenessState[currentUserId];
+
 	useMultiCursor( currentUserId, awarenessState, syncAwareness );
 
 	if ( ! awarenessState || Object.keys( awarenessState ).length === 0 ) {
@@ -27,7 +30,7 @@ export const PresenceUI = ( { awarenessState, syncAwareness } ) => {
 	return (
 		<>
 			{ headerTarget &&
-				createPortal( <AvatarList users={ Object.values( awarenessState ) } />, headerTarget ) }
+				createPortal( <AvatarList users={ awarenessState } />, headerTarget ) }
 		</>
 	);
 };
