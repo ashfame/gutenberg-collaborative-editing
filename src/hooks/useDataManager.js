@@ -108,7 +108,6 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 
 	return {
 		state,
-		syncAwareness,
-		syncContent,
+		syncAwareness
 	};
 };
