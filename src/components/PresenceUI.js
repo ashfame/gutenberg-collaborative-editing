@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useSelect } from '@wordpress/data';
 import { useMultiCursor } from '../useMultiCursor';
 import AvatarList from './AvatarList';
+import { useEffect } from "@wordpress/element";
 
 /**
  * A container for presence-related UI components.
@@ -13,6 +14,14 @@ import AvatarList from './AvatarList';
  * @returns {React.ReactElement} The rendered component.
  */
 export const PresenceUI = ( { awarenessState, syncAwareness } ) => {
+	useEffect( () => {
+		if ( Object.keys( awarenessState ).length > 0 ) {
+			document.body.classList.add( 'gutenberg-collaborative-editing' );
+		} else {
+			document.body.classList.remove( 'gutenberg-collaborative-editing' );
+		}
+	}, [ awarenessState ] );
+
 	const { currentUserId } = useSelect( ( select ) => ( {
 		currentUserId: select( 'core' )?.getCurrentUser()?.id,
 	} ), [] );
