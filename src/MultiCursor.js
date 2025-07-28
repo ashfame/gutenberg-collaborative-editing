@@ -30,15 +30,15 @@ export class MultiCursor {
 		return { node: root, offset: 0 };
 	}
 
-	updateUser(userId, cursorState) {
+	updateUser(userId, userData) {
 		// Additional check of filtering out the current user
 		if (parseInt(userId, 10) === this.currentUserId) {
 			return;
 		}
 		try {
-			this.users.set(userId, { cursor: cursorState });
+			this.users.set(userId, { cursor: userData.cursor_state, user: userData.user });
 		} catch (e) {
-			console.error('Failed to parse cursor state for user', userId, cursorState, e);
+			console.error('Failed to parse cursor state for user', userId, userData, e);
 		}
 	}
 
@@ -217,7 +217,7 @@ export class MultiCursor {
 		
 		Object.keys(awarenessData).forEach(userId => {
 			if (awarenessData[userId]?.cursor_state) {
-				this.updateUser(userId, awarenessData[userId].cursor_state);
+				this.updateUser(userId, awarenessData[userId]);
 			} else {
 				this.removeUser(userId);
 			}
@@ -263,7 +263,7 @@ export class MultiCursor {
 				}
 				const label = this.document.createElement('div');
 				label.className = 'cursor-label';
-				label.textContent = `User ${userId}`; // In a real app, you'd fetch the user's name
+				label.textContent = user.user?.name || `User ${userId}`;
 				label.style.backgroundColor = color;
 
 				cursor.appendChild(label);
@@ -282,7 +282,7 @@ export class MultiCursor {
 				// Create label
 				const label = this.document.createElement('div');
 				label.className = 'cursor-label';
-				label.textContent = `User ${userId}`; // In a real app, you'd fetch the user's name
+				label.textContent = user.user?.name || `User ${userId}`;
 				label.style.backgroundColor = color;
 				
 				cursor.appendChild(label);
