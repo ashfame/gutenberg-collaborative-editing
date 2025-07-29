@@ -6,6 +6,9 @@
 	display: none;
 }
 
+body.gutenberg-collaborative-editing .editor-document-bar {
+	display: none;
+}
 
 /* Simple read-only styles */
 body.gutenberg-collaborative-editing-readonly .editor-visual-editor {
@@ -51,6 +54,8 @@ body.gutenberg-collaborative-editing-readonly .editor-post-publish-button {
 	0%, 100% { opacity: 1; }
 	50% { opacity: 0.5; }
 }
+
+@import './avatars.scss';
 
 .cursor-overlay {
     position: absolute;

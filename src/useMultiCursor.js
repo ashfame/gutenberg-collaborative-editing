@@ -1,74 +1,98 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useSelect } from '@wordpress/data';
 import { MultiCursor } from './MultiCursor';
+import { getCursorState } from './utils';
 
-export const useMultiCursor = (currentUserId) => {
-	const multiCursorRef = useRef(null);
-	const overlayRef = useRef(null);
-	const [awarenessData, setAwarenessData] = useState(null);
+export const useMultiCursor = (
+	currentUserId,
+	awarenessState,
+	syncAwareness
+) => {
+	const multiCursorRef = useRef( null );
+	const overlayRef = useRef( null );
 
-	const blockCount = useSelect((select) => {
-		// We can detect when the editor is ready by checking if getBlockCount returns a non-null value.
-		// In the site editor, the store is 'core/block-editor'.
-		// In the post editor, it can also be 'core/block-editor'.
-		return select('core/block-editor')?.getBlockCount();
-	}, []);
+	const { blockCount, currentUser } = useSelect( ( select ) => {
+		const editorSelect = select( 'core/block-editor' );
+		const coreSelect = select( 'core' );
+		return {
+			blockCount: editorSelect?.getBlockCount(),
+			currentUser: coreSelect?.getCurrentUser(),
+		};
+	}, [] );
 
-	const updateAwarenessState = useCallback((newState) => {
-		setAwarenessData(newState);
-	}, []);
+	// Function to broadcast the current user's cursor state.
+	const broadcastCursor = useCallback( () => {
+		if ( ! syncAwareness || ! currentUser ) {
+			return;
+		}
+		const cursorState = getCursorState();
+		if ( cursorState ) {
+			// We attach the user object to the awareness payload.
+			// This is a bit of a shortcut. Ideally, the backend would
+			// associate the awareness state with the user.
+			syncAwareness( { ...cursorState, user: currentUser } );
+		}
+	}, [ syncAwareness, currentUser ] );
 
-	useEffect(() => {
-		// Don't do anything until the editor is ready and we have data.
-		if (blockCount === null || !awarenessData) {
+	useEffect( () => {
+		// Don't do anything until the editor is ready.
+		if ( blockCount === null ) {
 			return;
 		}
 
-		const iframe = document.querySelector('iframe[name="editor-canvas"]');
-		if (!iframe || !iframe.contentDocument || !iframe.contentDocument.body) {
+		const iframe = document.querySelector( 'iframe[name="editor-canvas"]' );
+		const editorDocument = iframe ? iframe.contentDocument : document;
+		const editorWrapper = iframe
+			? editorDocument.body
+			: document.querySelector( '.editor-styles-wrapper' );
+
+		if ( ! editorWrapper ) {
 			return;
 		}
-		const editorDocument = iframe.contentDocument;
-		const editorWrapper = editorDocument.body;
-		
+
 		// Ensure the overlay exists.
-		if (!overlayRef.current || !editorDocument.body.contains(overlayRef.current)) {
-			// Clean up any previous overlay to be safe.
+		if (
+			! overlayRef.current ||
+			! editorWrapper.contains( overlayRef.current )
+		) {
 			overlayRef.current?.remove();
-
-			// Make parent relative.
 			editorWrapper.style.position = 'relative';
 
-			// Create and append overlay IN THE IFRAME's document.
-			const overlay = editorDocument.createElement('div');
+			const overlay = editorDocument.createElement( 'div' );
 			overlay.className = 'cursor-overlay';
-			editorWrapper.appendChild(overlay);
+			editorWrapper.appendChild( overlay );
 			overlayRef.current = overlay;
 
-			// Initialize MultiCursor with the iframe's document.
-			multiCursorRef.current = new MultiCursor(editorDocument, overlay, currentUserId);
+			multiCursorRef.current = new MultiCursor(
+				editorDocument,
+				overlay,
+				currentUserId
+			);
 		}
-		
-		// We have everything we need, render the cursors.
-		if (multiCursorRef.current) {
-			// remove inactive cursors based on user's heartbeat_ts (user active/inactive) and not their cursor_ts (cursor position decay)
-			multiCursorRef.current.renderCursors(Object.fromEntries(
-				Object.entries(awarenessData).filter(([userId, user]) => {
-					return user.heartbeat_ts + parseInt( window.gce.awarenessTimeout ) > Math.floor(Date.now()/1000);
-				})
-			));
+
+		// Render incoming cursors.
+		if ( multiCursorRef.current && awarenessState ) {
+			multiCursorRef.current.renderCursors( awarenessState );
 		}
+
+		// Set up event listeners to broadcast our own cursor.
+		const handleSelectionChange = () => broadcastCursor();
+		editorDocument.addEventListener(
+			'selectionchange',
+			handleSelectionChange
+		);
 
 		// Cleanup on unmount.
 		return () => {
-			if (overlayRef.current) {
+			editorDocument.removeEventListener(
+				'selectionchange',
+				handleSelectionChange
+			);
+			if ( overlayRef.current ) {
 				overlayRef.current.remove();
 			}
 			overlayRef.current = null;
 			multiCursorRef.current = null;
 		};
-
-	}, [awarenessData, blockCount, currentUserId]);
-
-	return { updateAwarenessState };
+	}, [ blockCount, currentUserId, awarenessState, broadcastCursor ] );
 };

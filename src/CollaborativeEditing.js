@@ -1,47 +1,45 @@
-import { Modal, Button } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
-import { useCollaborativeEditingData } from './hooks/useCollaborativeEditingData';
-import { useContentSync } from './hooks/useContentSync';
-import { useAwarenessSync } from './hooks/useAwarenessSync';
-import { usePollingForUpdates } from './hooks/usePollingForUpdates';
-import { useReadOnlyUI } from './hooks/useReadOnlyUI';
+import { useDataManager } from './hooks/useDataManager';
+import { PresenceUI } from './components/PresenceUI';
+import { ReadOnlyUI } from './components/ReadOnlyUI';
+import { useEffect } from "@wordpress/element";
+import { lockEditor, releaseEditor } from "./utils";
 
 export const CollaborativeEditing = () => {
-	const { currentUserId, isUserLockHolder, postId, currentContent } =
-		useCollaborativeEditingData();
+	const { state, syncAwareness } = useDataManager();
 
-	useContentSync(postId, currentContent, isUserLockHolder);
-	useAwarenessSync(postId, currentUserId, isUserLockHolder);
-	usePollingForUpdates(postId, currentUserId);
-	const { showModal, setShowModal } = useReadOnlyUI(
-		isUserLockHolder,
-		currentUserId
-	);
+	useEffect( () => {
+		const editorElement = document.querySelector( '.editor-visual-editor' );
 
-	// Don't render anything if user data not loaded or user has lock
-	if (currentUserId === null || isUserLockHolder) {
-		return null;
-	}
+		const release = () => {
+			document.body.classList.remove( 'gutenberg-collaborative-editing-readonly' );
+			// editorElement might not be available on cleanup, so we need to query for it again.
+			const editorElementOnCleanup = document.querySelector( '.editor-visual-editor' );
+			if ( editorElementOnCleanup ) {
+				releaseEditor( editorElementOnCleanup );
+			}
+			wp.data.dispatch( 'core/editor' ).unlockPostSaving( 'collaborative-editing' );
+			wp.data.dispatch( 'core/editor' ).unlockPostAutosaving( 'collaborative-editing' );
+		};
 
-	if (!showModal) {
-		return null;
-	}
+		if ( state.isReadOnly ) {
+			document.body.classList.add( 'gutenberg-collaborative-editing-readonly' );
+			lockEditor( editorElement );
+			wp.data.dispatch( 'core/editor' ).lockPostSaving( 'collaborative-editing' );
+			wp.data.dispatch( 'core/editor' ).lockPostAutosaving( 'collaborative-editing' );
+		} else {
+			release();
+		}
+
+		return release;
+	}, [ state.isReadOnly ] );
 
 	return (
-		<Modal
-			className="gutenberg-collaborative-editing-read-only-modal"
-			title={__('Read-Only Mode', 'gutenberg-collaborative-editing')}
-			onRequestClose={() => setShowModal(false)}
-		>
-			<p>
-				{ __(
-					'Someone else is currently editing this post. You can only view the post content.',
-					'gutenberg-collaborative-editing'
-				) }
-			</p>
-			<Button variant="primary" onClick={() => setShowModal(false)}>
-				Okay
-			</Button>
-		</Modal>
+		<>
+			<PresenceUI
+				awarenessState={ state.awareness }
+				syncAwareness={ syncAwareness }
+			/>
+			<ReadOnlyUI isReadOnly={ state.isReadOnly } />
+		</>
 	);
 };
