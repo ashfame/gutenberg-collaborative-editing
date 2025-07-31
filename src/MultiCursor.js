@@ -4,6 +4,7 @@ export class MultiCursor {
 		this.overlay = overlayElement;
 		this.currentUserId = currentUserId;
 		this.users = new Map();
+		this.userContainers = new Map();
 	}
 
 	findTextPosition(root, offset) {
@@ -42,6 +43,10 @@ export class MultiCursor {
 
 	removeUser(userId) {
 		this.users.delete(userId);
+		if ( this.userContainers.has( userId ) ) {
+			this.userContainers.get( userId ).remove();
+			this.userContainers.delete( userId );
+		}
 	}
 
 	getPos(blockEl, charOffset) {
@@ -153,7 +158,7 @@ export class MultiCursor {
 					range.setEnd(endPos.node, endPos.offset);
 					addRects(range);
 				} catch (e) {
-					console.error('Failed to create range', e, startPos, endPos);
+					console.error('Failed to create range', e, startPos, end_pos);
 				}
 			}
 		} else {
@@ -211,9 +216,6 @@ export class MultiCursor {
 		if (!awarenessData) {
 			return;
 		}
-
-		// Clean up overlay
-		this.overlay.innerHTML = '';
 		
 		Object.keys(awarenessData).forEach(userId => {
 			if (awarenessData[userId]?.cursor_state) {
@@ -230,6 +232,16 @@ export class MultiCursor {
 				return;
 			}
 
+			if ( ! this.userContainers.has( userId ) ) {
+				const userContainer = this.document.createElement( 'div' );
+				userContainer.className = `user-container user-container-${ userId }`;
+				this.overlay.appendChild( userContainer );
+				this.userContainers.set( userId, userContainer );
+			}
+
+			const container = this.userContainers.get( userId );
+			container.innerHTML = '';
+
 			const color = user.ring_color;
 
 			if (result.isSelection) {
@@ -243,7 +255,7 @@ export class MultiCursor {
 					selection.style.width = `${rect.width}px`;
 					selection.style.height = `${rect.height}px`;
 					selection.style.backgroundColor = color;
-					this.overlay.appendChild(selection);
+					container.appendChild(selection);
 				});
 
 				const cursor = this.document.createElement('div');
@@ -265,7 +277,7 @@ export class MultiCursor {
 				} );
 
 				cursor.appendChild(label);
-				this.overlay.appendChild(cursor);
+				container.appendChild(cursor);
 			} else {
 				// Create cursor element
 				const cursor = this.document.createElement('div');
@@ -288,7 +300,7 @@ export class MultiCursor {
 				} );
 
 				cursor.appendChild(label);
-				this.overlay.appendChild(cursor);
+				container.appendChild(cursor);
 			}
 		});
 	}
