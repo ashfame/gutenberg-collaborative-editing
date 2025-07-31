@@ -211,6 +211,9 @@ export class MultiCursor {
 		if (!awarenessData) {
 			return;
 		}
+
+		// Clean up overlay
+		this.overlay.innerHTML = '';
 		
 		Object.keys(awarenessData).forEach(userId => {
 			if (awarenessData[userId]?.cursor_state) {
@@ -219,9 +222,6 @@ export class MultiCursor {
 				this.removeUser(userId);
 			}
 		});
-
-		// Clean up overlay
-		this.overlay.innerHTML = '';
 
 		// Render each user's cursor
 		this.users.forEach((user, userId) => {
@@ -256,9 +256,13 @@ export class MultiCursor {
 					cursor.style.height = `${lastRect.height}px`;
 				}
 				const label = this.document.createElement('div');
-				label.className = 'cursor-label';
+				label.className = 'cursor-label fade-out';
 				label.textContent = user.user?.name || `User ${userId}`;
 				label.style.backgroundColor = color;
+
+				label.addEventListener( 'animationend', () => {
+					label.classList.remove( 'fade-out' );
+				} );
 
 				cursor.appendChild(label);
 				this.overlay.appendChild(cursor);
@@ -275,9 +279,13 @@ export class MultiCursor {
 				
 				// Create label
 				const label = this.document.createElement('div');
-				label.className = 'cursor-label';
+				label.className = 'cursor-label fade-out';
 				label.textContent = user.user?.name || `User ${userId}`;
 				label.style.backgroundColor = color;
+
+				label.addEventListener( 'animationend', () => {
+					label.classList.remove( 'fade-out' );
+				} );
 
 				cursor.appendChild(label);
 				this.overlay.appendChild(cursor);
