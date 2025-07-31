@@ -6,7 +6,18 @@ class AwarenessStateRepository {
 
 	const POSTMETA_KEY_AWARENESS = 'gce_awareness';
 	const ACTIVITY_TIMEOUT = 240; // seconds
-	const COLORS = [ '#ff6b6b', '#4ecdc4', '#45b7d1', '#feca57', '#c56cf0', '#ff9f43', '#2e86de', '#ff6347', '#20b2aa', '#9370db' ];
+	const COLORS = [
+		'#0073AA', // WordPress Blue - Primary accessible
+		'#008080', // Teal - Primary accessible
+		'#00A32A', // WordPress Green - Primary accessible
+		'#CC6600', // Warm Orange - Primary accessible
+		'#800080', // Dark Purple - Primary accessible
+		'#D63638', // WordPress Red - Secondary
+		'#4A90E2', // Professional Blue - Secondary
+		'#F5A623', // Amber Yellow - Secondary
+		'#50C8A3', // Light Teal - Secondary
+		'#7B68EE'  // Medium Purple - Secondary
+	];
 
 	public function update_user_cursor_state( $user_id, $post_id, $cursor_state ) {
 		$awareness_state = $this->get( $post_id );
@@ -16,22 +27,12 @@ class AwarenessStateRepository {
 			$awareness_state = [];
 		}
 
-		// if its first time for this user to collaborate on this post
-		if (
-			! isset( $awareness_state[ $user_id ] ) ||
-			! isset( $awareness_state[ $user_id ][ 'color' ] )
-		) {
-			$awareness_state[ $user_id ][ 'color' ] = $this->get_color(
-				$awareness_state
-			);
-		}
-
 		$ts                          = time();
 		$awareness_state[ $user_id ] = [
 			'cursor_state' => $cursor_state,
 			'cursor_ts'    => $ts,
 			'heartbeat_ts' => $ts,
-			'color'        => $awareness_state[ $user_id ][ 'color' ],
+			'color'        => $this->get_color( $user_id, $awareness_state ),
 		];
 		update_post_meta( $post_id, self::POSTMETA_KEY_AWARENESS, $awareness_state );
 	}
@@ -69,14 +70,34 @@ class AwarenessStateRepository {
 		return $awareness_state;
 	}
 
-	private function get_color( $awareness_state ) {
-		$colors_in_use    = array_column( $awareness_state, 'color' );
-		$available_colors = array_diff( self::COLORS, $colors_in_use );
+	private function get_color( $user_id, $awareness_state ) : string {
+		// does the user have a color not in the list of colors anymore?
+		// this would happen when the list of colors has been updated
+		// unset it, so that we can set a new color for them
+		if (
+			isset( $awareness_state[ $user_id ][ 'color' ] ) &&
+			! in_array( $awareness_state[ $user_id ][ 'color' ], self::COLORS, true )
+		) {
+			unset( $awareness_state[ $user_id ][ 'color' ] );
+		}
 
-		$chosen = array_shift( $available_colors );
+		// if its first time for this user to collaborate on this post
+		// Or we unset its color above,
+		// let's choose a new color for them
+		if (
+			! isset( $awareness_state[ $user_id ] ) ||
+			! isset( $awareness_state[ $user_id ][ 'color' ] )
+		) {
+			$colors_in_use    = array_column( $awareness_state, 'color' );
+			$available_colors = array_diff( self::COLORS, $colors_in_use );
 
-		// TODO: Loop over already claimed colors to see what can be claimed back
-		return $chosen ?? '#000';
+			$chosen = array_shift( $available_colors );
+
+			// TODO: Loop over already claimed colors to see what can be claimed back
+			return $chosen ?? '#000'; // ran out of 10 colors
+		}
+
+		return $awareness_state[ $user_id ][ 'color' ];
 	}
 
 	public function update_user_heartbeat( $user_id, $post_id ) {
