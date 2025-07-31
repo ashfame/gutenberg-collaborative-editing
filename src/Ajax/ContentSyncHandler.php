@@ -29,7 +29,7 @@ class ContentSyncHandler {
 
 		wp_send_json_success(
 			[
-				'timestamp' => time(),
+				'timestamp' => microtime( true ),
 				'message'   => 'Content synced successfully',
 			]
 		);

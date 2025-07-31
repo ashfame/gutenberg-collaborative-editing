@@ -11,7 +11,7 @@ class PollingHandler {
 		check_ajax_referer( 'gce_poll', 'nonce' );
 
 		$post_id        = intval( $_GET[ 'post_id' ] ?? 0 );
-		$last_timestamp = intval( $_GET[ 'last_timestamp' ] ?? 0 );
+		$last_timestamp = floatval( $_GET[ 'last_timestamp' ] ?? 0 );
 		$lock_owner     = ! wp_check_post_lock( $post_id );
 
 		$awareness_user = [];
@@ -46,7 +46,7 @@ class PollingHandler {
 			if ( ! $lock_owner ) {
 				$sync_data = $content_repo->get( $post_id );
 
-				if ( $sync_data && $sync_data[ 'timestamp' ] > $last_timestamp ) {
+				if ( $sync_data && floatval( $sync_data[ 'timestamp' ] ) > $last_timestamp ) {
 					wp_send_json_success(
 						[
 							'modified'  => true,
