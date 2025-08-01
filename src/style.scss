@@ -90,3 +90,15 @@ body.gutenberg-collaborative-editing-readonly .editor-post-publish-button {
 	position: absolute;
 	opacity: 0.3;
 }
+.gutenberg-collaborative-editing-readonly-badge {
+	display: flex;
+	align-items: center;
+	background-color: #f8f9f9;
+	color: #1e1e1e;
+	font-size: 13px;
+	line-height: 1.4;
+	padding: 4px 8px;
+	border-radius: 2px;
+	border: 1px solid #ddd;
+	margin-right: 8px;
+}

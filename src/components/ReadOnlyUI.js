@@ -1,33 +1,35 @@
 import { Modal, Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { useState, useEffect } from "@wordpress/element";
+import { useState, useEffect } from '@wordpress/element';
+import { ReadOnlyBadge } from './ReadOnlyBadge';
 
 export const ReadOnlyUI = ( { isReadOnly } ) => {
 	const [ showModal, setShowModal ] = useState( isReadOnly );
 
 	useEffect( () => {
-		setShowModal(isReadOnly);
+		setShowModal( isReadOnly );
 	}, [ isReadOnly ] );
 
-	if ( ! showModal ) {
-		return null;
-	}
-
 	return (
-		<Modal
-			className="gutenberg-collaborative-editing-read-only-modal"
-			title={ __( 'Read-Only Mode', 'gutenberg-collaborative-editing' ) }
-			onRequestClose={ () => setShowModal( false ) }
-		>
-			<p>
-				{ __(
-					'Someone else is currently editing this post. You can only view the post content.',
-					'gutenberg-collaborative-editing'
-				) }
-			</p>
-			<Button variant="primary" onClick={ () => setShowModal( false ) }>
-				{ __( 'Okay', 'gutenberg-collaborative-editing' ) }
-			</Button>
-		</Modal>
+		<>
+			{ isReadOnly && <ReadOnlyBadge /> }
+			{ showModal && (
+				<Modal
+					className="gutenberg-collaborative-editing-read-only-modal"
+					title={ __( 'Read-Only Mode', 'gutenberg-collaborative-editing' ) }
+					onRequestClose={ () => setShowModal( false ) }
+				>
+					<p>
+						{ __(
+							'Someone else is currently editing this post. You can only view the post content.',
+							'gutenberg-collaborative-editing'
+						) }
+					</p>
+					<Button variant="primary" onClick={ () => setShowModal( false ) }>
+						{ __( 'Okay', 'gutenberg-collaborative-editing' ) }
+					</Button>
+				</Modal>
+			) }
+		</>
 	);
 };
