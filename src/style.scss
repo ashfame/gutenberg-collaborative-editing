@@ -74,6 +74,19 @@ body.gutenberg-collaborative-editing-readonly .editor-post-publish-button {
     animation: blink 1s infinite;
 }
 
+.remote-cursor:hover .cursor-label {
+	opacity: 1;
+}
+
+@keyframes fade-out {
+	0%, 80% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
 .cursor-label {
     position: absolute;
     font-size: 11px;
@@ -84,6 +97,14 @@ body.gutenberg-collaborative-editing-readonly .editor-post-publish-button {
     background-color: #ff6b6b;
     color: white;
 	white-space: nowrap;
+	opacity: 0;
+	transition: opacity .3s ease;
+	animation: none;
+}
+
+.cursor-label.fade-out {
+	animation: fade-out 2s ease forwards;
+	opacity: 1;
 }
 
 .remote-selection {
