@@ -1,4 +1,4 @@
-import { useEffect, useRef } from '@wordpress/element';
+import { useEffect, useRef, useCallback } from '@wordpress/element';
 import {AjaxWithLongPollingTransport} from "../transports/AjaxWithLongPolling";
 
 const transportFactory = {
@@ -49,11 +49,11 @@ export const useTransportManager = ( {
 		};
 	}, [ transport, postId, onDataReceived ] );
 
-	const send = ( data ) => {
+	const send = useCallback( ( data ) => {
 		if ( transportRef.current ) {
 			transportRef.current.send( data );
 		}
-	};
+	}, [] );
 
 	return {
 		send,

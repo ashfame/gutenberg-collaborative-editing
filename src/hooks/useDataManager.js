@@ -85,9 +85,9 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		send( { type: 'awareness', payload: awareness } );
 	};
 
-	const syncContent = ( content ) => {
+	const syncContent = useCallback( ( content ) => {
 		send( { type: 'content', payload: content } );
-	};
+	}, [ send ] );
 
 	useContentSyncer({
 		isReadOnly,
