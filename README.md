@@ -14,6 +14,13 @@ Enable collaborative editing in Gutenberg
 ## Description
 Enable collaborative editing in Gutenberg.
 
+## Settings
+This plugin adds a settings page under `Settings > Collaborative Editing` in the WordPress admin.
+
+- **Collaboration Mode**:
+    - **Read-only Follow**: The first user to open a post gets editing rights, and subsequent users can only view the post in real-time.
+    - **Block-level Locks**: Multiple users can edit the same post, just not the same block. (🚧Work in Progress)
+
 ## Screenshots
 ![Example](.wporg/screenshot-1.png)
 

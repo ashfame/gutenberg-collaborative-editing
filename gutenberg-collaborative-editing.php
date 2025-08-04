@@ -27,6 +27,7 @@ require_once __DIR__ . '/src/Ajax/AjaxRegistry.php';
 require_once __DIR__ . '/src/EditorAssets.php';
 require_once __DIR__ . '/src/Cron.php';
 require_once __DIR__ . '/src/HeartbeatListener.php';
+require_once __DIR__ . '/src/Admin/Settings.php';
 
 // Initialize the plugin.
 add_action( 'init', function() {

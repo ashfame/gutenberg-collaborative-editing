@@ -3,6 +3,7 @@
 namespace DotOrg\GCE;
 
 use DotOrg\GCE\Ajax\AjaxRegistry;
+use DotOrg\GCE\Admin\Settings;
 
 class Plugin {
 	public function __construct() {
@@ -10,5 +11,9 @@ class Plugin {
 		new EditorAssets();
 		new HeartbeatListener();
 		new Cron();
+
+		if ( is_admin() ) {
+			Settings::init();
+		}
 	}
 }
