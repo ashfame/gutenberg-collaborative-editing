@@ -13,6 +13,7 @@ class PollingHandler {
 		$post_id        = intval( $_GET[ 'post_id' ] ?? 0 );
 		$last_timestamp = floatval( $_GET[ 'last_timestamp' ] ?? 0 );
 		$lock_owner     = ! wp_check_post_lock( $post_id );
+		$fingerprint    = $_GET['fingerprint'] ?? null;
 
 		$awareness_user = [];
 		if ( isset( $_GET[ 'awareness' ] ) ) {
@@ -46,7 +47,11 @@ class PollingHandler {
 			if ( ! $lock_owner ) {
 				$sync_data = $content_repo->get( $post_id );
 
-				if ( $sync_data && floatval( $sync_data[ 'timestamp' ] ) > $last_timestamp ) {
+				if (
+					$sync_data &&
+					$sync_data[ 'fingerprint' ] !== $fingerprint &&
+					floatval( $sync_data[ 'timestamp' ] ) > $last_timestamp
+				) {
 					wp_send_json_success(
 						[
 							'modified'  => true,

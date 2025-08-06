@@ -20,6 +20,7 @@ export const syncContent = async (postId, content) => {
 		formData.append('action', window.gce.syncContentAction);
 		formData.append('nonce', window.gce.syncContentNonce);
 		formData.append('post_id', postId);
+		formData.append('fingerprint', window.gce.fingerprint);
 		formData.append('content', JSON.stringify(content));
 
 		const response = await fetch(window.gce.ajaxUrl, {
@@ -108,6 +109,7 @@ export const pollForUpdates = async (postId, lastTimestamp, awarenessData) => {
 		url.searchParams.append('action', window.gce.pollAction);
 		url.searchParams.append('nonce', window.gce.pollNonce);
 		url.searchParams.append('post_id', postId);
+		url.searchParams.append('fingerprint', window.gce.fingerprint);
 		url.searchParams.append('last_timestamp', lastTimestamp);
 		url.searchParams.append('awareness', JSON.stringify(awarenessData));
 

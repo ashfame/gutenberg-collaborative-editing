@@ -4,13 +4,14 @@ namespace DotOrg\GCE\Persistence;
 
 class ContentRepository {
 
-	public function save( $post_id, $user_id, $content ) {
+	public function save( $post_id, $user_id, $fingerprint, $content ) {
 		$transient_key = "gce_sync_content_{$post_id}";
-		$sync_data     = [
-			'content'   => $content,
-			'timestamp' => microtime( true ),
-			'post_id'   => $post_id,
-			'user_id'   => $user_id,
+		$sync_data = [
+			'content'     => $content,
+			'timestamp'   => microtime( true ),
+			'post_id'     => $post_id,
+			'user_id'     => $user_id,
+			'fingerprint' => $fingerprint,
 		];
 		set_transient( $transient_key, $sync_data, HOUR_IN_SECONDS );
 	}
