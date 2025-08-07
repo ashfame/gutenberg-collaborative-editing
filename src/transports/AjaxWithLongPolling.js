@@ -45,6 +45,7 @@ export const AjaxWithLongPollingTransport = ( { postId } ) => {
 			// eslint-disable-next-line no-console
 			console.error( 'Long polling error:', error );
 		} finally {
+			console.info('poll resp');
 			setTimeout( longPoll, 100 );
 		}
 	};

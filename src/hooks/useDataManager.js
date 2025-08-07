@@ -82,10 +82,12 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	} );
 
 	const syncAwareness = ( awareness ) => {
+		console.info( 'syncAwareness()' );
 		send( { type: 'awareness', payload: awareness } );
 	};
 
 	const syncContent = useCallback( ( content ) => {
+		console.info( 'syncContent()' );
 		send( { type: 'content', payload: content } );
 	}, [ send ] );
 
