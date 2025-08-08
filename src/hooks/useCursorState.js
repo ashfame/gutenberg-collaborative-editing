@@ -17,6 +17,14 @@ export const useCursorState = () => {
 
 		const sameBlock = selectionStart.clientId === selectionEnd.clientId;
 
+		/**
+		 * Three possible states:
+		 *
+		 * 1) User cursor sitting in one of the blocks
+		 * 2) User cursor highlighting some text within the block
+		 * 3) User cursor highlighting some text across blocks
+		 */
+
 		if ( sameBlock ) {
 			const blockIndex = blocks.indexOf( selectionStart.clientId );
 			if ( selectionStart.offset === selectionEnd.offset ) {
