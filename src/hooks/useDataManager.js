@@ -3,6 +3,7 @@ import { useGutenbergState } from './useGutenbergState';
 import { useTransportManager } from './useTransportManager';
 import { useContentSyncer } from './useContentSyncer';
 import { useDispatch } from '@wordpress/data';
+import { parse } from '@wordpress/blocks';
 
 const initialState = {
 	isReadOnly: false,
@@ -43,6 +44,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 
 	const [ state, dispatch ] = useReducer( reducer, initialState );
 	const { editPost } = useDispatch( 'core/editor' );
+	const { resetBlocks } = useDispatch( 'core/block-editor' );
 
 	const handleDataReceived = useCallback(
 		( data ) => {
@@ -63,6 +65,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 						content: receivedContent.content.html,
 						title: receivedContent.content.title || '',
 					} );
+					resetBlocks( parse( receivedContent.content.html ) );
 
 					console.info( 'Content updated from collaborator' );
 				}
