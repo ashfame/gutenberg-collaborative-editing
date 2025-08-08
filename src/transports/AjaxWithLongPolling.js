@@ -71,17 +71,7 @@ export const AjaxWithLongPollingTransport = ( { postId } ) => {
 				case 'content':
 					return syncContent( postId, action.payload );
 				case 'awareness':
-					// The syncAwareness function from api.js handles its own diffing.
-					// We need to update the transport's awareness state if the send was successful.
-					const newAwareness = await syncAwareness(
-						postId,
-						action.payload
-					);
-					if ( newAwareness ) {
-						// This is a bit tricky. The server will merge this and send it
-						// back on the next poll. We could update the local state here,
-						// but it's safer to let the polling response be the source of truth.
-					}
+					await syncAwareness( postId, action.payload );
 					return;
 				default:
 					return Promise.resolve();

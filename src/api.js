@@ -1,5 +1,3 @@
-import { getCursorState, needCursorStateBroadcast } from './utils';
-
 /**
  * @typedef {import('./utils').CursorState} CursorState
  */
@@ -46,23 +44,13 @@ export const syncContent = async (postId, content) => {
 /**
  * Syncs the user's awareness state (e.g., cursor position) to the server.
  *
- * @param {number}           postId               The ID of the post.
- * @param {CursorState|null} lastBroadcastedState The last broadcasted awareness state for the current user.
+ * @param {number} postId               The ID of the post.
+ * @param {CursorState} cursorState     The cursor state to sync.
  * @returns {Promise<CursorState|null>} The new cursor state if it was synced, otherwise null.
  * @throws {Error} If the sync fails.
  */
-export const syncAwareness = async (postId, lastBroadcastedState) => {
+export const syncAwareness = async (postId, cursorState) => {
 	if (!window.gce || !postId) return null;
-
-	const cursorState = getCursorState();
-	if ( !cursorState ) {
-		return null;
-	}
-
-	// Only sync if awareness data has changed.
-	if ( !needCursorStateBroadcast(cursorState, lastBroadcastedState) ) {
-		return null;
-	}
 
 	try {
 		const formData = new FormData();

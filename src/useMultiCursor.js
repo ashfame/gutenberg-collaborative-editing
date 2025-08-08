@@ -27,10 +27,7 @@ export const useMultiCursor = (
 		}
 		const cursorState = getCursorState();
 		if ( cursorState ) {
-			// We attach the user object to the awareness payload.
-			// This is a bit of a shortcut. Ideally, the backend would
-			// associate the awareness state with the user.
-			syncAwareness( { ...cursorState, user: currentUser } );
+			syncAwareness( cursorState );
 		}
 	}, [ syncAwareness, currentUser ] );
 

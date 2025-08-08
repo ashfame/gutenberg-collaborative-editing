@@ -106,35 +106,3 @@ export const getCursorState = () => {
 		};
 	}
 };
-
-/**
- * Determines if the cursor state needs to be broadcasted.
- *
- * @param {CursorState|null} cursorStateCurrent     The current cursor state.
- * @param {CursorState|null} cursorStateBroadcasted The last broadcasted cursor state.
- * @returns {boolean} Whether the cursor state needs to be broadcasted.
- */
-export const needCursorStateBroadcast = (cursorStateCurrent, cursorStateBroadcasted) => {
-	if (cursorStateCurrent === cursorStateBroadcasted) {
-		return false;
-	}
-
-	if (!cursorStateCurrent || !cursorStateBroadcasted) {
-		return true;
-	}
-
-	const keysA = Object.keys(cursorStateCurrent);
-	const keysB = Object.keys(cursorStateBroadcasted);
-
-	if (keysA.length !== keysB.length) {
-		return true;
-	}
-
-	for (const key of keysA) {
-		if (!keysB.includes(key) || cursorStateCurrent[key] !== cursorStateBroadcasted[key]) {
-			return true;
-		}
-	}
-
-	return false;
-};
