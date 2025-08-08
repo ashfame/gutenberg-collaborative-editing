@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useSelect } from '@wordpress/data';
 import { MultiCursor } from './MultiCursor';
+import { useCursorState } from './hooks/useCursorState';
 
 export const useMultiCursor = (
 	currentUserId,
@@ -9,6 +10,7 @@ export const useMultiCursor = (
 ) => {
 	const multiCursorRef = useRef( null );
 	const overlayRef = useRef( null );
+	const cursorState = useCursorState();
 	const cursorStateRef = useRef( null );
 
 	const { blockCount, currentUser } = useSelect( ( select ) => {
@@ -17,46 +19,6 @@ export const useMultiCursor = (
 		return {
 			blockCount: editorSelect?.getBlockCount(),
 			currentUser: coreSelect?.getCurrentUser(),
-		};
-	}, [] );
-
-	const cursorState = useSelect( ( select ) => {
-		const { getBlockOrder, getSelectionStart, getSelectionEnd } =
-			select( 'core/block-editor' );
-
-		const blocks = getBlockOrder();
-		const selectionStart = getSelectionStart();
-		const selectionEnd = getSelectionEnd();
-
-		console.log( 'cursorState', blocks, selectionStart, selectionEnd );
-
-		if ( ! selectionStart.clientId ) {
-			return null;
-		}
-
-		const sameBlock = selectionStart.clientId === selectionEnd.clientId;
-
-		if ( sameBlock ) {
-			const blockIndex = blocks.indexOf( selectionStart.clientId );
-			if ( selectionStart.offset === selectionEnd.offset ) {
-				return {
-					blockIndex,
-					cursorPos: selectionStart.offset,
-				};
-			}
-			return {
-				blockIndex,
-				cursorPosStart: selectionStart.offset,
-				cursorPosEnd: selectionEnd.offset,
-			};
-		}
-		const blockIndexStart = blocks.indexOf( selectionStart.clientId );
-		const blockIndexEnd = blocks.indexOf( selectionEnd.clientId );
-		return {
-			blockIndexStart,
-			blockIndexEnd,
-			cursorPosStart: selectionStart.offset,
-			cursorPosEnd: selectionEnd.offset,
 		};
 	}, [] );
 
