@@ -9,11 +9,13 @@ export const useCursorState = () => {
 		const selectionStart = getSelectionStart();
 		const selectionEnd = getSelectionEnd();
 
-		console.log( 'cursorState', blocks, selectionStart, selectionEnd );
-
-		if ( ! selectionStart?.clientId ) {
+		if (
+			! selectionStart?.clientId ||
+			typeof selectionStart.offset !== 'number'
+		) {
 			return null;
 		}
+    
 
 		const sameBlock = selectionStart.clientId === selectionEnd.clientId;
 
