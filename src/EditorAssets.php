@@ -36,6 +36,7 @@ class EditorAssets {
 				'postId'              => get_the_ID(),
 				'currentUserId'       => get_current_user_id(),
 				'gce_enabled'         => true, // TODO: Introduce a filter here as per note in README
+				'fingerprint'         => $this->generateFingerprint(),
 				'syncContentNonce'    => wp_create_nonce( 'gce_sync_content' ),
 				'syncAwarenessNonce'  => wp_create_nonce( 'gce_sync_awareness' ),
 				'pollNonce'           => wp_create_nonce( 'gce_poll' ),
@@ -43,7 +44,7 @@ class EditorAssets {
 				'syncAwarenessAction' => 'gce_sync_awareness',
 				'pollAction'          => 'gce_poll',
 				'awarenessTimeout'    => AwarenessStateRepository::ACTIVITY_TIMEOUT,
-				'collaborationMode'   => Admin\Settings::get()[ 'collaboration_mode'],
+				'collaborationMode'   => Admin\Settings::get()[ 'collaboration_mode' ],
 			]
 		);
 
@@ -62,5 +63,15 @@ class EditorAssets {
 				$asset_file[ 'version' ]
 			);
 		}
+	}
+
+	private function generateFingerprint( $length = 10 ) {
+		$characters       = 'abcdefghijklmnopqrstuvwxyz';
+		$charactersLength = strlen( $characters );
+		$randomString     = '';
+		for ( $i = 0; $i < $length; $i++ ) {
+			$randomString .= $characters[ random_int( 0, $charactersLength - 1 ) ];
+		}
+		return $randomString;
 	}
 }
