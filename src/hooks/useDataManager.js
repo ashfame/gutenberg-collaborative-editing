@@ -85,18 +85,11 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	} );
 
 	const syncAwareness = ( awareness ) => {
-		console.info( 'syncAwareness()' );
-		if ( ! document.hasFocus() ) {
-			console.log('syncAwareness() skipped');
-			return;
-		}
 		send( { type: 'awareness', payload: awareness } );
 	};
 
 	const syncContent = useCallback( ( content ) => {
-		console.info( 'syncContent()' );
 		if ( ! document.hasFocus() ) {
-			console.log('syncContent() skipped');
 			return;
 		}
 		send( { type: 'content', payload: content } );
