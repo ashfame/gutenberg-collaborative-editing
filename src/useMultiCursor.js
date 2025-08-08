@@ -1,7 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useSelect } from '@wordpress/data';
 import { MultiCursor } from './MultiCursor';
-import { getCursorState } from './utils';
 
 export const useMultiCursor = (
 	currentUserId,
@@ -10,6 +9,7 @@ export const useMultiCursor = (
 ) => {
 	const multiCursorRef = useRef( null );
 	const overlayRef = useRef( null );
+	const cursorStateRef = useRef( null );
 
 	const { blockCount, currentUser } = useSelect( ( select ) => {
 		const editorSelect = select( 'core/block-editor' );
@@ -20,14 +20,58 @@ export const useMultiCursor = (
 		};
 	}, [] );
 
+	const cursorState = useSelect( ( select ) => {
+		const { getBlockOrder, getSelectionStart, getSelectionEnd } =
+			select( 'core/block-editor' );
+
+		const blocks = getBlockOrder();
+		const selectionStart = getSelectionStart();
+		const selectionEnd = getSelectionEnd();
+
+		console.log( 'cursorState', blocks, selectionStart, selectionEnd );
+
+		if ( ! selectionStart.clientId ) {
+			return null;
+		}
+
+		const sameBlock = selectionStart.clientId === selectionEnd.clientId;
+
+		if ( sameBlock ) {
+			const blockIndex = blocks.indexOf( selectionStart.clientId );
+			if ( selectionStart.offset === selectionEnd.offset ) {
+				return {
+					blockIndex,
+					cursorPos: selectionStart.offset,
+				};
+			}
+			return {
+				blockIndex,
+				cursorPosStart: selectionStart.offset,
+				cursorPosEnd: selectionEnd.offset,
+			};
+		}
+		const blockIndexStart = blocks.indexOf( selectionStart.clientId );
+		const blockIndexEnd = blocks.indexOf( selectionEnd.clientId );
+		return {
+			blockIndexStart,
+			blockIndexEnd,
+			cursorPosStart: selectionStart.offset,
+			cursorPosEnd: selectionEnd.offset,
+		};
+	}, [] );
+
+	// Update the ref whenever the cursor state changes.
+	useEffect( () => {
+		cursorStateRef.current = cursorState;
+	}, [ cursorState ] );
+
 	// Function to broadcast the current user's cursor state.
 	const broadcastCursor = useCallback( () => {
 		if ( ! syncAwareness || ! currentUser ) {
 			return;
 		}
-		const cursorState = getCursorState();
-		if ( cursorState ) {
-			syncAwareness( cursorState );
+		if ( cursorStateRef.current ) {
+			syncAwareness( cursorStateRef.current );
 		}
 	}, [ syncAwareness, currentUser ] );
 
