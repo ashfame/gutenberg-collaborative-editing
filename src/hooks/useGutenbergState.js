@@ -10,7 +10,6 @@ import { useMemo } from '@wordpress/element';
  * @returns {{
  *   currentUserId: number | null,
  *   isLockHolder: boolean,
- *   postId: number,
  *   editorContent: {html: string, title: string}
  * }}
  */
@@ -18,7 +17,6 @@ export const useGutenbergState = () => {
 	const {
 		currentUserId,
 		isLockHolder,
-		postId,
 		editorContentHTML,
 		editorContentTitle,
 	} = useSelect( ( select ) => {
@@ -39,9 +37,6 @@ export const useGutenbergState = () => {
 			lockHolderId === null ||
 			( lockHolderId != null && currentUserId !== lockHolderId );
 
-		const postId =
-			editorSelect?.getCurrentPostId?.() || window.gce?.postId || 0;
-
 		const editorContentHTML = editorSelect?.getEditedPostContent?.() || '';
 		const editorContentTitle =
 			editorSelect?.getEditedPostAttribute?.( 'title' ) || '';
@@ -49,7 +44,6 @@ export const useGutenbergState = () => {
 		return {
 			currentUserId,
 			isLockHolder: !isReadOnly,
-			postId,
 			editorContentHTML,
 			editorContentTitle,
 		};
@@ -66,7 +60,6 @@ export const useGutenbergState = () => {
 	return {
 		currentUserId,
 		isLockHolder,
-		postId,
 		editorContent,
 	};
 };

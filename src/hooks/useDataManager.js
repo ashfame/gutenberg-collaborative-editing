@@ -41,9 +41,10 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	const {
 		currentUserId,
 		isLockHolder,
-		postId,
 		editorContent,
 	} = useGutenbergState();
+
+	const postId = window.gce.postId;
 
 	const [ state, dispatch ] = useReducer( reducer, initialState );
 	const { editPost } = useDispatch( 'core/editor' );
