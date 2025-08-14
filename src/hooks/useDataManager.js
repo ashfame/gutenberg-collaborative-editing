@@ -6,7 +6,7 @@ import { useDispatch } from '@wordpress/data';
 import { parse } from '@wordpress/blocks';
 
 const initialState = {
-	isReadOnly: false,
+	isLockHolder: false,
 	awareness: {},
 };
 
@@ -19,10 +19,10 @@ function reducer( state, action ) {
 			};
 		}
 		case 'LOCK_STATUS_UPDATED': {
-			const { isReadOnly } = action.payload;
+			const { isLockHolder } = action.payload;
 			return {
 				...state,
-				isReadOnly,
+				isLockHolder,
 			};
 		}
 		default:
@@ -37,7 +37,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	// Get all required data in a single useSelect
 	const {
 		currentUserId,
-		isReadOnly,
+		isLockHolder,
 		postId,
 		editorContent,
 	} = useGutenbergState();
@@ -96,7 +96,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	}, [ send ] );
 
 	useContentSyncer({
-		isReadOnly,
+		isReadOnly: ! isLockHolder,
 		postId,
 		editorContent,
 		onSync: syncContent,
@@ -108,9 +108,9 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		}
 		dispatch( {
 			type: 'LOCK_STATUS_UPDATED',
-			payload: { isReadOnly },
+			payload: { isLockHolder },
 		} );
-	}, [ isReadOnly, currentUserId, postId ] );
+	}, [ isLockHolder, currentUserId, postId ] );
 
 	return {
 		state,

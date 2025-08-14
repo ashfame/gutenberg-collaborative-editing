@@ -6,8 +6,17 @@ import { lockEditor, releaseEditor } from "./utils";
 
 export const CollaborativeEditing = () => {
 	const { state, syncAwareness } = useDataManager();
+	const { isLockHolder } = state;
 
 	useEffect( () => {
+		if ( window.gce.collaborationMode === 'BLOCK-LEVEL-LOCKS' ) {
+			/**
+			 * Experimenting with not disabling autosaving in BLOCK-LEVEL-LOCKS
+			 * but if we need to know, that's the only thing we are to do
+			 */
+			return;
+		}
+
 		const editorElement = document.querySelector( '.editor-visual-editor' );
 
 		const release = () => {
@@ -21,7 +30,7 @@ export const CollaborativeEditing = () => {
 			wp.data.dispatch( 'core/editor' ).unlockPostAutosaving( 'collaborative-editing' );
 		};
 
-		if ( state.isReadOnly ) {
+		if ( ! isLockHolder ) {
 			document.body.classList.add( 'gutenberg-collaborative-editing-readonly' );
 			lockEditor( editorElement );
 			wp.data.dispatch( 'core/editor' ).lockPostSaving( 'collaborative-editing' );
@@ -31,7 +40,7 @@ export const CollaborativeEditing = () => {
 		}
 
 		return release;
-	}, [ state.isReadOnly ] );
+	}, [ isLockHolder ] );
 
 	return (
 		<>
@@ -39,7 +48,8 @@ export const CollaborativeEditing = () => {
 				awarenessState={ state.awareness }
 				syncAwareness={ syncAwareness }
 			/>
-			<ReadOnlyUI isReadOnly={ state.isReadOnly } />
+			{ window.gce.collaborationMode === 'READ-ONLY-FOLLOW' &&
+				<ReadOnlyUI isReadOnly={!isLockHolder} /> }
 		</>
 	);
 };

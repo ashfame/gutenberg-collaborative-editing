@@ -9,7 +9,7 @@ import { useMemo } from '@wordpress/element';
  *
  * @returns {{
  *   currentUserId: number | null,
- *   isReadOnly: boolean,
+ *   isLockHolder: boolean,
  *   postId: number,
  *   editorContent: {html: string, title: string}
  * }}
@@ -17,7 +17,7 @@ import { useMemo } from '@wordpress/element';
 export const useGutenbergState = () => {
 	const {
 		currentUserId,
-		isReadOnly,
+		isLockHolder,
 		postId,
 		editorContentHTML,
 		editorContentTitle,
@@ -48,7 +48,7 @@ export const useGutenbergState = () => {
 
 		return {
 			currentUserId,
-			isReadOnly,
+			isLockHolder: !isReadOnly,
 			postId,
 			editorContentHTML,
 			editorContentTitle,
@@ -65,7 +65,7 @@ export const useGutenbergState = () => {
 
 	return {
 		currentUserId,
-		isReadOnly,
+		isLockHolder,
 		postId,
 		editorContent,
 	};
