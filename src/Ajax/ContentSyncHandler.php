@@ -2,12 +2,15 @@
 
 namespace DotOrg\GCE\Ajax;
 
+use DotOrg\GCE\Admin;
 use DotOrg\GCE\Persistence\ContentRepository;
 
 class ContentSyncHandler {
 
 	public function handle() {
 		check_ajax_referer( 'gce_sync_content', 'nonce' );
+
+		$collaboration_mode = Admin\Settings::get()[ 'collaboration_mode' ];
 
 		$post_id     = intval( $_POST[ 'post_id' ] ?? 0 );
 		$fingerprint = $_POST[ 'fingerprint' ] ?? null;
@@ -24,7 +27,10 @@ class ContentSyncHandler {
 			wp_send_json_error( [ 'message' => 'Permission denied' ] );
 		}
 
-		if ( wp_check_post_lock( $post_id ) ) {
+		if (
+			$collaboration_mode === 'READ-ONLY-FOLLOW' &&
+			wp_check_post_lock( $post_id )
+		) {
 			wp_send_json_error( [ 'message' => 'Post is locked by another user' ] );
 		}
 

@@ -4,6 +4,7 @@ import { useTransportManager } from './useTransportManager';
 import { useContentSyncer } from './useContentSyncer';
 import { useDispatch } from '@wordpress/data';
 import { parse } from '@wordpress/blocks';
+import { useCollaborationMode } from './useCollaborationMode';
 
 const initialState = {
 	isLockHolder: false,
@@ -34,6 +35,8 @@ function reducer( state, action ) {
  * The single source of truth for the collaborative editing session.
  */
 export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
+	const [ collaborationMode, ] = useCollaborationMode();
+
 	// Get all required data in a single useSelect
 	const {
 		currentUserId,
@@ -96,7 +99,8 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	}, [ send ] );
 
 	useContentSyncer({
-		isReadOnly: ! isLockHolder,
+		collaborationMode,
+		isLockHolder,
 		postId,
 		editorContent,
 		onSync: syncContent,
@@ -113,6 +117,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	}, [ isLockHolder, currentUserId, postId ] );
 
 	return {
+		collaborationMode,
 		state,
 		syncAwareness
 	};

@@ -7,13 +7,15 @@ import { useEffect, useRef } from '@wordpress/element';
  * calls a sync function when the content has stabilized.
  *
  * @param {object}   config
- * @param {boolean}  config.isReadOnly   - Disables syncing if true.
+ * @param {string}   config.collaborationMode - The collaboration mode.
+ * @param {boolean}  config.isLockHolder  - Is user the lock holder.
  * @param {number}   config.postId       - The ID of the post.
  * @param {object}   config.editorContent - The current editor content.
  * @param {Function} config.onSync        - The function to call to sync the content.
  */
 export const useContentSyncer = ( {
-	isReadOnly,
+	collaborationMode,
+	isLockHolder,
 	postId,
 	editorContent,
 	onSync,
@@ -24,7 +26,11 @@ export const useContentSyncer = ( {
 	} );
 
 	useEffect( () => {
-		if ( isReadOnly || ! postId ) {
+		if ( ! postId ) {
+			return;
+		}
+
+		if ( collaborationMode === 'READ-ONLY-FOLLOW' && ! isLockHolder ) {
 			return;
 		}
 
@@ -43,7 +49,7 @@ export const useContentSyncer = ( {
 				onSync( editorContent );
 			}, 200 );
 		}
-	}, [ postId, editorContent, isReadOnly, onSync ] );
+	}, [ postId, editorContent, isLockHolder, onSync, collaborationMode ] );
 
 	// Cleanup timeout on unmount
 	useEffect( () => {

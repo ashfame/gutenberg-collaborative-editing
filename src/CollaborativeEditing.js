@@ -5,11 +5,11 @@ import { useEffect } from "@wordpress/element";
 import { lockEditor, releaseEditor } from "./utils";
 
 export const CollaborativeEditing = () => {
-	const { state, syncAwareness } = useDataManager();
+	const { collaborationMode, state, syncAwareness } = useDataManager();
 	const { isLockHolder } = state;
 
 	useEffect( () => {
-		if ( window.gce.collaborationMode === 'BLOCK-LEVEL-LOCKS' ) {
+		if ( collaborationMode === 'BLOCK-LEVEL-LOCKS' ) {
 			/**
 			 * Experimenting with not disabling autosaving in BLOCK-LEVEL-LOCKS
 			 * but if we need to know, that's the only thing we are to do
@@ -40,7 +40,7 @@ export const CollaborativeEditing = () => {
 		}
 
 		return release;
-	}, [ isLockHolder ] );
+	}, [ isLockHolder, collaborationMode ] );
 
 	return (
 		<>
@@ -48,7 +48,7 @@ export const CollaborativeEditing = () => {
 				awarenessState={ state.awareness }
 				syncAwareness={ syncAwareness }
 			/>
-			{ window.gce.collaborationMode === 'READ-ONLY-FOLLOW' &&
+			{ collaborationMode === 'READ-ONLY-FOLLOW' &&
 				<ReadOnlyUI isReadOnly={!isLockHolder} /> }
 		</>
 	);
