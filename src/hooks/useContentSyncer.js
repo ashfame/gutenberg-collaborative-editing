@@ -11,6 +11,8 @@ import { useEffect, useRef } from '@wordpress/element';
  * @param {boolean}  config.isLockHolder  - Is user the lock holder.
  * @param {number}   config.postId       - The ID of the post.
  * @param {object}   config.editorContent - The current editor content.
+ * @param {string}   config.blockContent  - The current block content.
+ * @param {object}   config.cursorState  - The current cursor state.
  * @param {Function} config.onSync        - The function to call to sync the content.
  */
 export const useContentSyncer = ( {
@@ -18,6 +20,8 @@ export const useContentSyncer = ( {
 	isLockHolder,
 	postId,
 	editorContent,
+	blockContent,
+	cursorState,
 	onSync,
 } ) => {
 	const syncState = useRef( {
@@ -25,8 +29,13 @@ export const useContentSyncer = ( {
 		lastContent: '',
 	} );
 
+	// For full content sync every-time
 	useEffect( () => {
 		if ( ! postId ) {
+			return;
+		}
+
+		if ( collaborationMode !== 'READ-ONLY-FOLLOW' ) {
 			return;
 		}
 
@@ -46,10 +55,44 @@ export const useContentSyncer = ( {
 
 			// Schedule sync after 200ms delay
 			syncState.current.timeoutId = setTimeout( () => {
-				onSync( editorContent );
+				onSync( { content: editorContent } );
 			}, 200 );
 		}
 	}, [ postId, editorContent, isLockHolder, onSync, collaborationMode ] );
+
+	// For block-level content sync
+	useEffect( () => {
+		if ( ! postId ) {
+			return;
+		}
+
+		if ( collaborationMode !== 'BLOCK-LEVEL-LOCKS' ) {
+			return;
+		}
+
+		if ( ! cursorState || cursorState && cursorState.blockIndex === undefined ) {
+			return;
+		}
+
+		const contentStr = blockContent;
+
+		if ( contentStr !== syncState.current.lastContent ) {
+			syncState.current.lastContent = contentStr;
+
+			// Clear existing timeout
+			if ( syncState.current.timeoutId ) {
+				clearTimeout( syncState.current.timeoutId );
+			}
+
+			// Schedule sync after 200ms delay
+			syncState.current.timeoutId = setTimeout( () => {
+				onSync( {
+					content: blockContent,
+					blockIndex: cursorState.blockIndex,
+				} );
+			}, 200 );
+		}
+	}, [ postId, blockContent, cursorState, onSync, collaborationMode ] );
 
 	// Cleanup timeout on unmount
 	useEffect( () => {

@@ -16,6 +16,40 @@ class ContentRepository {
 		set_transient( $transient_key, $sync_data, HOUR_IN_SECONDS );
 	}
 
+	public function update_block( $post_id, $user_id, $fingerprint, $block_index, $content ) {
+		$transient_key = "gce_sync_content_{$post_id}";
+		$sync_data = $this->get( $post_id );
+
+		if ( false === $sync_data ) {
+			// ensure we have a full copy of the content
+			$this->save(
+				$post_id,
+				$user_id,
+				$fingerprint,
+				get_post( $post_id )->post_content
+			);
+			$sync_data = $this->get( $post_id );
+		}
+
+		$parsed_blocks = array_values( array_filter(
+			parse_blocks( $sync_data['content'] ),
+			function ( $block ) use ( $block_index ) {
+				return !empty( $block['blockName'] );
+			}
+		) );
+
+		$parsed_blocks[ $block_index ] = parse_blocks( $content )[0];
+
+		$sync_data = [
+			'content'     => serialize_blocks( $parsed_blocks ),
+			'timestamp'   => microtime( true ),
+			'post_id'     => $post_id,
+			'user_id'     => $user_id,
+			'fingerprint' => $fingerprint,
+		];
+		set_transient( $transient_key, $sync_data, HOUR_IN_SECONDS );
+	}
+
 	public function get( $post_id ) {
 		global $wpdb;
 

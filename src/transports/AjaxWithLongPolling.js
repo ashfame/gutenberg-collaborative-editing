@@ -3,7 +3,7 @@ import { pollForUpdates, syncContent, syncAwareness } from '../api';
 /**
  * Creates a Long Polling transport layer.
  *
- * @param {object} postId The initial data for the transport.
+ * @param {number} postId The initial data for the transport.
  * @returns {import('./types').ITransport} An ITransport-compliant object.
  */
 export const AjaxWithLongPollingTransport = ( { postId } ) => {
@@ -68,11 +68,16 @@ export const AjaxWithLongPollingTransport = ( { postId } ) => {
 		 */
 		send: async ( action ) => {
 			switch ( action.type ) {
-				case 'content':
-					return syncContent( postId, action.payload );
-				case 'awareness':
-					await syncAwareness( postId, action.payload );
-					return;
+				case 'content': {
+					return syncContent(
+						postId,
+						action.payload.content,
+						action.payload.blockIndex
+					);
+				}
+				case 'awareness': {
+					return syncAwareness( postId, action.payload );
+				}
 				default:
 					return Promise.resolve();
 			}

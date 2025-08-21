@@ -1,5 +1,6 @@
 import { useSelect } from '@wordpress/data';
 import { useMemo } from '@wordpress/element';
+import { getCursorState } from "../utils";
 
 /**
  * A hook to fetch and consolidate all necessary state from the Gutenberg editor.
@@ -11,6 +12,8 @@ import { useMemo } from '@wordpress/element';
  *   currentUserId: number | null,
  *   isLockHolder: boolean,
  *   editorContent: {html: string, title: string}
+ *   blockContent: string | null,
+ *   cursorState: CursorState | null
  * }}
  */
 export const useGutenbergState = () => {
@@ -57,9 +60,22 @@ export const useGutenbergState = () => {
 		[ editorContentHTML, editorContentTitle ]
 	);
 
+	const cursorState = getCursorState();
+
+	let blockContent = null;
+	if ( cursorState && 'blockIndex' in cursorState ) {
+		const block = window.wp?.data?.select( 'core/block-editor' )
+			.getBlocks()[ cursorState.blockIndex ];
+		if ( block ) {
+			blockContent = window.wp?.blocks?.serialize( block );
+		}
+	}
+
 	return {
 		currentUserId,
 		isLockHolder,
 		editorContent,
+		blockContent,
+		cursorState,
 	};
 };

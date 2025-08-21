@@ -7,10 +7,11 @@
  *
  * @param {number} postId  The ID of the post.
  * @param {object} content The content to sync.
+ * @param {number} [blockIndex] The index of the block to sync, if content is meant for the block as opposed to the full post content.
  * @returns {Promise<void>}
  * @throws {Error} If the sync fails.
  */
-export const syncContent = async (postId, content) => {
+export const syncContent = async (postId, content, blockIndex) => {
 	if (!window.gce || !postId) return;
 
 	try {
@@ -18,6 +19,7 @@ export const syncContent = async (postId, content) => {
 		formData.append('action', window.gce.syncContentAction);
 		formData.append('nonce', window.gce.syncContentNonce);
 		formData.append('post_id', postId);
+		blockIndex !== undefined && formData.append('block_index', blockIndex);
 		formData.append('fingerprint', window.gce.fingerprint);
 		formData.append('content', JSON.stringify(content));
 

@@ -42,6 +42,8 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		currentUserId,
 		isLockHolder,
 		editorContent,
+		blockContent,
+		cursorState
 	} = useGutenbergState();
 
 	const postId = window.gce.postId;
@@ -56,6 +58,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 				return;
 			}
 
+			console.info( 'Data received from transport:', data );
 			const { awareness, content, modified } = data;
 
 			if ( modified && content ) {
@@ -65,13 +68,28 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 					receivedContent.content &&
 					receivedContent.content.html
 				) {
+					resetBlocks( parse( receivedContent.content.html ) );
 					editPost( {
 						content: receivedContent.content.html,
 						title: receivedContent.content.title || '',
 					} );
-					resetBlocks( parse( receivedContent.content.html ) );
+					console.info( 'Content updated from collaborator 🌗' );
 
-					console.info( 'Content updated from collaborator' );
+				} else if (
+					receivedContent.content &&
+					typeof receivedContent.content === 'string'
+				) {
+					/**
+					 * We will probably need to swap out just the block
+					 * but for now still returning the entire content and replacing the entire content
+					 * seems to work, even thought clients are only sending the block they changed.
+					 */
+					resetBlocks( parse( receivedContent.content ) );
+					editPost( {
+						content: receivedContent.content,
+					} );
+					console.info( 'Content updated from collaborator 🌓' );
+
 				}
 			}
 
@@ -92,11 +110,11 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		send( { type: 'awareness', payload: awareness } );
 	};
 
-	const syncContent = useCallback( ( content ) => {
+	const syncContent = useCallback( ( payload ) => {
 		if ( ! document.hasFocus() ) {
 			return;
 		}
-		send( { type: 'content', payload: content } );
+		send( { type: 'content', payload } );
 	}, [ send ] );
 
 	useContentSyncer({
@@ -104,6 +122,8 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		isLockHolder,
 		postId,
 		editorContent,
+		blockContent,
+		cursorState,
 		onSync: syncContent,
 	});
 
