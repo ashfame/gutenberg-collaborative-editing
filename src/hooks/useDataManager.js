@@ -7,6 +7,83 @@ import { parse, serialize } from '@wordpress/blocks';
 import { useCollaborationMode } from './useCollaborationMode';
 import { getCursorState, mergeBlocks } from '../utils';
 
+const restoreSelection = ( state, resetSelection ) => {
+	if ( ! state ) {
+		return;
+	}
+
+	setTimeout( () => {
+		const newBlockOrder = wp.data
+			.select( 'core/block-editor' )
+			.getBlockOrder();
+
+		// Handles multi-block selection
+		if (
+			typeof state.blockIndexStart !== 'undefined' &&
+			state.blockIndexStart !== -1 &&
+			state.blockIndexEnd !== -1 &&
+			state.blockIndexStart < newBlockOrder.length &&
+			state.blockIndexEnd < newBlockOrder.length
+		) {
+			const newStartClientId =
+				newBlockOrder[ state.blockIndexStart ];
+			const newEndClientId =
+				newBlockOrder[ state.blockIndexEnd ];
+			resetSelection(
+				{
+					clientId: newStartClientId,
+					offset: state.cursorPosStart,
+				},
+				{
+					clientId: newEndClientId,
+					offset: state.cursorPosEnd,
+				}
+			);
+			return; // exit after handling
+		}
+
+		// Handles single-block selection (collapsed or ranged)
+		if (
+			typeof state.blockIndex !== 'undefined' &&
+			state.blockIndex !== -1 &&
+			state.blockIndex < newBlockOrder.length
+		) {
+			const newClientId = newBlockOrder[ state.blockIndex ];
+			if (
+				newClientId &&
+				typeof state.cursorPosStart !== 'undefined'
+			) {
+				// Ranged selection in a single block
+				resetSelection(
+					{
+						clientId: newClientId,
+						offset: state.cursorPosStart,
+					},
+					{
+						clientId: newClientId,
+						offset: state.cursorPosEnd,
+					}
+				);
+			} else if (
+				newClientId &&
+				typeof state.cursorPos !== 'undefined'
+			) {
+				// Collapsed cursor in a single block
+				resetSelection(
+					{
+						clientId: newClientId,
+						offset: state.cursorPos,
+					},
+					{
+						clientId: newClientId,
+						offset: state.cursorPos,
+					}
+				);
+			}
+		}
+	}, 0 );
+};
+
 const initialState = {
 	isLockHolder: false,
 	awareness: {},
@@ -59,119 +136,11 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 				return;
 			}
 
-			const restoreSelection = ( state ) => {
-				if ( ! state ) {
-					return;
-				}
-
-				setTimeout( () => {
-					const newBlockOrder = wp.data
-						.select( 'core/block-editor' )
-						.getBlockOrder();
-
-					let newClientId, newStartClientId, newEndClientId;
-
-					if ( state.anchorName && state.anchorAttributes ) {
-						const newBlocks = wp.data.select( 'core/block-editor' ).getBlocks();
-						const newAnchorBlock = newBlocks.find( b =>
-							b.name === state.anchorName &&
-							JSON.stringify( b.attributes ) === state.anchorAttributes
-						);
-						if ( newAnchorBlock ) {
-							newClientId = newAnchorBlock.clientId;
-						}
-					}
-
-					// Handles multi-block selection
-					if (
-						typeof state.blockIndexStart !== 'undefined' &&
-						state.blockIndexStart !== -1 &&
-						state.blockIndexEnd !== -1 &&
-						state.blockIndexStart < newBlockOrder.length &&
-						state.blockIndexEnd < newBlockOrder.length
-					) {
-						newStartClientId =
-							newBlockOrder[ state.blockIndexStart ];
-						newEndClientId =
-							newBlockOrder[ state.blockIndexEnd ];
-						console.log(
-							'Restoring multi-block selection:',
-							state
-						);
-						resetSelection(
-							{
-								clientId: newStartClientId,
-								offset: state.cursorPosStart,
-							},
-							{
-								clientId: newEndClientId,
-								offset: state.cursorPosEnd,
-							}
-						);
-						return; // exit after handling
-					}
-
-					// Handles single-block selection (collapsed or ranged)
-					if (
-						typeof state.blockIndex !== 'undefined' &&
-						state.blockIndex !== -1 &&
-						state.blockIndex < newBlockOrder.length
-					) {
-						if ( ! newClientId ) {
-							newClientId = newBlockOrder[ state.blockIndex ];
-						}
-						if ( newClientId && typeof state.cursorPosStart !== 'undefined' ) {
-							// Ranged selection in a single block
-							console.log(
-								'Restoring ranged selection in a single block:',
-								state
-							);
-							resetSelection(
-								{
-									clientId: newClientId,
-									offset: state.cursorPosStart,
-								},
-								{
-									clientId: newClientId,
-									offset: state.cursorPosEnd,
-								}
-							);
-						} else if ( newClientId && typeof state.cursorPos !== 'undefined' ) {
-							// Collapsed cursor in a single block
-							console.log(
-								'Restoring collapsed cursor in a single block:',
-								state
-							);
-							resetSelection(
-								{
-									clientId: newClientId,
-									offset: state.cursorPos,
-								},
-								{
-									clientId: newClientId,
-									offset: state.cursorPos,
-								}
-							);
-						}
-					}
-				}, 0 );
-			};
-
-			console.info( 'Data received from transport:', data );
 			const { awareness, content, modified } = data;
 
 			if ( modified && content ) {
 				const receivedContent = content;
 				const cursorState = getCursorState();
-
-				if ( cursorState && typeof cursorState.blockIndex !== 'undefined' && cursorState.blockIndex !== -1 ) {
-					const blocks = wp.data.select( 'core/block-editor' ).getBlocks();
-					const anchorBlock = blocks[ cursorState.blockIndex ];
-					if ( anchorBlock ) {
-						cursorState.anchorAttributes = JSON.stringify( anchorBlock.attributes );
-						cursorState.anchorName = anchorBlock.name;
-					}
-				}
 
 				if (
 					receivedContent.content &&
@@ -183,7 +152,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 						title: receivedContent.content.title || '',
 					} );
 					console.info( 'Content updated from collaborator 🌗' );
-					restoreSelection( cursorState );
+					restoreSelection( cursorState, resetSelection );
 				} else if (
 					receivedContent.content &&
 					typeof receivedContent.content === 'string'
@@ -205,7 +174,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 						content: serialize( blocksToSet ),
 					} );
 					console.info( 'Content updated from collaborator 🌓' );
-					restoreSelection( cursorState );
+					restoreSelection( cursorState, resetSelection );
 				}
 			}
 
@@ -213,7 +182,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 				dispatch( { type: 'SET_AWARENESS', payload: { awareness } } );
 			}
 		},
-		[ editPost, resetSelection, editorContent ]
+		[ editPost, resetSelection, editorContent, resetBlocks, dispatch ]
 	);
 
 	const { send } = useTransportManager( {
