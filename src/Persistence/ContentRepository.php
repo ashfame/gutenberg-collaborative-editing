@@ -31,8 +31,10 @@ class ContentRepository {
 			$sync_data = $this->get( $post_id );
 		}
 
+		// Note: $sync_data can still be false here if the post_content is empty
+
 		$parsed_blocks = array_values( array_filter(
-			parse_blocks( $sync_data['content'] ),
+			parse_blocks( $sync_data['content'] ?? '' ),
 			function ( $block ) use ( $block_index ) {
 				return !empty( $block['blockName'] );
 			}
