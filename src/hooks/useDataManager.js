@@ -84,6 +84,64 @@ const restoreSelection = ( state, resetSelection ) => {
 	}, 0 );
 };
 
+const handleDataReceived = ( data, dependencies ) => {
+	if ( ! data ) {
+		return;
+	}
+
+	const { awareness, content, modified } = data;
+	const {
+		editPost,
+		resetBlocks,
+		resetSelection,
+		dispatch,
+	} = dependencies;
+
+	if ( modified && content ) {
+		const receivedContent = content;
+		const cursorState = getCursorState();
+
+		if (
+			receivedContent.content &&
+			receivedContent.content.html
+		) {
+			resetBlocks( parse( receivedContent.content.html ) );
+			editPost( {
+				content: receivedContent.content.html,
+				title: receivedContent.content.title || '',
+			} );
+			console.info( 'Content updated from collaborator 🌗' );
+			restoreSelection( cursorState, resetSelection );
+		} else if (
+			receivedContent.content &&
+			typeof receivedContent.content === 'string'
+		) {
+			const receivedBlocks = parse( receivedContent.content );
+			const existingBlocks = wp.data
+				.select( 'core/block-editor' )
+				.getBlocks();
+			const engagedBlockIndex = cursorState?.blockIndex;
+
+			const blocksToSet = mergeBlocks(
+				existingBlocks,
+				receivedBlocks,
+				engagedBlockIndex
+			);
+
+			resetBlocks( blocksToSet );
+			editPost( {
+				content: serialize( blocksToSet ),
+			} );
+			console.info( 'Content updated from collaborator 🌓' );
+			restoreSelection( cursorState, resetSelection );
+		}
+	}
+
+	if ( awareness ) {
+		dispatch( { type: 'SET_AWARENESS', payload: { awareness } } );
+	}
+};
+
 const initialState = {
 	isLockHolder: false,
 	awareness: {},
@@ -130,65 +188,22 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	const { editPost } = useDispatch( 'core/editor' );
 	const { resetBlocks, resetSelection } = useDispatch( 'core/block-editor' );
 
-	const handleDataReceived = useCallback(
+	const onDataReceived = useCallback(
 		( data ) => {
-			if ( ! data ) {
-				return;
-			}
-
-			const { awareness, content, modified } = data;
-
-			if ( modified && content ) {
-				const receivedContent = content;
-				const cursorState = getCursorState();
-
-				if (
-					receivedContent.content &&
-					receivedContent.content.html
-				) {
-					resetBlocks( parse( receivedContent.content.html ) );
-					editPost( {
-						content: receivedContent.content.html,
-						title: receivedContent.content.title || '',
-					} );
-					console.info( 'Content updated from collaborator 🌗' );
-					restoreSelection( cursorState, resetSelection );
-				} else if (
-					receivedContent.content &&
-					typeof receivedContent.content === 'string'
-				) {
-					const receivedBlocks = parse( receivedContent.content );
-					const existingBlocks = wp.data
-						.select( 'core/block-editor' )
-						.getBlocks();
-					const engagedBlockIndex = cursorState?.blockIndex;
-
-					const blocksToSet = mergeBlocks(
-						existingBlocks,
-						receivedBlocks,
-						engagedBlockIndex
-					);
-
-					resetBlocks( blocksToSet );
-					editPost( {
-						content: serialize( blocksToSet ),
-					} );
-					console.info( 'Content updated from collaborator 🌓' );
-					restoreSelection( cursorState, resetSelection );
-				}
-			}
-
-			if ( awareness ) {
-				dispatch( { type: 'SET_AWARENESS', payload: { awareness } } );
-			}
+			handleDataReceived( data, {
+				editPost,
+				resetBlocks,
+				resetSelection,
+				dispatch,
+			} );
 		},
-		[ editPost, resetSelection, editorContent, resetBlocks, dispatch ]
+		[ editPost, resetBlocks, resetSelection, dispatch ]
 	);
 
 	const { send } = useTransportManager( {
 		transport,
 		postId,
-		onDataReceived: handleDataReceived,
+		onDataReceived,
 	} );
 
 	const syncAwareness = ( awareness ) => {
