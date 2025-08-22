@@ -106,3 +106,27 @@ export const getCursorState = () => {
 		};
 	}
 };
+
+/**
+ * Merges incoming blocks with existing blocks, preserving the engaged block.
+ *
+ * @param {Array} existingBlocks    The current blocks in the editor.
+ * @param {Array} receivedBlocks    The new blocks received from the transport.
+ * @param {number} engagedBlockIndex The index of the block currently being edited.
+ * @returns {Array} The merged set of blocks.
+ */
+export const mergeBlocks = ( existingBlocks, receivedBlocks, engagedBlockIndex ) => {
+	let blocksToSet = receivedBlocks;
+
+	if ( engagedBlockIndex !== undefined && engagedBlockIndex > -1 && existingBlocks[ engagedBlockIndex ] ) {
+		const engagedBlock = existingBlocks[ engagedBlockIndex ];
+		if ( blocksToSet.length > engagedBlockIndex ) {
+			blocksToSet[ engagedBlockIndex ] = engagedBlock;
+		} else {
+			// If the engaged block is outside the new set of blocks, append it.
+			blocksToSet.push( engagedBlock );
+		}
+	}
+
+	return blocksToSet;
+};

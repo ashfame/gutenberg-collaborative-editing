@@ -5,7 +5,7 @@ import { useContentSyncer } from './useContentSyncer';
 import { useDispatch } from '@wordpress/data';
 import { parse, serialize } from '@wordpress/blocks';
 import { useCollaborationMode } from './useCollaborationMode';
-import { getCursorState } from '../utils';
+import { getCursorState, mergeBlocks } from '../utils';
 
 const initialState = {
 	isLockHolder: false,
@@ -189,17 +189,16 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 					typeof receivedContent.content === 'string'
 				) {
 					const receivedBlocks = parse( receivedContent.content );
-					const existingBlocks = wp.data.select( 'core/block-editor' ).getBlocks();
+					const existingBlocks = wp.data
+						.select( 'core/block-editor' )
+						.getBlocks();
 					const engagedBlockIndex = cursorState?.blockIndex;
 
-					let blocksToSet = receivedBlocks;
-
-					if ( engagedBlockIndex !== undefined && engagedBlockIndex > -1 && existingBlocks[ engagedBlockIndex ] ) {
-						const engagedBlock = existingBlocks[ engagedBlockIndex ];
-						if ( blocksToSet.length > engagedBlockIndex ) {
-							blocksToSet[ engagedBlockIndex ] = engagedBlock;
-						}
-					}
+					const blocksToSet = mergeBlocks(
+						existingBlocks,
+						receivedBlocks,
+						engagedBlockIndex
+					);
 
 					resetBlocks( blocksToSet );
 					editPost( {
