@@ -56,7 +56,7 @@ class ContentSyncHandler {
 
 		wp_send_json_success(
 			[
-				'timestamp' => microtime( true ),
+				'timestamp' => $repo->get_last_saved_at( $post_id ),
 				'message'   => 'Content synced successfully',
 			]
 		);

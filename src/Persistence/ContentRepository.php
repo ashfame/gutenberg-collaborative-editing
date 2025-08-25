@@ -17,7 +17,6 @@ class ContentRepository {
 	}
 
 	public function update_block( $post_id, $user_id, $fingerprint, $block_index, $content ) {
-		$transient_key = "gce_sync_content_{$post_id}";
 		$sync_data = $this->get( $post_id );
 
 		if ( false === $sync_data ) {
@@ -31,8 +30,6 @@ class ContentRepository {
 			$sync_data = $this->get( $post_id );
 		}
 
-		// Note: $sync_data can still be false here if the post_content is empty
-
 		$parsed_blocks = array_values( array_filter(
 			parse_blocks( $sync_data['content'] ?? '' ),
 			function ( $block ) use ( $block_index ) {
@@ -42,14 +39,12 @@ class ContentRepository {
 
 		$parsed_blocks[ $block_index ] = parse_blocks( $content )[0];
 
-		$sync_data = [
-			'content'     => serialize_blocks( $parsed_blocks ),
-			'timestamp'   => microtime( true ),
-			'post_id'     => $post_id,
-			'user_id'     => $user_id,
-			'fingerprint' => $fingerprint,
-		];
-		set_transient( $transient_key, $sync_data, HOUR_IN_SECONDS );
+		$this->save(
+			$post_id,
+			$user_id,
+			$fingerprint,
+			serialize_blocks( $parsed_blocks )
+		);
 	}
 
 	public function get( $post_id ) {
@@ -66,6 +61,11 @@ class ContentRepository {
 			)
 		);
 		return $value ? unserialize( $value ) : false;
+	}
+
+	public function get_last_saved_at( $post_id ) {
+		$sync_data = $this->get( $post_id );
+		return $sync_data ? $sync_data['timestamp'] : false;
 	}
 
 	public function cleanup() {
