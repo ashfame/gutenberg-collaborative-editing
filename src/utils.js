@@ -110,13 +110,24 @@ export const getCursorState = () => {
 /**
  * Merges incoming blocks with existing blocks, preserving the engaged block.
  *
- * @param {Array} existingBlocks    The current blocks in the editor.
- * @param {Array} receivedBlocks    The new blocks received from the transport.
+ * This function treats the `receivedBlocks` as the new source of truth for the
+ * document structure. It then re-inserts the user's currently "engaged" block
+ * back into the set at its original index. This preserves the user's work on
+ * that block while accepting structural changes (additions/deletions) from
+ * collaborators.
+ *
+ * If the `engagedBlockIndex` is outside the bounds of the `receivedBlocks`
+ * (e.g., the block was part of a section deleted by a collaborator), the
+ * engaged block is appended to the end of the set.
+ *
+ * @param {Array}  existingBlocks    The current blocks in the editor.
+ * @param {Array}  receivedBlocks    The new blocks received from the transport.
  * @param {number} engagedBlockIndex The index of the block currently being edited.
  * @returns {Array} The merged set of blocks.
  */
 export const mergeBlocks = ( existingBlocks, receivedBlocks, engagedBlockIndex ) => {
-	let blocksToSet = receivedBlocks;
+	// Create a mutable copy of the received blocks.
+	const blocksToSet = [ ...receivedBlocks ];
 
 	if ( engagedBlockIndex !== undefined && engagedBlockIndex > -1 && existingBlocks[ engagedBlockIndex ] ) {
 		const engagedBlock = existingBlocks[ engagedBlockIndex ];
