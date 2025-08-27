@@ -1,3 +1,4 @@
+import logger from './logger';
 /**
  * @typedef {import('./utils').CursorState} CursorState
  */
@@ -13,6 +14,8 @@
  */
 export const syncContent = async (postId, content, blockIndex) => {
 	if (!window.gce || !postId) return;
+
+	logger.debug('syncContent called with:', {content, blockIndex});
 
 	try {
 		const formData = new FormData();
@@ -33,13 +36,14 @@ export const syncContent = async (postId, content, blockIndex) => {
 		}
 
 		const result = await response.json();
-		if ( !result.success ) {
+		if (!result.success) {
 			throw new Error(result.data.message);
 		}
 		window.gce.snapshotId = result.data.snapshot_id;
+		logger.debug('syncContent successful:', result.data);
 
 	} catch (error) {
-		console.error('Failed to sync content:', error);
+		logger.error('Failed to sync content:', error);
 		throw error;
 	}
 };
@@ -54,6 +58,8 @@ export const syncContent = async (postId, content, blockIndex) => {
  */
 export const syncAwareness = async (postId, cursorState) => {
 	if (!window.gce || !postId) return null;
+
+	logger.debug('syncAwareness called with cursorState:', cursorState);
 
 	try {
 		const formData = new FormData();
@@ -72,13 +78,13 @@ export const syncAwareness = async (postId, cursorState) => {
 		}
 
 		const result = await response.json();
-		if ( !result.success ) {
+		if (!result.success) {
 			throw new Error(result.data.message);
 		}
 
 		return cursorState;
 	} catch (error) {
-		console.error('Failed to sync awareness:', error);
+		logger.error('Failed to sync awareness:', error);
 		throw error;
 	}
 };
@@ -94,6 +100,8 @@ export const syncAwareness = async (postId, cursorState) => {
  */
 export const pollForUpdates = async (postId, lastTimestamp, awarenessData) => {
 	if (!window.gce || !postId) return null;
+
+	logger.debug('pollForUpdates called with:', {lastTimestamp, awarenessData});
 
 	try {
 		const url = new URL(window.gce.ajaxUrl);
@@ -122,14 +130,14 @@ export const pollForUpdates = async (postId, lastTimestamp, awarenessData) => {
 		}
 
 		const result = await response.json();
-		if ( !result.success ) {
+		if (!result.success) {
 			throw new Error(result.data?.message || 'Polling request was not successful.');
 		}
 
+		logger.debug('pollForUpdates successful:', result.data);
 		return result.data;
 	} catch (error) {
-		console.error('Long polling error:', error);
-		// Re-throw the error to be caught by the caller
+		logger.error('Long polling error:', error);
 		throw error;
 	}
-}; 
+};
