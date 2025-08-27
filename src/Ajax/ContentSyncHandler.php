@@ -4,6 +4,7 @@ namespace DotOrg\GCE\Ajax;
 
 use DotOrg\GCE\Admin;
 use DotOrg\GCE\Persistence\ContentRepository;
+use DotOrg\GCE\Persistence\SnapshotIdRepository;
 
 class ContentSyncHandler {
 
@@ -38,14 +39,14 @@ class ContentSyncHandler {
 		$repo = new ContentRepository();
 
 		if ( $block_index === -1 ) {
-			$repo->save(
+			$snapshot_id = $repo->save(
 				$post_id,
 				get_current_user_id(),
 				$fingerprint,
 				$content
 			);
 		} else {
-			$repo->update_block(
+			$snapshot_id = $repo->update_block(
 				$post_id,
 				get_current_user_id(),
 				$fingerprint,
@@ -54,10 +55,14 @@ class ContentSyncHandler {
 			);
 		}
 
+		// Since the user saved the content, we treat this as a declaration of this state of content
+		SnapshotIdRepository::save( $post_id, $snapshot_id );
+
 		wp_send_json_success(
 			[
-				'timestamp' => $repo->get_last_saved_at( $post_id ),
-				'message'   => 'Content synced successfully',
+				'timestamp'   => $repo->get_last_saved_at( $post_id ),
+				'snapshot_id' => $snapshot_id,
+				'message'     => 'Content synced successfully',
 			]
 		);
 	}

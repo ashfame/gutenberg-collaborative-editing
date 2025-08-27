@@ -20,12 +20,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once __DIR__ . '/src/Plugin.php';
 require_once __DIR__ . '/src/Persistence/AwarenessStateRepository.php';
 require_once __DIR__ . '/src/Persistence/ContentRepository.php';
+require_once __DIR__ . '/src/Persistence/SnapshotIdRepository.php';
 require_once __DIR__ . '/src/Ajax/AwarenessSyncHandler.php';
 require_once __DIR__ . '/src/Ajax/ContentSyncHandler.php';
 require_once __DIR__ . '/src/Ajax/PollingHandler.php';
 require_once __DIR__ . '/src/Ajax/AjaxRegistry.php';
 require_once __DIR__ . '/src/EditorAssets.php';
 require_once __DIR__ . '/src/Cron.php';
+require_once __DIR__ . '/src/Utils.php';
 require_once __DIR__ . '/src/HeartbeatListener.php';
 require_once __DIR__ . '/src/Admin/Settings.php';
 

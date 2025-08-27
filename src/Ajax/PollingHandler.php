@@ -4,6 +4,7 @@ namespace DotOrg\GCE\Ajax;
 
 use DotOrg\GCE\Persistence\AwarenessStateRepository;
 use DotOrg\GCE\Persistence\ContentRepository;
+use DotOrg\GCE\Persistence\SnapshotIdRepository;
 
 class PollingHandler {
 
@@ -41,13 +42,18 @@ class PollingHandler {
 		$content_repo   = new ContentRepository();
 		$awareness_repo = new AwarenessStateRepository();
 
+		$declared_snaphost_ids = SnapshotIdRepository::get( $post_id );
+
 		while ( ( microtime( true ) - $start_time ) < $max_wait ) {
 			wp_cache_delete( $post_id, 'post_meta' ); // for Awareness
 
 			$sync_data = $content_repo->get( $post_id );
 			if (
 				$sync_data &&
-				$sync_data[ 'fingerprint' ] !== $fingerprint &&
+				(
+					$sync_data[ 'fingerprint' ] !== $fingerprint ||
+					$declared_snaphost_ids[ get_current_user_id() ] !== $sync_data[ 'snapshot_id']
+				) &&
 				floatval( $sync_data[ 'timestamp' ] ) > $last_timestamp
 			) {
 				wp_send_json_success(

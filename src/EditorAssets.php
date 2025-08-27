@@ -3,6 +3,7 @@
 namespace DotOrg\GCE;
 
 use DotOrg\GCE\Persistence\AwarenessStateRepository;
+use DotOrg\GCE\Persistence\SnapshotIdRepository;
 
 class EditorAssets {
 
@@ -34,9 +35,10 @@ class EditorAssets {
 			[
 				'ajaxUrl'             => admin_url( 'admin-ajax.php' ),
 				'postId'              => get_the_ID(),
+				'snapshotId'          => SnapshotIdRepository::getOwn( get_the_ID() ),
 				'currentUserId'       => get_current_user_id(),
 				'gce_enabled'         => true, // TODO: Introduce a filter here as per note in README
-				'fingerprint'         => $this->generateFingerprint(),
+				'fingerprint'         => Utils::generateFingerprint(),
 				'syncContentNonce'    => wp_create_nonce( 'gce_sync_content' ),
 				'syncAwarenessNonce'  => wp_create_nonce( 'gce_sync_awareness' ),
 				'pollNonce'           => wp_create_nonce( 'gce_poll' ),
@@ -65,13 +67,4 @@ class EditorAssets {
 		}
 	}
 
-	private function generateFingerprint( $length = 10 ) {
-		$characters       = 'abcdefghijklmnopqrstuvwxyz';
-		$charactersLength = strlen( $characters );
-		$randomString     = '';
-		for ( $i = 0; $i < $length; $i++ ) {
-			$randomString .= $characters[ random_int( 0, $charactersLength - 1 ) ];
-		}
-		return $randomString;
-	}
 }

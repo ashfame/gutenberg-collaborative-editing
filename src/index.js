@@ -14,5 +14,6 @@ domReady( () => {
 if ( window.gce && window.gce.postId ) {
 	jQuery( document ).on( 'heartbeat-send', function ( event, data ) {
 		data.gce_post_id = window.gce.postId;
+		data.snapshot_id = window.gce.snapshotId;
 	} );
 }

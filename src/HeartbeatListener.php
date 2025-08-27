@@ -3,6 +3,7 @@
 namespace DotOrg\GCE;
 
 use DotOrg\GCE\Persistence\AwarenessStateRepository;
+use DotOrg\GCE\Persistence\SnapshotIdRepository;
 
 class HeartbeatListener {
 	public function __construct() {
@@ -21,6 +22,10 @@ class HeartbeatListener {
 
 		$repo = new AwarenessStateRepository();
 		$repo->update_user_heartbeat( get_current_user_id(), $post_id );
+
+		if ( ! empty( $data[ 'snapshot_id' ] ) ) {
+			SnapshotIdRepository::save( $post_id, $data[ 'snapshot_id' ] );
+		}
 
 		$response[ 'gce_awareness' ] = $repo->get( $post_id );
 

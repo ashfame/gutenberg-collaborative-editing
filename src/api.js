@@ -36,6 +36,7 @@ export const syncContent = async (postId, content, blockIndex) => {
 		if ( !result.success ) {
 			throw new Error(result.data.message);
 		}
+		window.gce.snapshotId = result.data.snapshot_id;
 
 	} catch (error) {
 		console.error('Failed to sync content:', error);

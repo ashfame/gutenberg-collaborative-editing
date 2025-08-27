@@ -2,6 +2,8 @@
 
 namespace DotOrg\GCE\Persistence;
 
+use DotOrg\GCE\Utils;
+
 class ContentRepository {
 
 	public function save( $post_id, $user_id, $fingerprint, $content ) {
@@ -12,8 +14,11 @@ class ContentRepository {
 			'post_id'     => $post_id,
 			'user_id'     => $user_id,
 			'fingerprint' => $fingerprint,
+			'snapshot_id' => Utils::generateFingerprint(),
 		];
 		set_transient( $transient_key, $sync_data, HOUR_IN_SECONDS );
+
+		return $sync_data['snapshot_id'];
 	}
 
 	public function update_block( $post_id, $user_id, $fingerprint, $block_index, $content ) {
@@ -39,7 +44,7 @@ class ContentRepository {
 
 		$parsed_blocks[ $block_index ] = parse_blocks( $content )[0];
 
-		$this->save(
+		return $this->save(
 			$post_id,
 			$user_id,
 			$fingerprint,
