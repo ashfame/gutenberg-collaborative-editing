@@ -9,6 +9,7 @@
         "lint:js": "wp-scripts lint-js",
         "lint:css": "wp-scripts lint-style",
         "lint:js:fix": "wp-scripts lint-js --fix",
+        "lint:css:fix": "wp-scripts lint-style --fix",
         "start": "wp-scripts start",
         "packages-update": "wp-scripts packages-update",
         "wp-env": "wp-env",
