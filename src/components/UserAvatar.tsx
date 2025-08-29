@@ -1,6 +1,12 @@
 import { Tooltip } from '@wordpress/components';
+import { User } from '../hooks/types';
 
-const UserAvatar = ( { user, ringColor } ) => {
+interface UserAvatarProps {
+	user: User;
+	ringColor: string;
+}
+
+const UserAvatar = ( { user, ringColor }: UserAvatarProps ) => {
 	if ( ! user || ! user.name ) {
 		return null;
 	}

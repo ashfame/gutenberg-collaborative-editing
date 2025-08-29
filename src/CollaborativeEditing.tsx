@@ -17,7 +17,9 @@ export const CollaborativeEditing = () => {
 			return;
 		}
 
-		const editorElement = document.querySelector( '.editor-visual-editor' );
+		const editorElement = document.querySelector<HTMLElement>(
+			'.editor-visual-editor'
+		);
 
 		const release = () => {
 			document.body.classList.remove( 'gutenberg-collaborative-editing-readonly' );

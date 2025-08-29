@@ -1,7 +1,5 @@
 import logger from './logger';
-/**
- * @typedef {import('./utils').CursorState} CursorState
- */
+import { CursorState } from './hooks/types';
 
 /**
  * Syncs the editor content to the server.
@@ -12,10 +10,10 @@ import logger from './logger';
  * @returns {Promise<void>}
  * @throws {Error} If the sync fails.
  */
-export const syncContent = async (postId, content, blockIndex) => {
-	if (!window.gce || !postId) return;
+export const syncContent = async ( postId: number, content: any, blockIndex?: number ): Promise<void> => {
+	if ( ! window.gce || ! postId ) return;
 
-	logger.debug('syncContent called with:', {content, blockIndex});
+	logger.debug( 'syncContent called with:', { content, blockIndex } );
 
 	try {
 		const formData = new FormData();
@@ -56,10 +54,10 @@ export const syncContent = async (postId, content, blockIndex) => {
  * @returns {Promise<CursorState|null>} The new cursor state if it was synced, otherwise null.
  * @throws {Error} If the sync fails.
  */
-export const syncAwareness = async (postId, cursorState) => {
-	if (!window.gce || !postId) return null;
+export const syncAwareness = async ( postId: number, cursorState: CursorState ): Promise<CursorState | null> => {
+	if ( ! window.gce || ! postId ) return null;
 
-	logger.debug('syncAwareness called with cursorState:', cursorState);
+	logger.debug( 'syncAwareness called with cursorState:', cursorState );
 
 	try {
 		const formData = new FormData();
@@ -98,10 +96,10 @@ export const syncAwareness = async (postId, cursorState) => {
  * @returns {Promise<object|null>} The data from the server, or null if there are no updates.
  * @throws {Error} If the polling request fails.
  */
-export const pollForUpdates = async (postId, lastTimestamp, awarenessData) => {
-	if (!window.gce || !postId) return null;
+export const pollForUpdates = async ( postId: number, lastTimestamp: number, awarenessData: any ): Promise<any | null> => {
+	if ( ! window.gce || ! postId ) return null;
 
-	logger.debug('pollForUpdates called with:', {lastTimestamp, awarenessData});
+	logger.debug( 'pollForUpdates called with:', { lastTimestamp, awarenessData } );
 
 	try {
 		const url = new URL(window.gce.ajaxUrl);

@@ -6,8 +6,9 @@ import { useDispatch } from '@wordpress/data';
 import { parse, serialize } from '@wordpress/blocks';
 import { useCollaborationMode } from './useCollaborationMode';
 import { getCursorState, mergeBlocks } from '../utils';
+import { CollaborativeState, CursorState } from './types';
 
-const restoreSelection = ( state, resetSelection ) => {
+const restoreSelection = ( state: CursorState, resetSelection: Function ) => {
 	if ( ! state ) {
 		return;
 	}
@@ -84,7 +85,7 @@ const restoreSelection = ( state, resetSelection ) => {
 	}, 0 );
 };
 
-const handleDataReceived = ( data, dependencies ) => {
+const handleDataReceived = ( data: any, dependencies: any ) => {
 	if ( ! data ) {
 		return;
 	}
@@ -142,12 +143,24 @@ const handleDataReceived = ( data, dependencies ) => {
 	}
 };
 
-const initialState = {
+interface DataManagerState {
+	isLockHolder: boolean;
+	awareness: CollaborativeState[ 'awareness' ];
+}
+
+const initialState: DataManagerState = {
 	isLockHolder: false,
 	awareness: {},
 };
 
-function reducer( state, action ) {
+type ReducerAction =
+	| {
+			type: 'SET_AWARENESS';
+			payload: { awareness: CollaborativeState[ 'awareness' ] };
+	  }
+	| { type: 'LOCK_STATUS_UPDATED'; payload: { isLockHolder: boolean } };
+
+function reducer( state: DataManagerState, action: ReducerAction ) {
 	switch ( action.type ) {
 		case 'SET_AWARENESS': {
 			return {
@@ -189,7 +202,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	const { resetBlocks, resetSelection } = useDispatch( 'core/block-editor' );
 
 	const onDataReceived = useCallback(
-		( data ) => {
+		( data: any ) => {
 			handleDataReceived( data, {
 				editPost,
 				resetBlocks,
@@ -206,18 +219,21 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		onDataReceived,
 	} );
 
-	const syncAwareness = ( awareness ) => {
+	const syncAwareness = ( awareness: CursorState ) => {
 		send( { type: 'awareness', payload: awareness } );
 	};
 
-	const syncContent = useCallback( ( payload ) => {
-		if ( ! document.hasFocus() ) {
-			return;
-		}
-		send( { type: 'content', payload } );
-	}, [ send ] );
+	const syncContent = useCallback(
+		( payload: { content: any; blockIndex?: number } ) => {
+			if ( ! document.hasFocus() ) {
+				return;
+			}
+			send( { type: 'content', payload } );
+		},
+		[ send ]
+	);
 
-	useContentSyncer({
+	useContentSyncer( {
 		collaborationMode,
 		isLockHolder,
 		postId,

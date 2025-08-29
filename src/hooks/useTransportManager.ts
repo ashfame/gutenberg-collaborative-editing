@@ -1,10 +1,17 @@
 import { useEffect, useRef, useCallback } from '@wordpress/element';
-import {AjaxWithLongPollingTransport} from "../transports/AjaxWithLongPolling";
+import { AjaxWithLongPollingTransport } from '../transports/AjaxWithLongPolling';
+import { TransportAction } from '../transports/types';
 
-const transportFactory = {
+const transportFactory: { [ key: string ]: any } = {
 	'ajax-with-long-polling': AjaxWithLongPollingTransport,
 	// More transports can be added here
 };
+
+interface UseTransportManagerConfig {
+	transport: string;
+	postId: number;
+	onDataReceived: ( data: any ) => void;
+}
 
 /**
  * Manages the data transport layer for the collaborative editing session.
@@ -24,7 +31,7 @@ export const useTransportManager = ( {
 	transport,
 	postId,
 	onDataReceived,
-} ) => {
+}: UseTransportManagerConfig ) => {
 	const transportRef = useRef( null );
 
 	useEffect( () => {
@@ -49,7 +56,7 @@ export const useTransportManager = ( {
 		};
 	}, [ transport, postId, onDataReceived ] );
 
-	const send = useCallback( ( data ) => {
+	const send = useCallback( ( data: TransportAction ) => {
 		if ( transportRef.current ) {
 			transportRef.current.send( data );
 		}

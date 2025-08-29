@@ -3,7 +3,11 @@ import { __ } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
 import { ReadOnlyBadge } from './ReadOnlyBadge';
 
-export const ReadOnlyUI = ( { isReadOnly } ) => {
+interface ReadOnlyUIProps {
+	isReadOnly: boolean;
+}
+
+export const ReadOnlyUI = ( { isReadOnly }: ReadOnlyUIProps ) => {
 	const [ showModal, setShowModal ] = useState( isReadOnly );
 
 	useEffect( () => {

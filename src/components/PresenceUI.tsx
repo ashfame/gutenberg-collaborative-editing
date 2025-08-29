@@ -3,7 +3,13 @@ import { createPortal } from 'react-dom';
 import { useSelect } from '@wordpress/data';
 import { useMultiCursor } from '../useMultiCursor';
 import AvatarList from './AvatarList';
-import { useEffect } from "@wordpress/element";
+import { useEffect } from '@wordpress/element';
+import { CollaborativeState, CursorState } from '../hooks/types';
+
+interface PresenceUIProps {
+	awarenessState: CollaborativeState[ 'awareness' ];
+	syncAwareness: ( awareness: CursorState ) => void;
+}
 
 /**
  * A container for presence-related UI components.
@@ -13,7 +19,7 @@ import { useEffect } from "@wordpress/element";
  * @param {(awareness: any) => void} props.syncAwareness A function to sync the awareness state.
  * @returns {React.ReactElement} The rendered component.
  */
-export const PresenceUI = ( { awarenessState, syncAwareness } ) => {
+export const PresenceUI = ( { awarenessState, syncAwareness }: PresenceUIProps ) => {
 	useEffect( () => {
 		if ( Object.keys( awarenessState ).length > 0 ) {
 			document.body.classList.add( 'gutenberg-collaborative-editing' );

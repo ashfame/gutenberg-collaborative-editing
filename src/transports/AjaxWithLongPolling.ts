@@ -1,4 +1,5 @@
 import { pollForUpdates, syncContent, syncAwareness } from '../api';
+import { ITransport, TransportAction } from './types';
 
 /**
  * Creates a Long Polling transport layer.
@@ -6,7 +7,11 @@ import { pollForUpdates, syncContent, syncAwareness } from '../api';
  * @param {number} postId The initial data for the transport.
  * @returns {import('./types').ITransport} An ITransport-compliant object.
  */
-export const AjaxWithLongPollingTransport = ( { postId } ) => {
+export const AjaxWithLongPollingTransport = ( {
+	postId,
+}: {
+	postId: number;
+} ): ITransport => {
 	const state = {
 		isPolling: false,
 		shouldStop: false,
@@ -66,7 +71,7 @@ export const AjaxWithLongPollingTransport = ( { postId } ) => {
 		/**
 		 * @param {import('./types').TransportAction} action
 		 */
-		send: async ( action ) => {
+		send: async ( action: TransportAction ) => {
 			switch ( action.type ) {
 				case 'content': {
 					return syncContent(

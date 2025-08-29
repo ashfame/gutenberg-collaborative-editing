@@ -1,6 +1,15 @@
 import { useSelect } from '@wordpress/data';
 import { useMemo } from '@wordpress/element';
-import { getCursorState } from "../utils";
+import { getCursorState } from '../utils';
+import { CursorState } from './types';
+
+interface GutenbergState {
+	currentUserId: number | null;
+	isLockHolder: boolean;
+	editorContent: { html: string; title: string };
+	blockContent: string | null;
+	cursorState: CursorState | null;
+}
 
 /**
  * A hook to fetch and consolidate all necessary state from the Gutenberg editor.
@@ -8,15 +17,9 @@ import { getCursorState } from "../utils";
  * This hook centralizes all interactions with the `@wordpress/data` store,
  * providing a clean and isolated way to access editor-specific data.
  *
- * @returns {{
- *   currentUserId: number | null,
- *   isLockHolder: boolean,
- *   editorContent: {html: string, title: string}
- *   blockContent: string | null,
- *   cursorState: CursorState | null
- * }}
+ * @returns {GutenbergState}
  */
-export const useGutenbergState = () => {
+export const useGutenbergState = (): GutenbergState => {
 	const {
 		currentUserId,
 		isLockHolder,
@@ -60,9 +63,9 @@ export const useGutenbergState = () => {
 		[ editorContentHTML, editorContentTitle ]
 	);
 
-	const cursorState = getCursorState();
+	const cursorState: CursorState | null = getCursorState();
 
-	let blockContent = null;
+	let blockContent: string | null = null;
 	if ( cursorState && 'blockIndex' in cursorState ) {
 		const block = window.wp?.data?.select( 'core/block-editor' )
 			.getBlocks()[ cursorState.blockIndex ];

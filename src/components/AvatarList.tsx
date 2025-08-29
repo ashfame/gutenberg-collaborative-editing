@@ -1,6 +1,13 @@
 import UserAvatar from './UserAvatar';
+import { AwarenessInfo } from '@/hooks/types';
 
-const AvatarList = ( { users } ) => {
+interface AvatarListProps {
+	users: {
+		[ userId: string ]: AwarenessInfo;
+	};
+}
+
+const AvatarList = ( { users }: AvatarListProps ) => {
 	const MAX_VISIBLE_AVATARS = 5;
 	const INACTIVITY_TIMEOUT = 240; // seconds
 

@@ -2,14 +2,15 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useSelect } from '@wordpress/data';
 import { MultiCursor } from './MultiCursor';
 import { getCursorState } from './utils';
+import { CollaborativeState, CursorState } from './hooks/types';
 
 export const useMultiCursor = (
-	currentUserId,
-	awarenessState,
-	syncAwareness
+	currentUserId: number,
+	awarenessState: CollaborativeState[ 'awareness' ],
+	syncAwareness: ( awareness: CursorState ) => void
 ) => {
-	const multiCursorRef = useRef( null );
-	const overlayRef = useRef( null );
+	const multiCursorRef = useRef<MultiCursor | null>( null );
+	const overlayRef = useRef<HTMLDivElement | null>( null );
 
 	const { blockCount, currentUser } = useSelect( ( select ) => {
 		const editorSelect = select( 'core/block-editor' );

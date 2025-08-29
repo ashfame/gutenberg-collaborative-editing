@@ -1,13 +1,36 @@
+import { CursorState, User } from './hooks/types';
+
+interface UserAwareness {
+	cursor: CursorState;
+	user: User;
+	ring_color: string;
+}
+
 export class MultiCursor {
-	constructor(doc, overlayElement, currentUserId) {
+	document: Document;
+	overlay: HTMLDivElement;
+	currentUserId: number;
+	users: Map<string, UserAwareness>;
+
+	constructor(
+		doc: Document,
+		overlayElement: HTMLDivElement,
+		currentUserId: number
+	) {
 		this.document = doc;
 		this.overlay = overlayElement;
 		this.currentUserId = currentUserId;
 		this.users = new Map();
 	}
 
-	findTextPosition(root, offset) {
-		const walker = this.document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+	findTextPosition(
+		root: Node,
+		offset: number
+	): { node: Node; offset: number } {
+		const walker = this.document.createTreeWalker(
+			root,
+			NodeFilter.SHOW_TEXT
+		);
 		let currentOffset = 0;
 		let node;
 		let lastTextNode = null;
@@ -28,26 +51,39 @@ export class MultiCursor {
 		return { node: root, offset: 0 };
 	}
 
-	updateUser(userId, user) {
+	/**
+	 * Updates user's awareness data
+	 */
+	updateUser( userId: string, awarenessData: any ) {
 		// Additional check of filtering out the current user
-		if (parseInt(userId, 10) === this.currentUserId) {
+		if ( parseInt( userId, 10 ) === this.currentUserId ) {
 			return;
 		}
 		try {
-			this.users.set(userId, { cursor: user.cursor_state, user: user.user_data, ring_color: user.color });
+			this.users.set(
+				userId,
+				{
+					cursor: awarenessData.cursor_state,
+					user: awarenessData.user_data,
+					ring_color: awarenessData.color
+				}
+			);
 		} catch (e) {
-			console.error('Failed to parse cursor state for user', userId, user, e);
+			console.error('Failed to parse cursor state for user', userId, awarenessData, e);
 		}
 	}
 
-	removeUser(userId) {
-		this.users.delete(userId);
+	removeUser( userId: string ) {
+		this.users.delete( userId );
 	}
 
-	getPos(blockEl, charOffset) {
-		const pos = this.findTextPosition(blockEl, charOffset);
+	getPos(
+		blockEl: HTMLElement,
+		charOffset: number
+	): { x: number; y: number; height: number } | null {
+		const pos = this.findTextPosition( blockEl, charOffset );
 
-		if (!pos.node) {
+		if ( ! pos.node ) {
 			return null;
 		}
 
@@ -87,9 +123,12 @@ export class MultiCursor {
 		};
 	}
 
-	getCoordinatesForCursor(blockIndex, cursorPos) {
-		const blocks = window.wp?.data?.select('core/block-editor').getBlockOrder();
-		if (!blocks || blockIndex >= blocks.length) return null;
+	getCoordinatesForCursor(
+		blockIndex: number,
+		cursorPos: number
+	): { startCoords: { x: number; y: number; height: number }; isSelection: false } | null {
+		const blocks = window.wp?.data?.select( 'core/block-editor' ).getBlockOrder();
+		if ( ! blocks || blockIndex >= blocks.length ) return null;
 
 		const clientId = blocks[blockIndex];
 		const blockEl = this.document.querySelector(`[data-block="${clientId}"] .rich-text`) ||
@@ -97,21 +136,27 @@ export class MultiCursor {
 			this.document.querySelector(`[data-block="${clientId}"]`);
 		if (!blockEl) return null;
 
-		const coords = this.getPos(blockEl, cursorPos);
+		const coords = this.getPos( blockEl, cursorPos );
 		return coords ? { startCoords: coords, isSelection: false } : null;
 	}
 
-	getCoordinatesForSelection(blockIndexStart, cursorPosStart, blockIndexEnd, cursorPosEnd) {
+	getCoordinatesForSelection(
+		blockIndexStart: number,
+		cursorPosStart: number,
+		blockIndexEnd: number,
+		cursorPosEnd: number
+	): { rects: any[]; isSelection: true } | null {
 		if (
 			blockIndexStart > blockIndexEnd ||
-			(blockIndexStart === blockIndexEnd && cursorPosStart > cursorPosEnd)
+			( blockIndexStart === blockIndexEnd &&
+				cursorPosStart > cursorPosEnd )
 		) {
 			[blockIndexStart, blockIndexEnd] = [blockIndexEnd, blockIndexStart];
 			[cursorPosStart, cursorPosEnd] = [cursorPosEnd, cursorPosStart];
 		}
 
-		const blocks = window.wp?.data?.select('core/block-editor').getBlockOrder();
-		if (!blocks || blockIndexStart >= blocks.length || blockIndexEnd >= blocks.length) return null;
+		const blocks = window.wp?.data?.select( 'core/block-editor' ).getBlockOrder();
+		if ( ! blocks || blockIndexStart >= blocks.length || blockIndexEnd >= blocks.length ) return null;
 
 		const startClientId = blocks[blockIndexStart];
 		const endClientId = blocks[blockIndexEnd];
@@ -124,7 +169,7 @@ export class MultiCursor {
 		const startBlockEl = getBlockEl(startClientId);
 		const endBlockEl = getBlockEl(endClientId);
 
-		if (!startBlockEl || !endBlockEl) {
+		if ( ! startBlockEl || ! endBlockEl ) {
 			return null;
 		}
 
@@ -189,29 +234,44 @@ export class MultiCursor {
 		return result;
 	}
 
-	getCoordinatesFromCursorState(cursorState) {
-		const { blockIndex, cursorPos, blockIndexStart, blockIndexEnd, cursorPosStart, cursorPosEnd } = cursorState;
+	getCoordinatesFromCursorState( cursorState: CursorState ) {
+		const {
+			blockIndex,
+			cursorPos,
+			blockIndexStart,
+			blockIndexEnd,
+			cursorPosStart,
+			cursorPosEnd,
+		} = cursorState;
 
 		// This handles both single-block and multi-block selections.
-		if (cursorPosStart !== undefined) {
-			const startBlock = blockIndexStart !== undefined ? blockIndexStart : blockIndex;
-			const endBlock = blockIndexEnd !== undefined ? blockIndexEnd : blockIndex;
-			return this.getCoordinatesForSelection(startBlock, cursorPosStart, endBlock, cursorPosEnd);
+		if ( cursorPosStart !== undefined ) {
+			const startBlock =
+				blockIndexStart !== undefined ? blockIndexStart : blockIndex;
+			const endBlock =
+				blockIndexEnd !== undefined ? blockIndexEnd : blockIndex;
+			return this.getCoordinatesForSelection(
+				startBlock,
+				cursorPosStart,
+				endBlock,
+				cursorPosEnd
+			);
 		}
 
 		// This handles a simple cursor (no selection).
-		if (cursorPos !== undefined) {
-			return this.getCoordinatesForCursor(blockIndex, cursorPos);
+		if ( cursorPos !== undefined ) {
+			return this.getCoordinatesForCursor( blockIndex, cursorPos );
 		}
 
 		return null;
 	}
 
-	renderCursors(awarenessData) {
-		if (!awarenessData) {
+	renderCursors( awarenessData: any ) {
+		if ( ! awarenessData ) {
 			return;
 		}
 		
+		// Update state with supplied awareness data
 		Object.keys(awarenessData).forEach(userId => {
 			if (awarenessData[userId]?.cursor_state) {
 				this.updateUser(userId, awarenessData[userId]);
@@ -224,13 +284,13 @@ export class MultiCursor {
 		this.overlay.innerHTML = '';
 
 		// Render each user's cursor
-		this.users.forEach((user, userId) => {
-			const result = this.getCoordinatesFromCursorState(user.cursor);
+		this.users.forEach((userAwareness, userId) => {
+			const result = this.getCoordinatesFromCursorState(userAwareness.cursor);
 			if (!result) {
 				return;
 			}
 
-			const color = user.ring_color;
+			const color = userAwareness.ring_color;
 
 			if (result.isSelection) {
 				// Render selection
@@ -257,7 +317,7 @@ export class MultiCursor {
 				}
 				const label = this.document.createElement('div');
 				label.className = 'cursor-label';
-				label.textContent = user.user?.name || `User ${userId}`;
+				label.textContent = userAwareness.user?.name || `User ${userId}`;
 				label.style.backgroundColor = color;
 
 				cursor.appendChild(label);
@@ -276,7 +336,7 @@ export class MultiCursor {
 				// Create label
 				const label = this.document.createElement('div');
 				label.className = 'cursor-label';
-				label.textContent = user.user?.name || `User ${userId}`;
+				label.textContent = userAwareness.user?.name || `User ${userId}`;
 				label.style.backgroundColor = color;
 
 				cursor.appendChild(label);
