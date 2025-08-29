@@ -2,7 +2,9 @@ import { CursorState } from './hooks/types';
 
 function preventEditing( e: Event ) {
 	// Allow scrolling events
-	if ( e.type === 'wheel' || e.type === 'scroll' ) return;
+	if ( e.type === 'wheel' || e.type === 'scroll' ) {
+		return;
+	}
 
 	// Prevent all editing interactions
 	e.preventDefault();
@@ -22,7 +24,7 @@ export function lockEditor( editorElement: HTMLElement ) {
 	editorElement.addEventListener( 'change', preventEditing, true );
 	editorElement.addEventListener( 'paste', preventEditing, true );
 	editorElement.addEventListener( 'cut', preventEditing, true );
-	editorElement.addEventListener( 'copy', preventEditing, true,);
+	editorElement.addEventListener( 'copy', preventEditing, true );
 	editorElement.addEventListener( 'focus', preventEditing, true );
 	editorElement.addEventListener( 'focusin', preventEditing, true );
 	editorElement.addEventListener( 'touchstart', preventEditing, true );
@@ -41,26 +43,28 @@ export function releaseEditor( editorElement: HTMLElement ) {
 	editorElement.removeEventListener( 'change', preventEditing, true );
 	editorElement.removeEventListener( 'paste', preventEditing, true );
 	editorElement.removeEventListener( 'cut', preventEditing, true );
-	editorElement.removeEventListener( 'copy', preventEditing, true,);
+	editorElement.removeEventListener( 'copy', preventEditing, true );
 	editorElement.removeEventListener( 'focus', preventEditing, true );
 	editorElement.removeEventListener( 'focusin', preventEditing, true );
 	editorElement.removeEventListener( 'touchstart', preventEditing, true );
 	editorElement.removeEventListener( 'touchend', preventEditing, true );
 }
 
-
 /**
  * Retrieves the current cursor state from the editor.
  *
- * @returns {CursorState|null} The current cursor state,
+ * @return {CursorState|null} The current cursor state,
  * or null if user cursor is not in editor.
  */
 export const getCursorState = (): CursorState | null => {
-	const blocks = window.wp?.data?.select( 'core/block-editor' )
+	const blocks = window.wp?.data
+		?.select( 'core/block-editor' )
 		.getBlockOrder();
-	const selectionStart = window.wp?.data?.select( 'core/block-editor' )
+	const selectionStart = window.wp?.data
+		?.select( 'core/block-editor' )
 		.getSelectionStart();
-	const selectionEnd = window.wp?.data?.select( 'core/block-editor' )
+	const selectionEnd = window.wp?.data
+		?.select( 'core/block-editor' )
 		.getSelectionEnd();
 
 	if ( ! selectionStart.clientId ) {
@@ -78,29 +82,27 @@ export const getCursorState = (): CursorState | null => {
 	const sameBlock = selectionStart.clientId === selectionEnd.clientId;
 
 	if ( sameBlock ) {
-		const blockIndex = blocks.indexOf(selectionStart.clientId);
+		const blockIndex = blocks.indexOf( selectionStart.clientId );
 		if ( selectionStart.offset === selectionEnd.offset ) {
 			return {
-				'blockIndex': blockIndex,
-				'cursorPos': selectionStart.offset
-			};
-		} else {
-			return {
-				'blockIndex': blockIndex,
-				'cursorPosStart': selectionStart.offset,
-				'cursorPosEnd': selectionEnd.offset
+				blockIndex,
+				cursorPos: selectionStart.offset,
 			};
 		}
-	} else {
-		const blockIndexStart = blocks.indexOf(selectionStart.clientId);
-		const blockIndexEnd = blocks.indexOf(selectionEnd.clientId);
 		return {
-			'blockIndexStart': blockIndexStart,
-			'blockIndexEnd': blockIndexEnd,
-			'cursorPosStart': selectionStart.offset,
-			'cursorPosEnd': selectionEnd.offset
+			blockIndex,
+			cursorPosStart: selectionStart.offset,
+			cursorPosEnd: selectionEnd.offset,
 		};
 	}
+	const blockIndexStart = blocks.indexOf( selectionStart.clientId );
+	const blockIndexEnd = blocks.indexOf( selectionEnd.clientId );
+	return {
+		blockIndexStart,
+		blockIndexEnd,
+		cursorPosStart: selectionStart.offset,
+		cursorPosEnd: selectionEnd.offset,
+	};
 };
 
 /**
@@ -119,13 +121,21 @@ export const getCursorState = (): CursorState | null => {
  * @param {Array}  existingBlocks    The current blocks in the editor.
  * @param {Array}  receivedBlocks    The new blocks received from the transport.
  * @param {number} engagedBlockIndex The index of the block currently being edited.
- * @returns {Array} The merged set of blocks.
+ * @return {Array} The merged set of blocks.
  */
-export const mergeBlocks = ( existingBlocks: any[], receivedBlocks: any[], engagedBlockIndex: number ): Array<any> => {
+export const mergeBlocks = (
+	existingBlocks: any[],
+	receivedBlocks: any[],
+	engagedBlockIndex: number
+): Array< any > => {
 	// Create a mutable copy of the received blocks.
 	const blocksToSet = [ ...receivedBlocks ];
 
-	if ( engagedBlockIndex !== undefined && engagedBlockIndex > -1 && existingBlocks[ engagedBlockIndex ] ) {
+	if (
+		engagedBlockIndex !== undefined &&
+		engagedBlockIndex > -1 &&
+		existingBlocks[ engagedBlockIndex ]
+	) {
 		const engagedBlock = existingBlocks[ engagedBlockIndex ];
 		if ( blocksToSet.length > engagedBlockIndex ) {
 			blocksToSet[ engagedBlockIndex ] = engagedBlock;

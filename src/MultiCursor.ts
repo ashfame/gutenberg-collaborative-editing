@@ -10,7 +10,7 @@ export class MultiCursor {
 	document: Document;
 	overlay: HTMLDivElement;
 	currentUserId: number;
-	users: Map<string, UserAwareness>;
+	users: Map< string, UserAwareness >;
 
 	constructor(
 		doc: Document,
@@ -35,17 +35,20 @@ export class MultiCursor {
 		let node;
 		let lastTextNode = null;
 
-		while ((node = walker.nextNode())) {
+		while ( ( node = walker.nextNode() ) ) {
 			const len = node.nodeValue.length;
-			if (currentOffset + len >= offset) {
+			if ( currentOffset + len >= offset ) {
 				return { node, offset: offset - currentOffset };
 			}
 			currentOffset += len;
 			lastTextNode = node;
 		}
 
-		if (lastTextNode) {
-			return { node: lastTextNode, offset: lastTextNode.nodeValue.length };
+		if ( lastTextNode ) {
+			return {
+				node: lastTextNode,
+				offset: lastTextNode.nodeValue.length,
+			};
 		}
 
 		return { node: root, offset: 0 };
@@ -53,6 +56,8 @@ export class MultiCursor {
 
 	/**
 	 * Updates user's awareness data
+	 * @param userId
+	 * @param awarenessData
 	 */
 	updateUser( userId: string, awarenessData: any ) {
 		// Additional check of filtering out the current user
@@ -60,16 +65,18 @@ export class MultiCursor {
 			return;
 		}
 		try {
-			this.users.set(
+			this.users.set( userId, {
+				cursor: awarenessData.cursor_state,
+				user: awarenessData.user_data,
+				ring_color: awarenessData.color,
+			} );
+		} catch ( e ) {
+			console.error(
+				'Failed to parse cursor state for user',
 				userId,
-				{
-					cursor: awarenessData.cursor_state,
-					user: awarenessData.user_data,
-					ring_color: awarenessData.color
-				}
+				awarenessData,
+				e
 			);
-		} catch (e) {
-			console.error('Failed to parse cursor state for user', userId, awarenessData, e);
 		}
 	}
 
@@ -89,12 +96,12 @@ export class MultiCursor {
 
 		const range = this.document.createRange();
 		try {
-			range.setStart(pos.node, pos.offset);
-		} catch (e) {
-			console.error('Failed to set range start', e, pos);
+			range.setStart( pos.node, pos.offset );
+		} catch ( e ) {
+			console.error( 'Failed to set range start', e, pos );
 			return null;
 		}
-		range.collapse(true);
+		range.collapse( true );
 
 		const rect = range.getBoundingClientRect();
 		const overlayRect = this.overlay.getBoundingClientRect();
@@ -102,7 +109,12 @@ export class MultiCursor {
 
 		let x;
 		let y;
-		if (rect.x === 0 && rect.y === 0 && rect.width === 0 && rect.height === 0) {
+		if (
+			rect.x === 0 &&
+			rect.y === 0 &&
+			rect.width === 0 &&
+			rect.height === 0
+		) {
 			// This can happen for empty blocks.
 			x = blockRect.left - overlayRect.left;
 			y = blockRect.top - overlayRect.top;
@@ -112,8 +124,10 @@ export class MultiCursor {
 		}
 
 		let height = rect.height;
-		if (height === 0) {
-			height = parseInt(window.getComputedStyle(blockEl).lineHeight, 10) || blockRect.height;
+		if ( height === 0 ) {
+			height =
+				parseInt( window.getComputedStyle( blockEl ).lineHeight, 10 ) ||
+				blockRect.height;
 		}
 
 		return {
@@ -126,11 +140,16 @@ export class MultiCursor {
 	getCoordinatesForCursor(
 		blockIndex: number,
 		cursorPos: number
-	): { startCoords: { x: number; y: number; height: number }; isSelection: false } | null {
+	): {
+		startCoords: { x: number; y: number; height: number };
+		isSelection: false;
+	} | null {
 		const blocks = window.wp?.data
 			?.select( 'core/block-editor' )
 			.getBlockOrder();
-		if ( ! blocks || blockIndex >= blocks.length ) return null;
+		if ( ! blocks || blockIndex >= blocks.length ) {
+			return null;
+		}
 
 		const clientId = blocks[ blockIndex ];
 		const blockEl =
@@ -143,7 +162,9 @@ export class MultiCursor {
 			this.document.querySelector< HTMLElement >(
 				`[data-block="${ clientId }"]`
 			);
-		if ( ! blockEl ) return null;
+		if ( ! blockEl ) {
+			return null;
+		}
 
 		const coords = this.getPos( blockEl, cursorPos );
 		return coords ? { startCoords: coords, isSelection: false } : null;
@@ -174,8 +195,9 @@ export class MultiCursor {
 			! blocks ||
 			blockIndexStart >= blocks.length ||
 			blockIndexEnd >= blocks.length
-		)
+		) {
 			return null;
+		}
 
 		const startClientId = blocks[ blockIndexStart ];
 		const endClientId = blocks[ blockIndexEnd ];
@@ -274,9 +296,13 @@ export class MultiCursor {
 		return result;
 	}
 
-	getCoordinatesFromCursorState(
-		cursorState: CursorState
-	): { rects: any[]; isSelection: true } | { startCoords: { x: number; y: number; height: number }; isSelection: false } | null {
+	getCoordinatesFromCursorState( cursorState: CursorState ):
+		| { rects: any[]; isSelection: true }
+		| {
+				startCoords: { x: number; y: number; height: number };
+				isSelection: false;
+		  }
+		| null {
 		// This handles both single-block and multi-block selections.
 		if ( 'cursorPosStart' in cursorState ) {
 			const startBlock =
@@ -310,15 +336,15 @@ export class MultiCursor {
 		if ( ! awarenessData ) {
 			return;
 		}
-		
+
 		// Update state with supplied awareness data
-		Object.keys(awarenessData).forEach(userId => {
-			if (awarenessData[userId]?.cursor_state) {
-				this.updateUser(userId, awarenessData[userId]);
+		Object.keys( awarenessData ).forEach( ( userId ) => {
+			if ( awarenessData[ userId ]?.cursor_state ) {
+				this.updateUser( userId, awarenessData[ userId ] );
 			} else {
-				this.removeUser(userId);
+				this.removeUser( userId );
 			}
-		});
+		} );
 
 		// Clean up overlay
 		this.overlay.innerHTML = '';

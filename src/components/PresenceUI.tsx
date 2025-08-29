@@ -14,12 +14,15 @@ interface PresenceUIProps {
 /**
  * A container for presence-related UI components.
  *
- * @param {object} props The props for the component.
+ * @param {Object}                                                   props                The props for the component.
  * @param {import('../hooks/types').CollaborativeState['awareness']} props.awarenessState The awareness state.
- * @param {(awareness: any) => void} props.syncAwareness A function to sync the awareness state.
- * @returns {React.ReactElement} The rendered component.
+ * @param {(awareness: any) => void}                                 props.syncAwareness  A function to sync the awareness state.
+ * @return {React.ReactElement} The rendered component.
  */
-export const PresenceUI = ( { awarenessState, syncAwareness }: PresenceUIProps ) => {
+export const PresenceUI = ( {
+	awarenessState,
+	syncAwareness,
+}: PresenceUIProps ) => {
 	useEffect( () => {
 		if ( Object.keys( awarenessState ).length > 0 ) {
 			document.body.classList.add( 'gutenberg-collaborative-editing' );
@@ -28,12 +31,15 @@ export const PresenceUI = ( { awarenessState, syncAwareness }: PresenceUIProps )
 		}
 	}, [ awarenessState ] );
 
-	const { currentUserId } = useSelect( ( select ) => ( {
-		currentUserId: select( 'core' )?.getCurrentUser()?.id,
-	} ), [] );
+	const { currentUserId } = useSelect(
+		( select ) => ( {
+			currentUserId: select( 'core' )?.getCurrentUser()?.id,
+		} ),
+		[]
+	);
 
 	// Modify awareness state to exclude current user
-	delete awarenessState[currentUserId];
+	delete awarenessState[ currentUserId ];
 
 	useMultiCursor( currentUserId, awarenessState, syncAwareness );
 
@@ -45,7 +51,10 @@ export const PresenceUI = ( { awarenessState, syncAwareness }: PresenceUIProps )
 	return (
 		<>
 			{ headerTarget &&
-				createPortal( <AvatarList users={ awarenessState } />, headerTarget ) }
+				createPortal(
+					<AvatarList users={ awarenessState } />,
+					headerTarget
+				) }
 		</>
 	);
 };

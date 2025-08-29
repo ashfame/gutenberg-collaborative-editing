@@ -17,11 +17,7 @@ const UserAvatar = ( { user, ringColor }: UserAvatarProps ) => {
 				className="gce-user-avatar"
 				style={ { '--gce-ring-color': ringColor } }
 			>
-				<img
-					src={ user.avatar }
-					alt={ user.name }
-					className="avatar"
-				/>
+				<img src={ user.avatar } alt={ user.name } className="avatar" />
 			</li>
 		</Tooltip>
 	);

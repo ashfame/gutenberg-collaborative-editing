@@ -9,8 +9,8 @@ export const useMultiCursor = (
 	awarenessState: CollaborativeState[ 'awareness' ],
 	syncAwareness: ( awareness: CursorState ) => void
 ) => {
-	const multiCursorRef = useRef<MultiCursor | null>( null );
-	const overlayRef = useRef<HTMLDivElement | null>( null );
+	const multiCursorRef = useRef< MultiCursor | null >( null );
+	const overlayRef = useRef< HTMLDivElement | null >( null );
 
 	const { blockCount, currentUser } = useSelect( ( select ) => {
 		const editorSelect = select( 'core/block-editor' );

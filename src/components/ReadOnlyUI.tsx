@@ -20,7 +20,10 @@ export const ReadOnlyUI = ( { isReadOnly }: ReadOnlyUIProps ) => {
 			{ showModal && (
 				<Modal
 					className="gutenberg-collaborative-editing-read-only-modal"
-					title={ __( 'Read-Only Mode', 'gutenberg-collaborative-editing' ) }
+					title={ __(
+						'Read-Only Mode',
+						'gutenberg-collaborative-editing'
+					) }
 					onRequestClose={ () => setShowModal( false ) }
 				>
 					<p>
@@ -29,7 +32,10 @@ export const ReadOnlyUI = ( { isReadOnly }: ReadOnlyUIProps ) => {
 							'gutenberg-collaborative-editing'
 						) }
 					</p>
-					<Button variant="primary" onClick={ () => setShowModal( false ) }>
+					<Button
+						variant="primary"
+						onClick={ () => setShowModal( false ) }
+					>
 						{ __( 'Okay', 'gutenberg-collaborative-editing' ) }
 					</Button>
 				</Modal>

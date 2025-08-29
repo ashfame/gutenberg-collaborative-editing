@@ -16,6 +16,14 @@ interface UseContentSyncerConfig {
  *
  * This hook debounces content changes to avoid excessive network requests and
  * calls a sync function when the content has stabilized.
+ * @param root0
+ * @param root0.collaborationMode
+ * @param root0.isLockHolder
+ * @param root0.postId
+ * @param root0.editorContent
+ * @param root0.blockContent
+ * @param root0.cursorState
+ * @param root0.onSync
  */
 export const useContentSyncer = ( {
 	collaborationMode,
@@ -72,7 +80,10 @@ export const useContentSyncer = ( {
 			return;
 		}
 
-		if ( ! cursorState || cursorState && cursorState.blockIndex === undefined ) {
+		if (
+			! cursorState ||
+			( cursorState && cursorState.blockIndex === undefined )
+		) {
 			return;
 		}
 

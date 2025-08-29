@@ -30,8 +30,7 @@ const restoreSelection = (
 			state.blockIndexStart < newBlockOrder.length &&
 			state.blockIndexEnd < newBlockOrder.length
 		) {
-			const newStartClientId =
-				newBlockOrder[ state.blockIndexStart ];
+			const newStartClientId = newBlockOrder[ state.blockIndexStart ];
 			const newEndClientId = newBlockOrder[ state.blockIndexEnd ];
 			resetSelection(
 				{
@@ -88,21 +87,13 @@ const handleDataReceived = ( data: any, dependencies: any ) => {
 	}
 
 	const { awareness, content, modified } = data;
-	const {
-		editPost,
-		resetBlocks,
-		resetSelection,
-		dispatch,
-	} = dependencies;
+	const { editPost, resetBlocks, resetSelection, dispatch } = dependencies;
 
 	if ( modified && content ) {
 		const receivedContent = content;
 		const cursorState = getCursorState();
 
-		if (
-			receivedContent.content &&
-			receivedContent.content.html
-		) {
+		if ( receivedContent.content && receivedContent.content.html ) {
 			resetBlocks( parse( receivedContent.content.html ) );
 			editPost( {
 				content: receivedContent.content.html,
@@ -182,9 +173,10 @@ function reducer( state: DataManagerState, action: ReducerAction ) {
 
 /**
  * The single source of truth for the collaborative editing session.
+ * @param transport
  */
 export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
-	const [ collaborationMode, ] = useCollaborationMode();
+	const [ collaborationMode ] = useCollaborationMode();
 
 	// Get all required data in a single useSelect
 	const {
@@ -192,7 +184,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		isLockHolder,
 		editorContent,
 		blockContent,
-		cursorState
+		cursorState,
 	} = useGutenbergState();
 
 	const postId = window.gce.postId;
@@ -241,10 +233,10 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		blockContent,
 		cursorState,
 		onSync: syncContent,
-	});
+	} );
 
 	useEffect( () => {
-		if ( currentUserId === null || !postId ) {
+		if ( currentUserId === null || ! postId ) {
 			return;
 		}
 		dispatch( {
@@ -256,6 +248,6 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	return {
 		collaborationMode,
 		state,
-		syncAwareness
+		syncAwareness,
 	};
 };

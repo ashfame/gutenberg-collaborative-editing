@@ -19,11 +19,11 @@ interface UseTransportManagerConfig {
  * This hook is responsible for instantiating the correct transport based on configuration,
  * managing its connection lifecycle, and providing a stable interface for sending data.
  *
- * @param {object}   config
- * @param {string}   config.transport   - The key for the transport to use (e.g., 'long-polling').
- * @param {number}   config.postId      - The ID of the post being edited.
+ * @param {Object}   config
+ * @param {string}   config.transport      - The key for the transport to use (e.g., 'long-polling').
+ * @param {number}   config.postId         - The ID of the post being edited.
  * @param {Function} config.onDataReceived - Callback function to handle data from the transport.
- * @returns {{
+ * @return {{
  *   send: (data: any) => void
  * }}
  */
@@ -46,7 +46,7 @@ export const useTransportManager = ( {
 			return;
 		}
 
-		const transportInstance = Transport( { postId: postId } );
+		const transportInstance = Transport( { postId } );
 		transportRef.current = transportInstance;
 
 		transportInstance.connect( onDataReceived );

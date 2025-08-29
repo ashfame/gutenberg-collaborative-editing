@@ -17,7 +17,7 @@ interface GutenbergState {
  * This hook centralizes all interactions with the `@wordpress/data` store,
  * providing a clean and isolated way to access editor-specific data.
  *
- * @returns {GutenbergState}
+ * @return {GutenbergState}
  */
 export const useGutenbergState = (): GutenbergState => {
 	const {
@@ -49,7 +49,7 @@ export const useGutenbergState = (): GutenbergState => {
 
 		return {
 			currentUserId,
-			isLockHolder: !isReadOnly,
+			isLockHolder: ! isReadOnly,
 			editorContentHTML,
 			editorContentTitle,
 		};
@@ -67,7 +67,8 @@ export const useGutenbergState = (): GutenbergState => {
 
 	let blockContent: string | null = null;
 	if ( cursorState && 'blockIndex' in cursorState ) {
-		const block = window.wp?.data?.select( 'core/block-editor' )
+		const block = window.wp?.data
+			?.select( 'core/block-editor' )
 			.getBlocks()[ cursorState.blockIndex ];
 		if ( block ) {
 			blockContent = window.wp?.blocks?.serialize( block );

@@ -6,7 +6,7 @@ export interface TransportAction {
 }
 
 export interface ITransport {
-	connect( onData: ( data: any ) => void ): void;
-	send( data: TransportAction ): Promise<void>;
-	disconnect(): void;
+	connect: ( onData: ( data: any ) => void ) => void;
+	send: ( data: TransportAction ) => Promise< void >;
+	disconnect: () => void;
 }

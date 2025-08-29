@@ -5,7 +5,7 @@ import { ITransport, TransportAction } from './types';
  * Creates a Long Polling transport layer.
  *
  * @param {number} postId The initial data for the transport.
- * @returns {import('./types').ITransport} An ITransport-compliant object.
+ * @return {import('./types').ITransport} An ITransport-compliant object.
  */
 export const AjaxWithLongPollingTransport = ( {
 	postId,
@@ -62,7 +62,9 @@ export const AjaxWithLongPollingTransport = ( {
 			if ( onDataReceivedCallback ) {
 				state.onDataReceived = onDataReceivedCallback;
 			} else {
-				console.error( 'callback for receiving data is missing from Transport' );
+				console.error(
+					'callback for receiving data is missing from Transport'
+				);
 			}
 			state.isPolling = true;
 			longPoll();

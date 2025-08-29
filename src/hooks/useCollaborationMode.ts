@@ -1,7 +1,10 @@
 import { useState, useCallback } from '@wordpress/element';
 
-export function useCollaborationMode(): [ string, ( newMode: string ) => void ] {
-	const [ collaborationMode, setCollaborationMode ] = useState<string>(
+export function useCollaborationMode(): [
+	string,
+	( newMode: string ) => void,
+] {
+	const [ collaborationMode, setCollaborationMode ] = useState< string >(
 		() => window.gce?.collaborationMode
 	);
 
