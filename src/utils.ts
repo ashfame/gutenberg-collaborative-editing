@@ -52,12 +52,16 @@ export function releaseEditor( editorElement: HTMLElement ) {
 /**
  * Retrieves the current cursor state from the editor.
  *
- * @returns {CursorState|null} The current cursor state, or null if no selection exists.
+ * @returns {CursorState|null} The current cursor state,
+ * or null if user cursor is not in editor.
  */
 export const getCursorState = (): CursorState | null => {
-	const blocks = window.wp?.data?.select( 'core/block-editor' ).getBlockOrder();
-	const selectionStart = window.wp?.data?.select( 'core/block-editor' ).getSelectionStart();
-	const selectionEnd = window.wp?.data?.select( 'core/block-editor' ).getSelectionEnd();
+	const blocks = window.wp?.data?.select( 'core/block-editor' )
+		.getBlockOrder();
+	const selectionStart = window.wp?.data?.select( 'core/block-editor' )
+		.getSelectionStart();
+	const selectionEnd = window.wp?.data?.select( 'core/block-editor' )
+		.getSelectionEnd();
 
 	if ( ! selectionStart.clientId ) {
 		return null;

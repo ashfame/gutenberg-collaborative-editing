@@ -234,33 +234,33 @@ export class MultiCursor {
 		return result;
 	}
 
-	getCoordinatesFromCursorState( cursorState: CursorState ) {
-		const {
-			blockIndex,
-			cursorPos,
-			blockIndexStart,
-			blockIndexEnd,
-			cursorPosStart,
-			cursorPosEnd,
-		} = cursorState;
-
+	getCoordinatesFromCursorState(
+		cursorState: CursorState
+	): { rects: any[]; isSelection: true } | { startCoords: { x: number; y: number; height: number }; isSelection: false } | null {
 		// This handles both single-block and multi-block selections.
-		if ( cursorPosStart !== undefined ) {
+		if ( 'cursorPosStart' in cursorState ) {
 			const startBlock =
-				blockIndexStart !== undefined ? blockIndexStart : blockIndex;
+				'blockIndexStart' in cursorState
+					? cursorState.blockIndexStart
+					: cursorState.blockIndex;
 			const endBlock =
-				blockIndexEnd !== undefined ? blockIndexEnd : blockIndex;
+				'blockIndexEnd' in cursorState
+					? cursorState.blockIndexEnd
+					: cursorState.blockIndex;
 			return this.getCoordinatesForSelection(
 				startBlock,
-				cursorPosStart,
+				cursorState.cursorPosStart,
 				endBlock,
-				cursorPosEnd
+				cursorState.cursorPosEnd
 			);
 		}
 
 		// This handles a simple cursor (no selection).
-		if ( cursorPos !== undefined ) {
-			return this.getCoordinatesForCursor( blockIndex, cursorPos );
+		if ( 'cursorPos' in cursorState ) {
+			return this.getCoordinatesForCursor(
+				cursorState.blockIndex,
+				cursorState.cursorPos
+			);
 		}
 
 		return null;

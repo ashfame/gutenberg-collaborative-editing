@@ -8,7 +8,10 @@ import { useCollaborationMode } from './useCollaborationMode';
 import { getCursorState, mergeBlocks } from '../utils';
 import { CollaborativeState, CursorState } from './types';
 
-const restoreSelection = ( state: CursorState, resetSelection: Function ) => {
+const restoreSelection = (
+	state: CursorState | null,
+	resetSelection: Function
+) => {
 	if ( ! state ) {
 		return;
 	}
@@ -20,16 +23,16 @@ const restoreSelection = ( state: CursorState, resetSelection: Function ) => {
 
 		// Handles multi-block selection
 		if (
-			typeof state.blockIndexStart !== 'undefined' &&
+			'blockIndexStart' in state &&
 			state.blockIndexStart !== -1 &&
+			'blockIndexEnd' in state &&
 			state.blockIndexEnd !== -1 &&
 			state.blockIndexStart < newBlockOrder.length &&
 			state.blockIndexEnd < newBlockOrder.length
 		) {
 			const newStartClientId =
 				newBlockOrder[ state.blockIndexStart ];
-			const newEndClientId =
-				newBlockOrder[ state.blockIndexEnd ];
+			const newEndClientId = newBlockOrder[ state.blockIndexEnd ];
 			resetSelection(
 				{
 					clientId: newStartClientId,
@@ -45,15 +48,12 @@ const restoreSelection = ( state: CursorState, resetSelection: Function ) => {
 
 		// Handles single-block selection (collapsed or ranged)
 		if (
-			typeof state.blockIndex !== 'undefined' &&
+			'blockIndex' in state &&
 			state.blockIndex !== -1 &&
 			state.blockIndex < newBlockOrder.length
 		) {
 			const newClientId = newBlockOrder[ state.blockIndex ];
-			if (
-				newClientId &&
-				typeof state.cursorPosStart !== 'undefined'
-			) {
+			if ( newClientId && 'cursorPosStart' in state ) {
 				// Ranged selection in a single block
 				resetSelection(
 					{
@@ -65,10 +65,7 @@ const restoreSelection = ( state: CursorState, resetSelection: Function ) => {
 						offset: state.cursorPosEnd,
 					}
 				);
-			} else if (
-				newClientId &&
-				typeof state.cursorPos !== 'undefined'
-			) {
+			} else if ( newClientId && 'cursorPos' in state ) {
 				// Collapsed cursor in a single block
 				resetSelection(
 					{
@@ -121,7 +118,10 @@ const handleDataReceived = ( data: any, dependencies: any ) => {
 			const existingBlocks = wp.data
 				.select( 'core/block-editor' )
 				.getBlocks();
-			const engagedBlockIndex = cursorState?.blockIndex;
+			const engagedBlockIndex =
+				cursorState && 'blockIndex' in cursorState
+					? cursorState.blockIndex
+					: undefined;
 
 			const blocksToSet = mergeBlocks(
 				existingBlocks,
