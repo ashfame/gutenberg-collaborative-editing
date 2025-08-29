@@ -9,14 +9,6 @@ interface PresenceUIProps {
 	syncAwareness: ( awareness: CursorState ) => void;
 }
 
-/**
- * A container for presence-related UI components.
- *
- * @param {Object}                                                   props                The props for the component.
- * @param {import('../hooks/types').CollaborativeState['awareness']} props.awarenessState The awareness state.
- * @param {(awareness: any) => void}                                 props.syncAwareness  A function to sync the awareness state.
- * @return {React.ReactElement} The rendered component.
- */
 export const PresenceUI = ( {
 	awarenessState,
 	syncAwareness,

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { MultiCursor } from './MultiCursor';
 import { getCursorState } from './utils';
@@ -73,6 +73,7 @@ export const useMultiCursor = (
 			try {
 				multiCursorRef.current.renderCursors( awarenessState );
 			} catch ( e ) {
+				// eslint-disable-next-line no-console
 				console.error( 'Error rendering cursors:', e );
 			}
 		}

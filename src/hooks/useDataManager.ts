@@ -99,6 +99,7 @@ const handleDataReceived = ( data: any, dependencies: any ) => {
 				content: receivedContent.content.html,
 				title: receivedContent.content.title || '',
 			} );
+			// eslint-disable-next-line no-console
 			console.info( 'Content updated from collaborator 🌗' );
 			restoreSelection( cursorState, resetSelection );
 		} else if (
@@ -124,6 +125,7 @@ const handleDataReceived = ( data: any, dependencies: any ) => {
 			editPost( {
 				content: serialize( blocksToSet ),
 			} );
+			// eslint-disable-next-line no-console
 			console.info( 'Content updated from collaborator 🌓' );
 			restoreSelection( cursorState, resetSelection );
 		}

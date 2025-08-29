@@ -71,6 +71,7 @@ export class MultiCursor {
 				ring_color: awarenessData.color,
 			} );
 		} catch ( e ) {
+			// eslint-disable-next-line no-console
 			console.error(
 				'Failed to parse cursor state for user',
 				userId,
@@ -99,6 +100,7 @@ export class MultiCursor {
 		try {
 			range.setStart( pos.node, pos.offset );
 		} catch ( e ) {
+			// eslint-disable-next-line no-console
 			console.warn( 'Failed to set range start', e, pos );
 			return null;
 		}
@@ -249,6 +251,7 @@ export class MultiCursor {
 					range.setEnd( endPos.node, endPos.offset );
 					addRects( range );
 				} catch ( e ) {
+					// eslint-disable-next-line no-console
 					console.error(
 						'Failed to create range',
 						e,

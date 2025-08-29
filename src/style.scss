@@ -1,3 +1,5 @@
+@import "./avatars";
+
 .editor-post-locked-modal {
 	display: none;
 }
@@ -55,7 +57,7 @@ body.gutenberg-collaborative-editing-readonly .editor-post-save-draft {
 @keyframes blink {
 
 	0%,
- 100% {
+	100% {
 		opacity: 1;
 	}
 
@@ -63,8 +65,6 @@ body.gutenberg-collaborative-editing-readonly .editor-post-save-draft {
 		opacity: 0.5;
 	}
 }
-
-@import "./avatars";
 
 .cursor-overlay {
 	position: absolute;
@@ -91,7 +91,7 @@ body.gutenberg-collaborative-editing-readonly .editor-post-save-draft {
 	transform: translateY(-100%);
 	margin-top: -2px;
 	background-color: #ff6b6b;
-	color: white;
+	color: #fff;
 	white-space: nowrap;
 }
 
