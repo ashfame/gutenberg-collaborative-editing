@@ -4,22 +4,27 @@
     "private": true,
     "scripts": {
         "build": "wp-scripts build",
+        "format": "wp-scripts format",
+        "lint": "npm run lint:js && npm run lint:css",
+        "lint:js": "wp-scripts lint-js",
+        "lint:css": "wp-scripts lint-style",
         "start": "wp-scripts start",
         "packages-update": "wp-scripts packages-update",
-        "wp-env": "wp-env"
+        "wp-env": "wp-env",
+        "type-check": "tsc --noEmit"
     },
     "devDependencies": {
-        "@types/react": "^19.1.12",
-        "@types/react-dom": "^19.1.9",
-        "@wordpress/blocks": "^15.1.0",
-        "@wordpress/components": "^29.12.0",
-        "@wordpress/data": "^10.26.0",
-        "@wordpress/dom-ready": "^4.26.0",
-        "@wordpress/element": "^6.26.0",
-        "@wordpress/env": "^10.26.0",
-        "@wordpress/i18n": "^5.26.0",
-        "@wordpress/plugins": "^7.26.0",
-        "@wordpress/scripts": "^30.19.0",
+        "@types/react": "^18.3.3",
+        "@types/react-dom": "^18.3.0",
+        "@wordpress/blocks": "^15.2.0",
+        "@wordpress/components": "^30.2.0",
+        "@wordpress/data": "^10.29.0",
+        "@wordpress/dom-ready": "^4.29.0",
+        "@wordpress/element": "^6.29.0",
+        "@wordpress/env": "^10.29.0",
+        "@wordpress/i18n": "^6.2.0",
+        "@wordpress/plugins": "^7.29.0",
+        "@wordpress/scripts": "^30.22.0",
         "typescript": "^5.9.2"
     }
 }
