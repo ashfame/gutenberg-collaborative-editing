@@ -26,8 +26,9 @@ export const syncContent = async (
 		formData.append( 'action', window.gce.syncContentAction );
 		formData.append( 'nonce', window.gce.syncContentNonce );
 		formData.append( 'post_id', postId );
-		blockIndex !== undefined &&
+		if ( blockIndex !== undefined ) {
 			formData.append( 'block_index', blockIndex );
+		}
 		formData.append( 'fingerprint', window.gce.fingerprint );
 		formData.append( 'content', JSON.stringify( content ) );
 
