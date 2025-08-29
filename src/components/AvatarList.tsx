@@ -1,5 +1,5 @@
 import UserAvatar from './UserAvatar';
-import { AwarenessInfo } from '@/hooks/types';
+import { AwarenessInfo } from '../hooks/types';
 
 interface AvatarListProps {
 	users: {
@@ -13,7 +13,7 @@ const AvatarList = ( { users }: AvatarListProps ) => {
 
 	// Filter out stale presence based on INACTIVITY_TIMEOUT defined above
 	const activeUsers = Object.fromEntries(
-		Object.entries( users ).filter( ( [ _, userData ] ) => {
+		Object.entries( users ).filter( ( [ , userData ] ) => {
 			const heartbeatAge = Date.now() / 1000 - userData.heartbeat_ts;
 			return heartbeatAge < INACTIVITY_TIMEOUT;
 		} )
