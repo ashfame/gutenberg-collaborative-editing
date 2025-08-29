@@ -77,6 +77,7 @@ export class MultiCursor {
 				awarenessData,
 				e
 			);
+			throw e;
 		}
 	}
 
@@ -98,7 +99,7 @@ export class MultiCursor {
 		try {
 			range.setStart( pos.node, pos.offset );
 		} catch ( e ) {
-			console.error( 'Failed to set range start', e, pos );
+			console.warn( 'Failed to set range start', e, pos );
 			return null;
 		}
 		range.collapse( true );
@@ -254,6 +255,7 @@ export class MultiCursor {
 						startPos,
 						endPos
 					);
+					throw e;
 				}
 			}
 		} else {
@@ -339,10 +341,14 @@ export class MultiCursor {
 
 		// Update state with supplied awareness data
 		Object.keys( awarenessData ).forEach( ( userId ) => {
-			if ( awarenessData[ userId ]?.cursor_state ) {
-				this.updateUser( userId, awarenessData[ userId ] );
-			} else {
-				this.removeUser( userId );
+			try {
+				if ( awarenessData[ userId ]?.cursor_state ) {
+					this.updateUser( userId, awarenessData[ userId ] );
+				} else {
+					this.removeUser( userId );
+				}
+			} catch ( e ) {
+				// This user's awareness data is problematic, but we can continue.
 			}
 		} );
 
@@ -351,66 +357,70 @@ export class MultiCursor {
 
 		// Render each user's cursor
 		this.users.forEach( ( userAwareness, userId ) => {
-			const result = this.getCoordinatesFromCursorState(
-				userAwareness.cursor
-			);
-			if ( ! result ) {
-				return;
-			}
-
-			const color = userAwareness.ring_color;
-
-			if ( result.isSelection ) {
-				// Render selection
-				const { rects } = result;
-				rects.forEach( ( rect ) => {
-					const selection = this.document.createElement( 'div' );
-					selection.className = 'remote-selection';
-					selection.style.left = `${ rect.x }px`;
-					selection.style.top = `${ rect.y }px`;
-					selection.style.width = `${ rect.width }px`;
-					selection.style.height = `${ rect.height }px`;
-					selection.style.backgroundColor = color;
-					this.overlay.appendChild( selection );
-				} );
-
-				const cursor = this.document.createElement( 'div' );
-				cursor.className = 'remote-cursor';
-				const lastRect = rects[ rects.length - 1 ];
-				cursor.style.left = `${ lastRect.x + lastRect.width }px`;
-				cursor.style.top = `${ lastRect.y }px`;
-				cursor.style.backgroundColor = color;
-				if ( lastRect.height ) {
-					cursor.style.height = `${ lastRect.height }px`;
-				}
-				const label = this.document.createElement( 'div' );
-				label.className = 'cursor-label';
-				label.textContent =
-					userAwareness.user?.name || `User ${ userId }`;
-				label.style.backgroundColor = color;
-
-				cursor.appendChild( label );
-				this.overlay.appendChild( cursor );
-			} else if ( 'startCoords' in result ) {
-				// Create cursor element
-				const cursor = this.document.createElement( 'div' );
-				cursor.className = 'remote-cursor';
-				cursor.style.left = `${ result.startCoords.x }px`;
-				cursor.style.top = `${ result.startCoords.y }px`;
-				cursor.style.backgroundColor = color;
-				if ( result.startCoords.height ) {
-					cursor.style.height = `${ result.startCoords.height }px`;
+			try {
+				const result = this.getCoordinatesFromCursorState(
+					userAwareness.cursor
+				);
+				if ( ! result ) {
+					return;
 				}
 
-				// Create label
-				const label = this.document.createElement( 'div' );
-				label.className = 'cursor-label';
-				label.textContent =
-					userAwareness.user?.name || `User ${ userId }`;
-				label.style.backgroundColor = color;
+				const color = userAwareness.ring_color;
 
-				cursor.appendChild( label );
-				this.overlay.appendChild( cursor );
+				if ( result.isSelection ) {
+					// Render selection
+					const { rects } = result;
+					rects.forEach( ( rect ) => {
+						const selection = this.document.createElement( 'div' );
+						selection.className = 'remote-selection';
+						selection.style.left = `${ rect.x }px`;
+						selection.style.top = `${ rect.y }px`;
+						selection.style.width = `${ rect.width }px`;
+						selection.style.height = `${ rect.height }px`;
+						selection.style.backgroundColor = color;
+						this.overlay.appendChild( selection );
+					} );
+
+					const cursor = this.document.createElement( 'div' );
+					cursor.className = 'remote-cursor';
+					const lastRect = rects[ rects.length - 1 ];
+					cursor.style.left = `${ lastRect.x + lastRect.width }px`;
+					cursor.style.top = `${ lastRect.y }px`;
+					cursor.style.backgroundColor = color;
+					if ( lastRect.height ) {
+						cursor.style.height = `${ lastRect.height }px`;
+					}
+					const label = this.document.createElement( 'div' );
+					label.className = 'cursor-label';
+					label.textContent =
+						userAwareness.user?.name || `User ${ userId }`;
+					label.style.backgroundColor = color;
+
+					cursor.appendChild( label );
+					this.overlay.appendChild( cursor );
+				} else if ( 'startCoords' in result ) {
+					// Create cursor element
+					const cursor = this.document.createElement( 'div' );
+					cursor.className = 'remote-cursor';
+					cursor.style.left = `${ result.startCoords.x }px`;
+					cursor.style.top = `${ result.startCoords.y }px`;
+					cursor.style.backgroundColor = color;
+					if ( result.startCoords.height ) {
+						cursor.style.height = `${ result.startCoords.height }px`;
+					}
+
+					// Create label
+					const label = this.document.createElement( 'div' );
+					label.className = 'cursor-label';
+					label.textContent =
+						userAwareness.user?.name || `User ${ userId }`;
+					label.style.backgroundColor = color;
+
+					cursor.appendChild( label );
+					this.overlay.appendChild( cursor );
+				}
+			} catch ( e ) {
+				// This user's cursor state is problematic, but we can continue.
 			}
 		} );
 	}

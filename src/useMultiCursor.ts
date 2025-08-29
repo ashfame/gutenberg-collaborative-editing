@@ -70,7 +70,11 @@ export const useMultiCursor = (
 
 		// Render incoming cursors.
 		if ( multiCursorRef.current && awarenessState ) {
-			multiCursorRef.current.renderCursors( awarenessState );
+			try {
+				multiCursorRef.current.renderCursors( awarenessState );
+			} catch ( e ) {
+				console.error( 'Error rendering cursors:', e );
+			}
 		}
 
 		// Set up event listeners to broadcast our own cursor.
