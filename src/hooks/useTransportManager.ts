@@ -23,9 +23,7 @@ interface UseTransportManagerConfig {
  * @param {string}   config.transport      - The key for the transport to use (e.g., 'long-polling').
  * @param {number}   config.postId         - The ID of the post being edited.
  * @param {Function} config.onDataReceived - Callback function to handle data from the transport.
- * @return {{
- *   send: (data: any) => void
- * }}
+ * @return {{send: (data: any) => void}} An object containing the send function.
  */
 export const useTransportManager = ( {
 	transport,

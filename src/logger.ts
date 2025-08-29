@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 const LOG_LEVELS: { [ key: string ]: number } = {
 	ERROR: 0,
 	WARN: 1,

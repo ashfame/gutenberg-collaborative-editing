@@ -16,8 +16,6 @@ interface GutenbergState {
  *
  * This hook centralizes all interactions with the `@wordpress/data` store,
  * providing a clean and isolated way to access editor-specific data.
- *
- * @return {GutenbergState}
  */
 export const useGutenbergState = (): GutenbergState => {
 	const {
@@ -31,7 +29,7 @@ export const useGutenbergState = (): GutenbergState => {
 
 		const activePostLock = editorSelect?.getActivePostLock?.();
 		const currentUser = coreSelect?.getCurrentUser?.();
-		const currentUserId = currentUser?.id || null;
+		const CUID = currentUser?.id || null;
 		const lockHolderId = activePostLock
 			? parseInt( activePostLock.split( ':' ).pop() )
 			: null;
@@ -41,17 +39,17 @@ export const useGutenbergState = (): GutenbergState => {
 		// we treat it as a read-only state for the current user.
 		const isReadOnly =
 			lockHolderId === null ||
-			( lockHolderId != null && currentUserId !== lockHolderId );
+			( lockHolderId !== null && CUID !== lockHolderId );
 
-		const editorContentHTML = editorSelect?.getEditedPostContent?.() || '';
-		const editorContentTitle =
+		const contentHTML = editorSelect?.getEditedPostContent?.() || '';
+		const contentTitle =
 			editorSelect?.getEditedPostAttribute?.( 'title' ) || '';
 
 		return {
-			currentUserId,
+			currentUserId: CUID,
 			isLockHolder: ! isReadOnly,
-			editorContentHTML,
-			editorContentTitle,
+			editorContentHTML: contentHTML,
+			editorContentTitle: contentTitle,
 		};
 	}, [] );
 

@@ -62,6 +62,7 @@ export const AjaxWithLongPollingTransport = ( {
 			if ( onDataReceivedCallback ) {
 				state.onDataReceived = onDataReceivedCallback;
 			} else {
+				// eslint-disable-next-line no-console
 				console.error(
 					'callback for receiving data is missing from Transport'
 				);

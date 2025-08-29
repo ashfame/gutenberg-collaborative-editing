@@ -1,9 +1,7 @@
-import React from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, useEffect } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { useMultiCursor } from '../useMultiCursor';
 import AvatarList from './AvatarList';
-import { useEffect } from '@wordpress/element';
 import { CollaborativeState, CursorState } from '../hooks/types';
 
 interface PresenceUIProps {

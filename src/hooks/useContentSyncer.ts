@@ -109,9 +109,10 @@ export const useContentSyncer = ( {
 
 	// Cleanup timeout on unmount
 	useEffect( () => {
+		const syncerState = syncState.current;
 		return () => {
-			if ( syncState.current.timeoutId ) {
-				clearTimeout( syncState.current.timeoutId );
+			if ( syncerState.timeoutId ) {
+				clearTimeout( syncerState.timeoutId );
 			}
 		};
 	}, [] );
