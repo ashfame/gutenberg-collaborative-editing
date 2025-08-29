@@ -127,14 +127,23 @@ export class MultiCursor {
 		blockIndex: number,
 		cursorPos: number
 	): { startCoords: { x: number; y: number; height: number }; isSelection: false } | null {
-		const blocks = window.wp?.data?.select( 'core/block-editor' ).getBlockOrder();
+		const blocks = window.wp?.data
+			?.select( 'core/block-editor' )
+			.getBlockOrder();
 		if ( ! blocks || blockIndex >= blocks.length ) return null;
 
-		const clientId = blocks[blockIndex];
-		const blockEl = this.document.querySelector(`[data-block="${clientId}"] .rich-text`) ||
-			this.document.querySelector(`[data-block="${clientId}"] .block-editor-rich-text__editable`) ||
-			this.document.querySelector(`[data-block="${clientId}"]`);
-		if (!blockEl) return null;
+		const clientId = blocks[ blockIndex ];
+		const blockEl =
+			this.document.querySelector< HTMLElement >(
+				`[data-block="${ clientId }"] .rich-text`
+			) ||
+			this.document.querySelector< HTMLElement >(
+				`[data-block="${ clientId }"] .block-editor-rich-text__editable`
+			) ||
+			this.document.querySelector< HTMLElement >(
+				`[data-block="${ clientId }"]`
+			);
+		if ( ! blockEl ) return null;
 
 		const coords = this.getPos( blockEl, cursorPos );
 		return coords ? { startCoords: coords, isSelection: false } : null;
@@ -151,86 +160,117 @@ export class MultiCursor {
 			( blockIndexStart === blockIndexEnd &&
 				cursorPosStart > cursorPosEnd )
 		) {
-			[blockIndexStart, blockIndexEnd] = [blockIndexEnd, blockIndexStart];
-			[cursorPosStart, cursorPosEnd] = [cursorPosEnd, cursorPosStart];
+			[ blockIndexStart, blockIndexEnd ] = [
+				blockIndexEnd,
+				blockIndexStart,
+			];
+			[ cursorPosStart, cursorPosEnd ] = [ cursorPosEnd, cursorPosStart ];
 		}
 
-		const blocks = window.wp?.data?.select( 'core/block-editor' ).getBlockOrder();
-		if ( ! blocks || blockIndexStart >= blocks.length || blockIndexEnd >= blocks.length ) return null;
+		const blocks = window.wp?.data
+			?.select( 'core/block-editor' )
+			.getBlockOrder();
+		if (
+			! blocks ||
+			blockIndexStart >= blocks.length ||
+			blockIndexEnd >= blocks.length
+		)
+			return null;
 
-		const startClientId = blocks[blockIndexStart];
-		const endClientId = blocks[blockIndexEnd];
+		const startClientId = blocks[ blockIndexStart ];
+		const endClientId = blocks[ blockIndexEnd ];
 
-		const getBlockEl = (clientId) =>
-			this.document.querySelector(`[data-block="${clientId}"] .rich-text`) ||
-			this.document.querySelector(`[data-block="${clientId}"] .block-editor-rich-text__editable`) ||
-			this.document.querySelector(`[data-block="${clientId}"]`);
+		const getBlockEl = ( clientId: string ) =>
+			this.document.querySelector< HTMLElement >(
+				`[data-block="${ clientId }"] .rich-text`
+			) ||
+			this.document.querySelector< HTMLElement >(
+				`[data-block="${ clientId }"] .block-editor-rich-text__editable`
+			) ||
+			this.document.querySelector< HTMLElement >(
+				`[data-block="${ clientId }"]`
+			);
 
-		const startBlockEl = getBlockEl(startClientId);
-		const endBlockEl = getBlockEl(endClientId);
+		const startBlockEl = getBlockEl( startClientId );
+		const endBlockEl = getBlockEl( endClientId );
 
 		if ( ! startBlockEl || ! endBlockEl ) {
 			return null;
 		}
 
 		const overlayRect = this.overlay.getBoundingClientRect();
-		const rects = [];
+		const rects: any[] = [];
 
-		const addRects = (range) => {
+		const addRects = ( range: Range ) => {
 			const clientRects = range.getClientRects();
-			for (const rect of clientRects) {
-				rects.push({
+			for ( const rect of clientRects ) {
+				rects.push( {
 					x: rect.left - overlayRect.left,
 					y: rect.top - overlayRect.top,
 					width: rect.width,
 					height: rect.height,
-				});
+				} );
 			}
 		};
 
-		if (blockIndexStart === blockIndexEnd) {
+		if ( blockIndexStart === blockIndexEnd ) {
 			const range = this.document.createRange();
-			const startPos = this.findTextPosition(startBlockEl, cursorPosStart);
-			const endPos = this.findTextPosition(endBlockEl, cursorPosEnd);
-			if (startPos.node && endPos.node) {
+			const startPos = this.findTextPosition(
+				startBlockEl,
+				cursorPosStart
+			);
+			const endPos = this.findTextPosition( endBlockEl, cursorPosEnd );
+			if ( startPos.node && endPos.node ) {
 				try {
-					range.setStart(startPos.node, startPos.offset);
-					range.setEnd(endPos.node, endPos.offset);
-					addRects(range);
-				} catch (e) {
-					console.error('Failed to create range', e, startPos, endPos);
+					range.setStart( startPos.node, startPos.offset );
+					range.setEnd( endPos.node, endPos.offset );
+					addRects( range );
+				} catch ( e ) {
+					console.error(
+						'Failed to create range',
+						e,
+						startPos,
+						endPos
+					);
 				}
 			}
 		} else {
 			// Multi-block selection
 			// 1. Rects for the start block
 			const startRange = this.document.createRange();
-			const startPos = this.findTextPosition(startBlockEl, cursorPosStart);
-			const endOfStartBlock = this.findTextPosition(startBlockEl, startBlockEl.textContent.length);
-			startRange.setStart(startPos.node, startPos.offset);
-			startRange.setEnd(endOfStartBlock.node, endOfStartBlock.offset);
-			addRects(startRange);
+			const startPos = this.findTextPosition(
+				startBlockEl,
+				cursorPosStart
+			);
+			const endOfStartBlock = this.findTextPosition(
+				startBlockEl,
+				startBlockEl.textContent.length
+			);
+			startRange.setStart( startPos.node, startPos.offset );
+			startRange.setEnd( endOfStartBlock.node, endOfStartBlock.offset );
+			addRects( startRange );
 
 			// 2. Rects for intermediate blocks
-			for (let i = blockIndexStart + 1; i < blockIndexEnd; i++) {
-				const intermediateBlockEl = getBlockEl(blocks[i]);
-				if (intermediateBlockEl) {
+			for ( let i = blockIndexStart + 1; i < blockIndexEnd; i++ ) {
+				const intermediateBlockEl = getBlockEl( blocks[ i ] );
+				if ( intermediateBlockEl ) {
 					const intermediateRange = this.document.createRange();
-					intermediateRange.selectNodeContents(intermediateBlockEl);
-					addRects(intermediateRange);
+					intermediateRange.selectNodeContents( intermediateBlockEl );
+					addRects( intermediateRange );
 				}
 			}
 
 			// 3. Rects for the end block
 			const endRange = this.document.createRange();
-			const startOfEndBlock = this.findTextPosition(endBlockEl, 0);
-			const endPos = this.findTextPosition(endBlockEl, cursorPosEnd);
-			endRange.setStart(startOfEndBlock.node, startOfEndBlock.offset);
-			endRange.setEnd(endPos.node, endPos.offset);
-			addRects(endRange);
+			const startOfEndBlock = this.findTextPosition( endBlockEl, 0 );
+			const endPos = this.findTextPosition( endBlockEl, cursorPosEnd );
+			endRange.setStart( startOfEndBlock.node, startOfEndBlock.offset );
+			endRange.setEnd( endPos.node, endPos.offset );
+			addRects( endRange );
 		}
 
-		const result = rects.length > 0 ? { rects, isSelection: true } : null;
+		const result =
+			rects.length > 0 ? { rects, isSelection: true as const } : null;
 		return result;
 	}
 
@@ -284,64 +324,68 @@ export class MultiCursor {
 		this.overlay.innerHTML = '';
 
 		// Render each user's cursor
-		this.users.forEach((userAwareness, userId) => {
-			const result = this.getCoordinatesFromCursorState(userAwareness.cursor);
-			if (!result) {
+		this.users.forEach( ( userAwareness, userId ) => {
+			const result = this.getCoordinatesFromCursorState(
+				userAwareness.cursor
+			);
+			if ( ! result ) {
 				return;
 			}
 
 			const color = userAwareness.ring_color;
 
-			if (result.isSelection) {
+			if ( result.isSelection ) {
 				// Render selection
 				const { rects } = result;
-				rects.forEach(rect => {
-					const selection = this.document.createElement('div');
+				rects.forEach( ( rect ) => {
+					const selection = this.document.createElement( 'div' );
 					selection.className = 'remote-selection';
-					selection.style.left = `${rect.x}px`;
-					selection.style.top = `${rect.y}px`;
-					selection.style.width = `${rect.width}px`;
-					selection.style.height = `${rect.height}px`;
+					selection.style.left = `${ rect.x }px`;
+					selection.style.top = `${ rect.y }px`;
+					selection.style.width = `${ rect.width }px`;
+					selection.style.height = `${ rect.height }px`;
 					selection.style.backgroundColor = color;
-					this.overlay.appendChild(selection);
-				});
+					this.overlay.appendChild( selection );
+				} );
 
-				const cursor = this.document.createElement('div');
+				const cursor = this.document.createElement( 'div' );
 				cursor.className = 'remote-cursor';
-				const lastRect = rects[rects.length - 1];
-				cursor.style.left = `${lastRect.x + lastRect.width}px`;
-				cursor.style.top = `${lastRect.y}px`;
+				const lastRect = rects[ rects.length - 1 ];
+				cursor.style.left = `${ lastRect.x + lastRect.width }px`;
+				cursor.style.top = `${ lastRect.y }px`;
 				cursor.style.backgroundColor = color;
-				if (lastRect.height) {
-					cursor.style.height = `${lastRect.height}px`;
+				if ( lastRect.height ) {
+					cursor.style.height = `${ lastRect.height }px`;
 				}
-				const label = this.document.createElement('div');
+				const label = this.document.createElement( 'div' );
 				label.className = 'cursor-label';
-				label.textContent = userAwareness.user?.name || `User ${userId}`;
+				label.textContent =
+					userAwareness.user?.name || `User ${ userId }`;
 				label.style.backgroundColor = color;
 
-				cursor.appendChild(label);
-				this.overlay.appendChild(cursor);
-			} else {
+				cursor.appendChild( label );
+				this.overlay.appendChild( cursor );
+			} else if ( 'startCoords' in result ) {
 				// Create cursor element
-				const cursor = this.document.createElement('div');
+				const cursor = this.document.createElement( 'div' );
 				cursor.className = 'remote-cursor';
-				cursor.style.left = `${result.startCoords.x}px`;
-				cursor.style.top = `${result.startCoords.y}px`;
+				cursor.style.left = `${ result.startCoords.x }px`;
+				cursor.style.top = `${ result.startCoords.y }px`;
 				cursor.style.backgroundColor = color;
-				if (result.startCoords.height) {
-					cursor.style.height = `${result.startCoords.height}px`;
+				if ( result.startCoords.height ) {
+					cursor.style.height = `${ result.startCoords.height }px`;
 				}
-				
+
 				// Create label
-				const label = this.document.createElement('div');
+				const label = this.document.createElement( 'div' );
 				label.className = 'cursor-label';
-				label.textContent = userAwareness.user?.name || `User ${userId}`;
+				label.textContent =
+					userAwareness.user?.name || `User ${ userId }`;
 				label.style.backgroundColor = color;
 
-				cursor.appendChild(label);
-				this.overlay.appendChild(cursor);
+				cursor.appendChild( label );
+				this.overlay.appendChild( cursor );
 			}
-		});
+		} );
 	}
 }

@@ -121,7 +121,7 @@ export const getCursorState = (): CursorState | null => {
  * @param {number} engagedBlockIndex The index of the block currently being edited.
  * @returns {Array} The merged set of blocks.
  */
-export const mergeBlocks = ( existingBlocks: any[], receivedBlocks: any[], engagedBlockIndex: number ) => {
+export const mergeBlocks = ( existingBlocks: any[], receivedBlocks: any[], engagedBlockIndex: number ): Array<any> => {
 	// Create a mutable copy of the received blocks.
 	const blocksToSet = [ ...receivedBlocks ];
 
