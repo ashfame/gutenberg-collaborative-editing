@@ -1,9 +1,13 @@
+import React, { useState, useEffect } from '@wordpress/element';
 import { Modal, Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { useState, useEffect } from '@wordpress/element';
 import { ReadOnlyBadge } from './ReadOnlyBadge';
 
-export const ReadOnlyUI = ( { isReadOnly } ) => {
+interface ReadOnlyUIProps {
+	isReadOnly: boolean;
+}
+
+export const ReadOnlyUI = ( { isReadOnly }: ReadOnlyUIProps ) => {
 	const [ showModal, setShowModal ] = useState( isReadOnly );
 
 	useEffect( () => {
@@ -16,7 +20,10 @@ export const ReadOnlyUI = ( { isReadOnly } ) => {
 			{ showModal && (
 				<Modal
 					className="gutenberg-collaborative-editing-read-only-modal"
-					title={ __( 'Read-Only Mode', 'gutenberg-collaborative-editing' ) }
+					title={ __(
+						'Read-Only Mode',
+						'gutenberg-collaborative-editing'
+					) }
 					onRequestClose={ () => setShowModal( false ) }
 				>
 					<p>
@@ -25,7 +32,10 @@ export const ReadOnlyUI = ( { isReadOnly } ) => {
 							'gutenberg-collaborative-editing'
 						) }
 					</p>
-					<Button variant="primary" onClick={ () => setShowModal( false ) }>
+					<Button
+						variant="primary"
+						onClick={ () => setShowModal( false ) }
+					>
 						{ __( 'Okay', 'gutenberg-collaborative-editing' ) }
 					</Button>
 				</Modal>

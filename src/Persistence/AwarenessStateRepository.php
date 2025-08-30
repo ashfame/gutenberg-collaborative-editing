@@ -45,7 +45,9 @@ class AwarenessStateRepository {
 		foreach ( $state as $user_id => $user_state ) {
 			$user                             = get_userdata( $user_id );
 			$state[ $user_id ][ 'user_data' ] = [
+				'id'     => $user_id,
 				'name'   => $user->display_name ?: $user->user_login,
+				'slug'   => $user->user_login,
 				'avatar' => get_avatar_url(
 					$user_id,
 					[

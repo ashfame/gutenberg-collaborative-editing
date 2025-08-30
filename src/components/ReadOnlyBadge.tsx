@@ -1,18 +1,23 @@
-import { useEffect } from '@wordpress/element';
+import React, { useEffect, createRoot } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { createRoot } from '@wordpress/element';
 import { Icon } from '@wordpress/components';
 
 export const ReadOnlyBadge = () => {
 	useEffect( () => {
-		const targetElement = document.querySelector( '.editor-header__settings' );
+		const targetElement = document.querySelector(
+			'.editor-header__settings'
+		);
 
 		if ( ! targetElement ) {
 			return;
 		}
 
 		// Don't add if it already exists. This can happen with fast re-renders.
-		if ( targetElement.querySelector( '.gutenberg-collaborative-editing-readonly-badge' ) ) {
+		if (
+			targetElement.querySelector(
+				'.gutenberg-collaborative-editing-readonly-badge'
+			)
+		) {
 			return;
 		}
 
@@ -23,8 +28,10 @@ export const ReadOnlyBadge = () => {
 		const root = createRoot( badge );
 		const badgeContent = (
 			<>
-				<Icon size={18} icon="lock" />
-				<span style={ { marginLeft: '4px' } }>{ __( 'Read-only', 'gutenberg-collaborative-editing' ) }</span>
+				<Icon size={ 18 } icon="lock" />
+				<span style={ { marginLeft: '4px' } }>
+					{ __( 'Read-only', 'gutenberg-collaborative-editing' ) }
+				</span>
 			</>
 		);
 

@@ -1,13 +1,25 @@
 import { pollForUpdates, syncContent, syncAwareness } from '../api';
+import { CursorState } from '../hooks/types';
+import { ITransport, TransportAction } from './types';
 
 /**
  * Creates a Long Polling transport layer.
  *
  * @param {number} postId The initial data for the transport.
- * @returns {import('./types').ITransport} An ITransport-compliant object.
+ * @return {import('./types').ITransport} An ITransport-compliant object.
  */
-export const AjaxWithLongPollingTransport = ( { postId } ) => {
-	const state = {
+export const AjaxWithLongPollingTransport = ( {
+	postId,
+}: {
+	postId: number;
+} ): ITransport => {
+	const state: {
+		isPolling: boolean;
+		shouldStop: boolean;
+		lastReceivedTimestamp: number;
+		onDataReceived: ( ( data: any ) => void ) | null;
+		awarenessState: any | null;
+	} = {
 		isPolling: false,
 		shouldStop: false,
 		lastReceivedTimestamp: 0,
@@ -29,7 +41,9 @@ export const AjaxWithLongPollingTransport = ( { postId } ) => {
 			);
 
 			if ( data ) {
-				state.onDataReceived( data );
+				if ( state.onDataReceived ) {
+					state.onDataReceived( data );
+				}
 
 				// Update local state for later calls
 				if ( data.awareness ) {
@@ -57,7 +71,10 @@ export const AjaxWithLongPollingTransport = ( { postId } ) => {
 			if ( onDataReceivedCallback ) {
 				state.onDataReceived = onDataReceivedCallback;
 			} else {
-				console.error( 'callback for receiving data is missing from Transport' );
+				// eslint-disable-next-line no-console
+				console.error(
+					'callback for receiving data is missing from Transport'
+				);
 			}
 			state.isPolling = true;
 			longPoll();
@@ -66,17 +83,19 @@ export const AjaxWithLongPollingTransport = ( { postId } ) => {
 		/**
 		 * @param {import('./types').TransportAction} action
 		 */
-		send: async ( action ) => {
+		send: async ( action: TransportAction ): Promise< void > => {
 			switch ( action.type ) {
 				case 'content': {
-					return syncContent(
+					await syncContent(
 						postId,
 						action.payload.content,
 						action.payload.blockIndex
 					);
+					return;
 				}
 				case 'awareness': {
-					return syncAwareness( postId, action.payload );
+					await syncAwareness( postId, action.payload );
+					return;
 				}
 				default:
 					return Promise.resolve();

@@ -1,19 +1,29 @@
 import { useEffect, useRef } from '@wordpress/element';
+import { CursorState } from './types';
+
+interface UseContentSyncerConfig {
+	collaborationMode: string;
+	isLockHolder: boolean;
+	postId: number;
+	editorContent: any;
+	blockContent: string; // current block content
+	cursorState: CursorState | null;
+	onSync: ( payload: { content: any; blockIndex?: number } ) => void;
+}
 
 /**
  * Handles the logic for syncing editor content changes.
  *
  * This hook debounces content changes to avoid excessive network requests and
  * calls a sync function when the content has stabilized.
- *
- * @param {object}   config
- * @param {string}   config.collaborationMode - The collaboration mode.
- * @param {boolean}  config.isLockHolder  - Is user the lock holder.
- * @param {number}   config.postId       - The ID of the post.
- * @param {object}   config.editorContent - The current editor content.
- * @param {string}   config.blockContent  - The current block content.
- * @param {object}   config.cursorState  - The current cursor state.
- * @param {Function} config.onSync        - The function to call to sync the content.
+ * @param root0
+ * @param root0.collaborationMode
+ * @param root0.isLockHolder
+ * @param root0.postId
+ * @param root0.editorContent
+ * @param root0.blockContent
+ * @param root0.cursorState
+ * @param root0.onSync
  */
 export const useContentSyncer = ( {
 	collaborationMode,
@@ -23,9 +33,9 @@ export const useContentSyncer = ( {
 	blockContent,
 	cursorState,
 	onSync,
-} ) => {
+}: UseContentSyncerConfig ) => {
 	const syncState = useRef( {
-		timeoutId: null,
+		timeoutId: null as number | null,
 		lastContent: '',
 	} );
 
@@ -54,7 +64,7 @@ export const useContentSyncer = ( {
 			}
 
 			// Schedule sync after 200ms delay
-			syncState.current.timeoutId = setTimeout( () => {
+			syncState.current.timeoutId = window.setTimeout( () => {
 				onSync( { content: editorContent } );
 			}, 200 );
 		}
@@ -70,7 +80,7 @@ export const useContentSyncer = ( {
 			return;
 		}
 
-		if ( ! cursorState || cursorState && cursorState.blockIndex === undefined ) {
+		if ( ! cursorState || ! ( 'blockIndex' in cursorState ) ) {
 			return;
 		}
 
@@ -85,7 +95,7 @@ export const useContentSyncer = ( {
 			}
 
 			// Schedule sync after 200ms delay
-			syncState.current.timeoutId = setTimeout( () => {
+			syncState.current.timeoutId = window.setTimeout( () => {
 				onSync( {
 					content: blockContent,
 					blockIndex: cursorState.blockIndex,
@@ -96,9 +106,10 @@ export const useContentSyncer = ( {
 
 	// Cleanup timeout on unmount
 	useEffect( () => {
+		const syncerState = syncState.current;
 		return () => {
-			if ( syncState.current.timeoutId ) {
-				clearTimeout( syncState.current.timeoutId );
+			if ( syncerState.timeoutId ) {
+				clearTimeout( syncerState.timeoutId );
 			}
 		};
 	}, [] );
