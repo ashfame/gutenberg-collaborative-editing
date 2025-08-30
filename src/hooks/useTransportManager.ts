@@ -47,9 +47,12 @@ export const useTransportManager = ( {
 		const transportInstance = Transport( { postId } );
 		transportRef.current = transportInstance;
 
-		transportInstance.connect( onDataReceived );
+		const timeoutId = setTimeout(() => {
+			transportInstance.connect(onDataReceived);
+		}, 100);
 
 		return () => {
+			clearTimeout(timeoutId);
 			transportInstance.disconnect();
 		};
 	}, [ transport, postId, onDataReceived ] );
