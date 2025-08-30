@@ -1,4 +1,5 @@
 import { pollForUpdates, syncContent, syncAwareness } from '../api';
+import { CursorState } from '../hooks/types';
 import { ITransport, TransportAction } from './types';
 
 /**
@@ -12,7 +13,13 @@ export const AjaxWithLongPollingTransport = ( {
 }: {
 	postId: number;
 } ): ITransport => {
-	const state = {
+	const state: {
+		isPolling: boolean;
+		shouldStop: boolean;
+		lastReceivedTimestamp: number;
+		onDataReceived: ( ( data: any ) => void ) | null;
+		awarenessState: any | null;
+	} = {
 		isPolling: false,
 		shouldStop: false,
 		lastReceivedTimestamp: 0,
@@ -34,7 +41,9 @@ export const AjaxWithLongPollingTransport = ( {
 			);
 
 			if ( data ) {
-				state.onDataReceived( data );
+				if ( state.onDataReceived ) {
+					state.onDataReceived( data );
+				}
 
 				// Update local state for later calls
 				if ( data.awareness ) {
@@ -74,17 +83,19 @@ export const AjaxWithLongPollingTransport = ( {
 		/**
 		 * @param {import('./types').TransportAction} action
 		 */
-		send: async ( action: TransportAction ) => {
+		send: async ( action: TransportAction ): Promise< void > => {
 			switch ( action.type ) {
 				case 'content': {
-					return syncContent(
+					await syncContent(
 						postId,
 						action.payload.content,
 						action.payload.blockIndex
 					);
+					return;
 				}
 				case 'awareness': {
-					return syncAwareness( postId, action.payload );
+					await syncAwareness( postId, action.payload );
+					return;
 				}
 				default:
 					return Promise.resolve();

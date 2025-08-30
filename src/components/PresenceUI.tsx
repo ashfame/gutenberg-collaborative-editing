@@ -1,8 +1,9 @@
-import { createPortal, useEffect } from '@wordpress/element';
+import React, { createPortal, useEffect } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { useMultiCursor } from '../useMultiCursor';
 import AvatarList from './AvatarList';
 import { CollaborativeState, CursorState } from '../hooks/types';
+import { store as coreStore } from '@wordpress/core-data';
 
 interface PresenceUIProps {
 	awarenessState: CollaborativeState[ 'awareness' ];
@@ -23,13 +24,15 @@ export const PresenceUI = ( {
 
 	const { currentUserId } = useSelect(
 		( select ) => ( {
-			currentUserId: select( 'core' )?.getCurrentUser()?.id,
+			currentUserId: select( coreStore )?.getCurrentUser()?.id,
 		} ),
 		[]
 	);
 
 	// Modify awareness state to exclude current user
-	delete awarenessState[ currentUserId ];
+	if ( currentUserId ) {
+		delete awarenessState[ currentUserId ];
+	}
 
 	useMultiCursor( currentUserId, awarenessState, syncAwareness );
 

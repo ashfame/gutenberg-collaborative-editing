@@ -1,7 +1,7 @@
 import { useDataManager } from './hooks/useDataManager';
 import { PresenceUI } from './components/PresenceUI';
 import { ReadOnlyUI } from './components/ReadOnlyUI';
-import { useEffect } from '@wordpress/element';
+import React, { useEffect } from '@wordpress/element';
 import { lockEditor, releaseEditor } from './utils';
 
 export const CollaborativeEditing = () => {
@@ -29,7 +29,7 @@ export const CollaborativeEditing = () => {
 			const editorElementOnCleanup = document.querySelector(
 				'.editor-visual-editor'
 			);
-			if ( editorElementOnCleanup ) {
+			if ( editorElementOnCleanup instanceof HTMLElement ) {
 				releaseEditor( editorElementOnCleanup );
 			}
 			wp.data
@@ -44,7 +44,9 @@ export const CollaborativeEditing = () => {
 			document.body.classList.add(
 				'gutenberg-collaborative-editing-readonly'
 			);
-			lockEditor( editorElement );
+			if ( editorElement ) {
+				lockEditor( editorElement );
+			}
 			wp.data
 				.dispatch( 'core/editor' )
 				.lockPostSaving( 'collaborative-editing' );

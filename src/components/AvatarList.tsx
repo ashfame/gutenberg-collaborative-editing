@@ -1,3 +1,4 @@
+import React from '@wordpress/element';
 import UserAvatar from './UserAvatar';
 import { AwarenessInfo } from '../hooks/types';
 

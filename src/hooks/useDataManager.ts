@@ -118,7 +118,7 @@ const handleDataReceived = ( data: any, dependencies: any ) => {
 			const blocksToSet = mergeBlocks(
 				existingBlocks,
 				receivedBlocks,
-				engagedBlockIndex
+				engagedBlockIndex ?? -1
 			);
 
 			resetBlocks( blocksToSet );
@@ -232,7 +232,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		isLockHolder,
 		postId,
 		editorContent,
-		blockContent,
+		blockContent: blockContent || '',
 		cursorState,
 		onSync: syncContent,
 	} );

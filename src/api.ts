@@ -25,9 +25,9 @@ export const syncContent = async (
 		const formData = new FormData();
 		formData.append( 'action', window.gce.syncContentAction );
 		formData.append( 'nonce', window.gce.syncContentNonce );
-		formData.append( 'post_id', postId );
+		formData.append( 'post_id', String( postId ) );
 		if ( blockIndex !== undefined ) {
-			formData.append( 'block_index', blockIndex );
+			formData.append( 'block_index', String( blockIndex ) );
 		}
 		formData.append( 'fingerprint', window.gce.fingerprint );
 		formData.append( 'content', JSON.stringify( content ) );
@@ -75,7 +75,7 @@ export const syncAwareness = async (
 		const formData = new FormData();
 		formData.append( 'action', window.gce.syncAwarenessAction );
 		formData.append( 'nonce', window.gce.syncAwarenessNonce );
-		formData.append( 'post_id', postId );
+		formData.append( 'post_id', String( postId ) );
 		formData.append( 'cursor_state', JSON.stringify( cursorState ) );
 
 		const response = await fetch( window.gce.ajaxUrl, {
@@ -126,9 +126,9 @@ export const pollForUpdates = async (
 		const url = new URL( window.gce.ajaxUrl );
 		url.searchParams.append( 'action', window.gce.pollAction );
 		url.searchParams.append( 'nonce', window.gce.pollNonce );
-		url.searchParams.append( 'post_id', postId );
+		url.searchParams.append( 'post_id', String( postId ) );
 		url.searchParams.append( 'fingerprint', window.gce.fingerprint );
-		url.searchParams.append( 'last_timestamp', lastTimestamp );
+		url.searchParams.append( 'last_timestamp', String( lastTimestamp ) );
 		url.searchParams.append( 'awareness', JSON.stringify( awarenessData ) );
 
 		const response = await fetch( url.toString(), {

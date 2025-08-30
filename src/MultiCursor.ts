@@ -36,7 +36,7 @@ export class MultiCursor {
 		let lastTextNode = null;
 
 		while ( ( node = walker.nextNode() ) ) {
-			const len = node.nodeValue.length;
+			const len = node.nodeValue?.length || 0;
 			if ( currentOffset + len >= offset ) {
 				return { node, offset: offset - currentOffset };
 			}
@@ -47,7 +47,7 @@ export class MultiCursor {
 		if ( lastTextNode ) {
 			return {
 				node: lastTextNode,
-				offset: lastTextNode.nodeValue.length,
+				offset: lastTextNode.nodeValue?.length || 0,
 			};
 		}
 

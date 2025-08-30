@@ -2,6 +2,8 @@ import { useSelect } from '@wordpress/data';
 import { useMemo } from '@wordpress/element';
 import { getCursorState } from '../utils';
 import { CursorState } from './types';
+import { store as coreStore } from '@wordpress/core-data';
+import { store as editorStore } from '@wordpress/editor';
 
 interface GutenbergState {
 	currentUserId: number | null;
@@ -24,11 +26,15 @@ export const useGutenbergState = (): GutenbergState => {
 		editorContentHTML,
 		editorContentTitle,
 	} = useSelect( ( select ) => {
-		const editorSelect = select( 'core/editor' );
-		const coreSelect = select( 'core' );
+		const editorSelect = select( editorStore );
+		const coreSelect = select( coreStore );
 
-		const activePostLock = editorSelect?.getActivePostLock?.();
-		const currentUser = coreSelect?.getCurrentUser?.();
+		const activePostLock = (
+			editorSelect as /** @type {import('@wordpress/editor').EditorSelector} */ ( any )
+		).getActivePostLock();
+		const currentUser = (
+			coreSelect as /** @type {import('@wordpress/core-data').CoreDataSelector} */ ( any )
+		).getCurrentUser();
 		const CUID = currentUser?.id || null;
 		const lockHolderId = activePostLock
 			? parseInt( activePostLock.split( ':' ).pop() )
@@ -41,9 +47,14 @@ export const useGutenbergState = (): GutenbergState => {
 			lockHolderId === null ||
 			( lockHolderId !== null && CUID !== lockHolderId );
 
-		const contentHTML = editorSelect?.getEditedPostContent?.() || '';
+		const contentHTML =
+			(
+				editorSelect as /** @type {import('@wordpress/editor').EditorSelector} */ ( any )
+			).getEditedPostContent() || '';
 		const contentTitle =
-			editorSelect?.getEditedPostAttribute?.( 'title' ) || '';
+			(
+				editorSelect as /** @type {import('@wordpress/editor').EditorSelector} */ ( any )
+			).getEditedPostAttribute( 'title' ) || '';
 
 		return {
 			currentUserId: CUID,

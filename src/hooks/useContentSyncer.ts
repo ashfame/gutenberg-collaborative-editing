@@ -35,7 +35,7 @@ export const useContentSyncer = ( {
 	onSync,
 }: UseContentSyncerConfig ) => {
 	const syncState = useRef( {
-		timeoutId: null,
+		timeoutId: null as number | null,
 		lastContent: '',
 	} );
 
@@ -64,7 +64,7 @@ export const useContentSyncer = ( {
 			}
 
 			// Schedule sync after 200ms delay
-			syncState.current.timeoutId = setTimeout( () => {
+			syncState.current.timeoutId = window.setTimeout( () => {
 				onSync( { content: editorContent } );
 			}, 200 );
 		}
@@ -80,10 +80,7 @@ export const useContentSyncer = ( {
 			return;
 		}
 
-		if (
-			! cursorState ||
-			( cursorState && cursorState.blockIndex === undefined )
-		) {
+		if ( ! cursorState || ! ( 'blockIndex' in cursorState ) ) {
 			return;
 		}
 
@@ -98,7 +95,7 @@ export const useContentSyncer = ( {
 			}
 
 			// Schedule sync after 200ms delay
-			syncState.current.timeoutId = setTimeout( () => {
+			syncState.current.timeoutId = window.setTimeout( () => {
 				onSync( {
 					content: blockContent,
 					blockIndex: cursorState.blockIndex,
