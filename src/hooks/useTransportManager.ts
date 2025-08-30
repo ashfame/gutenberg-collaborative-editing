@@ -1,16 +1,18 @@
 import { useEffect, useRef, useCallback } from '@wordpress/element';
 import { AjaxWithLongPollingTransport } from '../transports/AjaxWithLongPolling';
-import { ITransport, TransportAction } from '../transports/types';
+import { ITransport, TransportAction, TransportReceivedData } from '../transports/types';
+
+export type OnDataReceivedCallback<T> = ( data: T ) => void;
 
 const transportFactory: { [ key: string ]: any } = {
 	'ajax-with-long-polling': AjaxWithLongPollingTransport,
 	// More transports can be added here
 };
 
-interface UseTransportManagerConfig {
+export interface UseTransportManagerConfig<T> {
 	transport: string;
 	postId: number;
-	onDataReceived: ( data: any ) => void;
+	onDataReceived: OnDataReceivedCallback<T>;
 }
 
 /**
@@ -25,11 +27,11 @@ interface UseTransportManagerConfig {
  * @param {Function} config.onDataReceived - Callback function to handle data from the transport.
  * @return {{send: (data: any) => void}} An object containing the send function.
  */
-export const useTransportManager = ( {
+export const useTransportManager = <T>( {
 	transport,
 	postId,
 	onDataReceived,
-}: UseTransportManagerConfig ) => {
+}: UseTransportManagerConfig<T> ): { send: (data: any) => void; } => {
 	const transportRef = useRef< ITransport | null >( null );
 
 	useEffect( () => {
@@ -48,7 +50,7 @@ export const useTransportManager = ( {
 		transportRef.current = transportInstance;
 
 		const timeoutId = setTimeout(() => {
-			transportInstance.connect(onDataReceived);
+			transportInstance.connect(onDataReceived as (data: TransportReceivedData) => void);
 		}, 100);
 
 		return () => {

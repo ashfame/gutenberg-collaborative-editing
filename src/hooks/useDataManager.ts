@@ -1,12 +1,13 @@
 import { useEffect, useReducer, useCallback } from '@wordpress/element';
 import { useGutenbergState } from './useGutenbergState';
-import { useTransportManager } from './useTransportManager';
+import { useTransportManager, UseTransportManagerConfig } from './useTransportManager';
 import { useContentSyncer } from './useContentSyncer';
 import { useDispatch } from '@wordpress/data';
 import { parse, serialize } from '@wordpress/blocks';
 import { useCollaborationMode } from './useCollaborationMode';
 import { getCursorState, mergeBlocks } from '../utils';
 import { CollaborativeState, CursorState } from './types';
+import { TransportReceivedData } from '../transports/types';
 
 const restoreSelection = (
 	state: CursorState | null,
@@ -81,7 +82,10 @@ const restoreSelection = (
 	}, 0 );
 };
 
-const handleDataReceived = ( data: any, dependencies: any ) => {
+const handleDataReceived = (
+	data: TransportReceivedData,
+	dependencies: any
+) => {
 	if ( ! data ) {
 		return;
 	}
@@ -196,7 +200,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	const { resetBlocks, resetSelection } = useDispatch( 'core/block-editor' );
 
 	const onDataReceived = useCallback(
-		( data: any ) => {
+		( data: TransportReceivedData ) => {
 			handleDataReceived( data, {
 				editPost,
 				resetBlocks,
@@ -211,7 +215,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		transport,
 		postId,
 		onDataReceived,
-	} );
+	} as UseTransportManagerConfig< TransportReceivedData > );
 
 	const syncAwareness = ( awareness: CursorState ) => {
 		send( { type: 'awareness', payload: awareness } );

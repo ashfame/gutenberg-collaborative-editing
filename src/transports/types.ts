@@ -5,8 +5,14 @@ export interface TransportAction {
 	payload: any;
 }
 
+export interface TransportReceivedData {
+	awareness: any;
+	content: any;
+	modified: boolean;
+}
+
 export interface ITransport {
-	connect: ( onData: ( data: any ) => void ) => void;
+	connect: ( onData: ( data: TransportReceivedData ) => void ) => void;
 	send: ( data: TransportAction ) => Promise< void >;
 	disconnect: () => void;
 }
