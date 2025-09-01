@@ -31,7 +31,7 @@ export interface MultiBlockSelectionCursorState {
 	cursorPosEnd: number;
 }
 
-export interface AwarenessInfo {
+export interface UserAwarenessInfo {
 	cursor_state: CursorState;
 	cursor_ts: number;
 	heartbeat_ts: number;
@@ -44,6 +44,6 @@ export interface CollaborativeState {
 	isSynced: boolean;
 	lockHolder: User | null;
 	awareness: {
-		[ userId: string ]: AwarenessInfo;
+		[ userId: string ]: UserAwarenessInfo;
 	};
 }
