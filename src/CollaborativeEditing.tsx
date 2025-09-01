@@ -9,6 +9,9 @@ export const CollaborativeEditing = () => {
 	const { isLockHolder, awareness } = state;
 
 	useEffect( () => {
+		/**
+		 * TODO: Filter out inactive users here for accuracy
+		 */
 		if ( Object.keys( awareness ).length > 0 ) {
 			document.body.classList.add( 'gutenberg-collaborative-editing' );
 		} else {
