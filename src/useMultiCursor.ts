@@ -2,13 +2,13 @@ import { useEffect, useRef, useCallback } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { MultiCursor } from './MultiCursor';
 import { getCursorState } from './utils';
-import { CollaborativeState, CursorState } from './hooks/types';
+import { CursorState, UsersAwarenessInfo } from './hooks/types';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { store as coreStore } from '@wordpress/core-data';
 
 export const useMultiCursor = (
 	currentUserId: number | null,
-	awarenessState: CollaborativeState[ 'awareness' ],
+	awarenessState: UsersAwarenessInfo,
 	syncAwareness: ( awareness: CursorState ) => void
 ) => {
 	const multiCursorRef = useRef< MultiCursor | null >( null );

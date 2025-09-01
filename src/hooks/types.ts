@@ -39,11 +39,13 @@ export interface UserAwarenessInfo {
 	color: string;
 }
 
+export interface UsersAwarenessInfo {
+	[ userId: string ]: UserAwarenessInfo;
+}
+
 export interface CollaborativeState {
 	isReadOnly: boolean;
 	isSynced: boolean;
 	lockHolder: User | null;
-	awareness: {
-		[ userId: string ]: UserAwarenessInfo;
-	};
+	awareness: UsersAwarenessInfo;
 }

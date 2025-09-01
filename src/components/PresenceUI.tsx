@@ -2,11 +2,11 @@ import { createPortal } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { useMultiCursor } from '../useMultiCursor';
 import AvatarList from './AvatarList';
-import { CollaborativeState, CursorState } from '../hooks/types';
+import { CursorState, UsersAwarenessInfo } from '../hooks/types';
 import { store as coreStore } from '@wordpress/core-data';
 
 interface PresenceUIProps {
-	awarenessState: CollaborativeState[ 'awareness' ];
+	awarenessState: UsersAwarenessInfo;
 	syncAwareness: ( awareness: CursorState ) => void;
 }
 
