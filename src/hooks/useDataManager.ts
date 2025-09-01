@@ -9,7 +9,7 @@ import { useDispatch } from '@wordpress/data';
 import { parse, serialize } from '@wordpress/blocks';
 import { useCollaborationMode } from './useCollaborationMode';
 import { getCursorState, mergeBlocks } from '../utils';
-import { CursorState, UsersAwarenessInfo } from './types';
+import { CursorState, AwarenessState } from './types';
 import { TransportReceivedData } from '../transports/types';
 
 const restoreSelection = (
@@ -145,7 +145,7 @@ const handleDataReceived = (
 
 interface DataManagerState {
 	isLockHolder: boolean;
-	awareness: UsersAwarenessInfo;
+	awareness: AwarenessState;
 }
 
 const initialState: DataManagerState = {
@@ -156,7 +156,7 @@ const initialState: DataManagerState = {
 type ReducerAction =
 	| {
 			type: 'SET_AWARENESS';
-			payload: { awareness: UsersAwarenessInfo };
+			payload: { awareness: AwarenessState };
 	  }
 	| { type: 'LOCK_STATUS_UPDATED'; payload: { isLockHolder: boolean } };
 

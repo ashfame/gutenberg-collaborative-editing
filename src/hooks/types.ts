@@ -39,6 +39,6 @@ export interface UserAwareness {
 	color: string;
 }
 
-export interface UsersAwarenessInfo {
+export interface AwarenessState {
 	[ userId: number ]: UserAwareness;
 }
