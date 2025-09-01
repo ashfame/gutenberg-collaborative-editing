@@ -3,8 +3,6 @@ import { CollaborativeEditing } from './CollaborativeEditing';
 import './style.scss';
 import domReady from '@wordpress/dom-ready';
 
-const unusedVariable = 'This should cause a linting error';
-
 declare const jQuery: any;
 
 domReady( () => {
