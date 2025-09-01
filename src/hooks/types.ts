@@ -42,10 +42,3 @@ export interface UserAwarenessInfo {
 export interface UsersAwarenessInfo {
 	[ userId: string ]: UserAwarenessInfo;
 }
-
-export interface CollaborativeState {
-	isReadOnly: boolean;
-	isSynced: boolean;
-	lockHolder: User | null;
-	awareness: UsersAwarenessInfo;
-}
