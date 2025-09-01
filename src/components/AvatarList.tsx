@@ -3,7 +3,7 @@ import { UserAwarenessInfo } from '../hooks/types';
 
 interface AvatarListProps {
 	users: {
-		[ userId: string ]: UserAwarenessInfo;
+		[ userId: number ]: UserAwarenessInfo;
 	};
 }
 

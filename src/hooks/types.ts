@@ -40,5 +40,5 @@ export interface UserAwarenessInfo {
 }
 
 export interface UsersAwarenessInfo {
-	[ userId: string ]: UserAwarenessInfo;
+	[ userId: number ]: UserAwarenessInfo;
 }
