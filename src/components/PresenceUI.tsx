@@ -1,4 +1,4 @@
-import { createPortal, useEffect } from '@wordpress/element';
+import { createPortal } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { useMultiCursor } from '../useMultiCursor';
 import AvatarList from './AvatarList';
@@ -14,14 +14,6 @@ export const PresenceUI = ( {
 	awarenessState,
 	syncAwareness,
 }: PresenceUIProps ) => {
-	useEffect( () => {
-		if ( Object.keys( awarenessState ).length > 0 ) {
-			document.body.classList.add( 'gutenberg-collaborative-editing' );
-		} else {
-			document.body.classList.remove( 'gutenberg-collaborative-editing' );
-		}
-	}, [ awarenessState ] );
-
 	const { currentUserId } = useSelect(
 		( select ) => ( {
 			currentUserId: select( coreStore )?.getCurrentUser()?.id,

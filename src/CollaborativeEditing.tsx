@@ -6,7 +6,15 @@ import { lockEditor, releaseEditor } from './utils';
 
 export const CollaborativeEditing = () => {
 	const { collaborationMode, state, syncAwareness } = useDataManager();
-	const { isLockHolder } = state;
+	const { isLockHolder, awareness } = state;
+
+	useEffect( () => {
+		if ( Object.keys( awareness ).length > 0 ) {
+			document.body.classList.add( 'gutenberg-collaborative-editing' );
+		} else {
+			document.body.classList.remove( 'gutenberg-collaborative-editing' );
+		}
+	}, [ awareness ] );
 
 	useEffect( () => {
 		if ( collaborationMode === 'BLOCK-LEVEL-LOCKS' ) {
@@ -63,7 +71,7 @@ export const CollaborativeEditing = () => {
 	return (
 		<>
 			<PresenceUI
-				awarenessState={ state.awareness }
+				awarenessState={ awareness }
 				syncAwareness={ syncAwareness }
 			/>
 			{ collaborationMode === 'READ-ONLY-FOLLOW' && (
