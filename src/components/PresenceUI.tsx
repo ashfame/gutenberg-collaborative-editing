@@ -1,4 +1,4 @@
-import React, { createPortal, useEffect } from '@wordpress/element';
+import { createPortal, useEffect } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { useMultiCursor } from '../useMultiCursor';
 import AvatarList from './AvatarList';

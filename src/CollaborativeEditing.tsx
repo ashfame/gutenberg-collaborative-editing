@@ -1,7 +1,7 @@
 import { useDataManager } from './hooks/useDataManager';
 import { PresenceUI } from './components/PresenceUI';
 import { ReadOnlyUI } from './components/ReadOnlyUI';
-import React, { useEffect } from '@wordpress/element';
+import { useEffect } from '@wordpress/element';
 import { lockEditor, releaseEditor } from './utils';
 
 export const CollaborativeEditing = () => {

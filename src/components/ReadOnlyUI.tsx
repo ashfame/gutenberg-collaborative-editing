@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import { Modal, Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { ReadOnlyBadge } from './ReadOnlyBadge';

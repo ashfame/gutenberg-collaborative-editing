@@ -19,11 +19,11 @@ export const useMultiCursor = (
 		const coreSelect = select( coreStore );
 		return {
 			blockCount: (
-				editorSelect as /** @type {import('@wordpress/block-editor').BlockEditorSelector} */ ( any )
-			).getBlockCount(),
+				editorSelect as /** @type {import('@wordpress/block-editor').BlockEditorSelector} */ any
+			 ).getBlockCount(),
 			currentUser: (
-				coreSelect as /** @type {import('@wordpress/core-data').CoreDataSelector} */ ( any )
-			).getCurrentUser(),
+				coreSelect as /** @type {import('@wordpress/core-data').CoreDataSelector} */ any
+			 ).getCurrentUser(),
 		};
 	}, [] );
 

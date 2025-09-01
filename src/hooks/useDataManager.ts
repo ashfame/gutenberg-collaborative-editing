@@ -1,6 +1,9 @@
 import { useEffect, useReducer, useCallback } from '@wordpress/element';
 import { useGutenbergState } from './useGutenbergState';
-import { useTransportManager, UseTransportManagerConfig } from './useTransportManager';
+import {
+	useTransportManager,
+	UseTransportManagerConfig,
+} from './useTransportManager';
 import { useContentSyncer } from './useContentSyncer';
 import { useDispatch } from '@wordpress/data';
 import { parse, serialize } from '@wordpress/blocks';

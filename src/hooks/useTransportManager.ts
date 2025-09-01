@@ -1,18 +1,22 @@
 import { useEffect, useRef, useCallback } from '@wordpress/element';
 import { AjaxWithLongPollingTransport } from '../transports/AjaxWithLongPolling';
-import { ITransport, TransportAction, TransportReceivedData } from '../transports/types';
+import {
+	ITransport,
+	TransportAction,
+	TransportReceivedData,
+} from '../transports/types';
 
-export type OnDataReceivedCallback<T> = ( data: T ) => void;
+export type OnDataReceivedCallback< T > = ( data: T ) => void;
 
 const transportFactory: { [ key: string ]: any } = {
 	'ajax-with-long-polling': AjaxWithLongPollingTransport,
 	// More transports can be added here
 };
 
-export interface UseTransportManagerConfig<T> {
+export interface UseTransportManagerConfig< T > {
 	transport: string;
 	postId: number;
-	onDataReceived: OnDataReceivedCallback<T>;
+	onDataReceived: OnDataReceivedCallback< T >;
 }
 
 /**
@@ -27,11 +31,11 @@ export interface UseTransportManagerConfig<T> {
  * @param {Function} config.onDataReceived - Callback function to handle data from the transport.
  * @return {{send: (data: any) => void}} An object containing the send function.
  */
-export const useTransportManager = <T>( {
+export const useTransportManager = < T >( {
 	transport,
 	postId,
 	onDataReceived,
-}: UseTransportManagerConfig<T> ): { send: (data: any) => void; } => {
+}: UseTransportManagerConfig< T > ): { send: ( data: any ) => void } => {
 	const transportRef = useRef< ITransport | null >( null );
 
 	useEffect( () => {
@@ -49,12 +53,14 @@ export const useTransportManager = <T>( {
 		const transportInstance = Transport( { postId } );
 		transportRef.current = transportInstance;
 
-		const timeoutId = setTimeout(() => {
-			transportInstance.connect(onDataReceived as (data: TransportReceivedData) => void);
-		}, 100);
+		const timeoutId = setTimeout( () => {
+			transportInstance.connect(
+				onDataReceived as ( data: TransportReceivedData ) => void
+			);
+		}, 100 );
 
 		return () => {
-			clearTimeout(timeoutId);
+			clearTimeout( timeoutId );
 			transportInstance.disconnect();
 		};
 	}, [ transport, postId, onDataReceived ] );

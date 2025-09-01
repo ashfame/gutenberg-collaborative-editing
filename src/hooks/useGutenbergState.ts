@@ -30,11 +30,11 @@ export const useGutenbergState = (): GutenbergState => {
 		const coreSelect = select( coreStore );
 
 		const activePostLock = (
-			editorSelect as /** @type {import('@wordpress/editor').EditorSelector} */ ( any )
-		).getActivePostLock();
+			editorSelect as /** @type {import('@wordpress/editor').EditorSelector} */ any
+		 ).getActivePostLock();
 		const currentUser = (
-			coreSelect as /** @type {import('@wordpress/core-data').CoreDataSelector} */ ( any )
-		).getCurrentUser();
+			coreSelect as /** @type {import('@wordpress/core-data').CoreDataSelector} */ any
+		 ).getCurrentUser();
 		const CUID = currentUser?.id || null;
 		const lockHolderId = activePostLock
 			? parseInt( activePostLock.split( ':' ).pop() )
@@ -49,12 +49,12 @@ export const useGutenbergState = (): GutenbergState => {
 
 		const contentHTML =
 			(
-				editorSelect as /** @type {import('@wordpress/editor').EditorSelector} */ ( any )
-			).getEditedPostContent() || '';
+				editorSelect as /** @type {import('@wordpress/editor').EditorSelector} */ any
+			 ).getEditedPostContent() || '';
 		const contentTitle =
 			(
-				editorSelect as /** @type {import('@wordpress/editor').EditorSelector} */ ( any )
-			).getEditedPostAttribute( 'title' ) || '';
+				editorSelect as /** @type {import('@wordpress/editor').EditorSelector} */ any
+			 ).getEditedPostAttribute( 'title' ) || '';
 
 		return {
 			currentUserId: CUID,

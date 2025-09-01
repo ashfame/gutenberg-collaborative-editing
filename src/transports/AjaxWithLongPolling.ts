@@ -1,5 +1,4 @@
 import { pollForUpdates, syncContent, syncAwareness } from '../api';
-import { CursorState } from '../hooks/types';
 import { ITransport, TransportAction } from './types';
 
 /**

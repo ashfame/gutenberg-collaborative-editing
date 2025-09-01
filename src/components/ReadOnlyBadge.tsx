@@ -1,4 +1,4 @@
-import React, { useEffect, createRoot } from '@wordpress/element';
+import { useEffect, createRoot } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Icon } from '@wordpress/components';
 
