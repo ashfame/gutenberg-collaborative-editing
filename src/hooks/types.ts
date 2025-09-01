@@ -1,10 +1,3 @@
-export interface User {
-	id: number;
-	name: string;
-	slug: string;
-	avatar: string;
-}
-
 export type CursorState =
 	| CollapsedCursorState
 	| SingleBlockSelectionCursorState
@@ -29,6 +22,13 @@ export interface MultiBlockSelectionCursorState {
 	blockIndexEnd: number;
 	cursorPosStart: number;
 	cursorPosEnd: number;
+}
+
+export interface User {
+	id: number;
+	name: string;
+	slug: string;
+	avatar: string;
 }
 
 export interface UserAwarenessInfo {
