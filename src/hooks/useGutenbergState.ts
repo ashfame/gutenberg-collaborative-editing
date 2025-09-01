@@ -4,6 +4,7 @@ import { getCursorState } from '@/utils';
 import { CursorState } from './types';
 import { store as coreStore } from '@wordpress/core-data';
 import { store as editorStore } from '@wordpress/editor';
+import { BlockInstance } from '@wordpress/blocks';
 
 interface GutenbergState {
 	currentUserId: number | null;
@@ -11,6 +12,7 @@ interface GutenbergState {
 	editorContent: { html: string; title: string };
 	blockContent: string | null;
 	cursorState: CursorState | null;
+	blocks: BlockInstance[];
 }
 
 /**
@@ -25,9 +27,11 @@ export const useGutenbergState = (): GutenbergState => {
 		isLockHolder,
 		editorContentHTML,
 		editorContentTitle,
+		blocks,
 	} = useSelect( ( select ) => {
 		const editorSelect = select( editorStore );
 		const coreSelect = select( coreStore );
+		const blockEditorSelect = select( 'core/block-editor' );
 
 		const activePostLock = (
 			editorSelect as /** @type {import('@wordpress/editor').EditorSelector} */ any
@@ -61,8 +65,9 @@ export const useGutenbergState = (): GutenbergState => {
 			isLockHolder: ! isReadOnly,
 			editorContentHTML: contentHTML,
 			editorContentTitle: contentTitle,
+			blocks: blockEditorSelect ? blockEditorSelect.getBlocks() : [],
 		};
-	}, [] );
+	}, );
 
 	const editorContent = useMemo(
 		() => ( {
@@ -75,10 +80,8 @@ export const useGutenbergState = (): GutenbergState => {
 	const cursorState: CursorState | null = getCursorState();
 
 	let blockContent: string | null = null;
-	if ( cursorState && 'blockIndex' in cursorState ) {
-		const block = window.wp?.data
-			?.select( 'core/block-editor' )
-			.getBlocks()[ cursorState.blockIndex ];
+	if ( cursorState && 'blockIndex' in cursorState && blocks ) {
+		const block = blocks[ cursorState.blockIndex ];
 		if ( block ) {
 			blockContent = window.wp?.blocks?.serialize( block );
 		}
@@ -90,5 +93,6 @@ export const useGutenbergState = (): GutenbergState => {
 		editorContent,
 		blockContent,
 		cursorState,
+		blocks,
 	};
 };
