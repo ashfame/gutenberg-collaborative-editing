@@ -31,7 +31,7 @@ export interface User {
 	avatar: string;
 }
 
-export interface UserAwarenessInfo {
+export interface UserAwareness {
 	cursor_state: CursorState;
 	cursor_ts: number;
 	heartbeat_ts: number;
@@ -40,5 +40,5 @@ export interface UserAwarenessInfo {
 }
 
 export interface UsersAwarenessInfo {
-	[ userId: number ]: UserAwarenessInfo;
+	[ userId: number ]: UserAwareness;
 }
