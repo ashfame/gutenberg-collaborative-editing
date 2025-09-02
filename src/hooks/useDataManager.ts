@@ -113,12 +113,8 @@ const handleDataReceived = (
 
 			// eslint-disable-next-line no-console
 			console.info( 'Content updated from collaborator 🌗' );
-
 			restoreSelection( cursorState, resetSelection );
-
 		} else if ( window.gce.collaborationMode === 'BLOCK-LEVEL-LOCKS' ) {
-
-			const receivedContent = content.content;
 			const receivedBlocks = parse( receivedContent.html );
 			const existingBlocks = wp.data
 				.select( 'core/block-editor' )

@@ -108,7 +108,14 @@ export const useContentSyncer = ( {
 				} );
 			}, 200 );
 		}
-	}, [ postId, editorContent, blockContent, cursorState, onSync, collaborationMode ] );
+	}, [
+		postId,
+		editorContent,
+		blockContent,
+		cursorState,
+		onSync,
+		collaborationMode,
+	] );
 
 	// Cleanup timeout on unmount
 	useEffect( () => {

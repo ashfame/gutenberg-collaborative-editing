@@ -27,7 +27,7 @@ export interface TransportReceivedDataContent {
 	content: {
 		title: string;
 		html: string;
-	}
+	};
 	timestamp: number;
 }
 
