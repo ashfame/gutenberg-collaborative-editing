@@ -105,7 +105,7 @@ export const syncAwareness = async (
  * @param {number} postId        The ID of the post.
  * @param {number} lastTimestamp The timestamp of the last received content update.
  * @param {Object} awarenessData The current awareness data of all users.
- * @return {Promise<object|null>} The data from the server, or null if there are no updates.
+ * @return {Promise<TransportReceivedData|null>} The data from the server, or null if there are no updates.
  * @throws {Error} If the polling request fails.
  */
 export const pollForUpdates = async (
