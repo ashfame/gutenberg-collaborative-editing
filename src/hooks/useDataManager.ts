@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useCallback } from '@wordpress/element';
+import { useEffect, useReducer, useCallback, useRef } from '@wordpress/element';
 import { useGutenbergState } from './useGutenbergState';
 import {
 	useTransportManager,
@@ -11,6 +11,7 @@ import { useCollaborationMode } from './useCollaborationMode';
 import { getCursorState, mergeBlocks } from '../utils';
 import { CollaborativeState, CursorState } from './types';
 import { TransportReceivedData } from '../transports/types';
+import { BlockChangeTracker, Block } from '../block-sync';
 
 const restoreSelection = (
 	state: CursorState | null,
@@ -194,9 +195,29 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		editorContent,
 		blockContent,
 		cursorState,
+		blocks,
 	} = useGutenbergState();
 
 	const postId = window.gce.postId;
+	const tracker = useRef( new BlockChangeTracker() );
+
+	useEffect( () => {
+		if ( ! blocks ) {
+			return;
+		}
+
+		// The tracker expects a simplified `Block` object.
+		const mappedBlocks: Block[] = blocks.map( ( block ) => ( {
+			clientId: block.clientId,
+			content: block.attributes,
+		} ) );
+
+		const operations = tracker.current.updateFromEditor( mappedBlocks );
+		if ( operations.length > 0 ) {
+			// eslint-disable-next-line no-console
+			console.log( 'Pending operations:', operations );
+		}
+	}, [ blocks ] );
 
 	const [ state, dispatch ] = useReducer( reducer, initialState );
 	const { editPost } = useDispatch( 'core/editor' );
