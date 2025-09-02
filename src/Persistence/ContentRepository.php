@@ -18,7 +18,7 @@ class ContentRepository {
 		];
 		set_transient( $transient_key, $sync_data, HOUR_IN_SECONDS );
 
-		return $sync_data['snapshot_id'];
+		return [ $sync_data['snapshot_id'], $sync_data['timestamp'] ];
 	}
 
 	public function update_block( $post_id, $user_id, $fingerprint, $block_index, $content ) {
@@ -66,11 +66,6 @@ class ContentRepository {
 			)
 		);
 		return $value ? unserialize( $value ) : false;
-	}
-
-	public function get_last_saved_at( $post_id ) {
-		$sync_data = $this->get( $post_id );
-		return $sync_data ? $sync_data['timestamp'] : false;
 	}
 
 	public function cleanup() {
