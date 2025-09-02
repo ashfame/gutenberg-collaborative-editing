@@ -14,7 +14,9 @@ class ContentSyncHandler {
 		$collaboration_mode = Admin\Settings::get()[ 'collaboration_mode' ];
 
 		$post_id     = intval( $_POST[ 'post_id' ] ?? 0 );
-		$block_index = intval( $_POST[ 'block_index' ] ?? -1 );
+		$block_index = isset( $_POST[ 'block_index' ] )
+			? intval( $_POST[ 'block_index' ] )
+			: null;
 		$fingerprint = $_POST[ 'fingerprint' ] ?? null;
 		$content     = json_decode(
 			wp_unslash( $_POST[ 'content' ] ?? '{}' ),
@@ -38,12 +40,13 @@ class ContentSyncHandler {
 
 		$repo = new ContentRepository();
 
-		if ( $block_index === -1 ) {
+		if ( is_null( $block_index ) ) {
 			[ $snapshot_id, $saved_at_ts ] = $repo->save(
 				$post_id,
 				get_current_user_id(),
 				$fingerprint,
-				$content
+				$content[ 'html' ],
+				$content[ 'title' ],
 			);
 		} else {
 			[ $snapshot_id, $saved_at_ts ] = $repo->update_block(
@@ -51,7 +54,8 @@ class ContentSyncHandler {
 				get_current_user_id(),
 				$fingerprint,
 				$block_index,
-				$content
+				$content[ 'html' ],
+				$content[ 'title' ],
 			);
 		}
 

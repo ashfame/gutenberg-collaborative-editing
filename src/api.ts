@@ -30,7 +30,7 @@ export const syncContent = async (
 			formData.append( 'block_index', String( blockIndex ) );
 		}
 		formData.append( 'fingerprint', window.gce.fingerprint );
-		formData.append( 'content', JSON.stringify( content ) );
+		formData.append( 'content', content );
 
 		const response = await fetch( window.gce.ajaxUrl, {
 			method: 'POST',
