@@ -1,10 +1,3 @@
-export interface User {
-	id: number;
-	name: string;
-	slug: string;
-	avatar: string;
-}
-
 export type CursorState =
 	| CollapsedCursorState
 	| SingleBlockSelectionCursorState
@@ -31,7 +24,14 @@ export interface MultiBlockSelectionCursorState {
 	cursorPosEnd: number;
 }
 
-export interface AwarenessInfo {
+export interface User {
+	id: number;
+	name: string;
+	slug: string;
+	avatar: string;
+}
+
+export interface UserAwareness {
 	cursor_state: CursorState;
 	cursor_ts: number;
 	heartbeat_ts: number;
@@ -39,11 +39,6 @@ export interface AwarenessInfo {
 	color: string;
 }
 
-export interface CollaborativeState {
-	isReadOnly: boolean;
-	isSynced: boolean;
-	lockHolder: User | null;
-	awareness: {
-		[ userId: string ]: AwarenessInfo;
-	};
+export interface AwarenessState {
+	[ userId: number ]: UserAwareness;
 }

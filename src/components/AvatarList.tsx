@@ -1,9 +1,9 @@
 import UserAvatar from './UserAvatar';
-import { AwarenessInfo } from '../hooks/types';
+import { UserAwareness } from '../hooks/types';
 
 interface AvatarListProps {
 	users: {
-		[ userId: string ]: AwarenessInfo;
+		[ userId: number ]: UserAwareness;
 	};
 }
 

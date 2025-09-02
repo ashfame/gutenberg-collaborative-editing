@@ -79,9 +79,6 @@ export const AjaxWithLongPollingTransport = ( {
 			longPoll();
 		},
 
-		/**
-		 * @param {import('./types').TransportAction} action
-		 */
 		send: async ( action: TransportAction ): Promise< void > => {
 			switch ( action.type ) {
 				case 'content': {

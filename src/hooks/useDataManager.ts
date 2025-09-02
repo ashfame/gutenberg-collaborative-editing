@@ -9,7 +9,7 @@ import { useDispatch } from '@wordpress/data';
 import { parse, serialize } from '@wordpress/blocks';
 import { useCollaborationMode } from './useCollaborationMode';
 import { getCursorState, mergeBlocks } from '../utils';
-import { CollaborativeState, CursorState } from './types';
+import { CursorState, AwarenessState } from './types';
 import { TransportReceivedData } from '../transports/types';
 
 const restoreSelection = (
@@ -96,24 +96,26 @@ const handleDataReceived = (
 	const { awareness, content, modified } = data;
 	const { editPost, resetBlocks, resetSelection, dispatch } = dependencies;
 
-	if ( modified && content ) {
-		const receivedContent = content;
+	if ( modified && content && content.content ) {
+		const receivedContent = content.content;
 		const cursorState = getCursorState();
 
-		if ( receivedContent.content && receivedContent.content.html ) {
-			resetBlocks( parse( receivedContent.content.html ) );
+		if ( ! receivedContent || ! ( 'html' in receivedContent ) ) {
+			return;
+		}
+
+		if ( window.gce.collaborationMode === 'READ-ONLY-FOLLOW' ) {
+			resetBlocks( parse( receivedContent.html ) );
 			editPost( {
-				content: receivedContent.content.html,
-				title: receivedContent.content.title || '',
+				content: receivedContent.html,
+				title: receivedContent.title || '',
 			} );
+
 			// eslint-disable-next-line no-console
 			console.info( 'Content updated from collaborator 🌗' );
 			restoreSelection( cursorState, resetSelection );
-		} else if (
-			receivedContent.content &&
-			typeof receivedContent.content === 'string'
-		) {
-			const receivedBlocks = parse( receivedContent.content );
+		} else if ( window.gce.collaborationMode === 'BLOCK-LEVEL-LOCKS' ) {
+			const receivedBlocks = parse( receivedContent.html );
 			const existingBlocks = wp.data
 				.select( 'core/block-editor' )
 				.getBlocks();
@@ -131,9 +133,12 @@ const handleDataReceived = (
 			resetBlocks( blocksToSet );
 			editPost( {
 				content: serialize( blocksToSet ),
+				title: receivedContent.title || '',
 			} );
+
 			// eslint-disable-next-line no-console
 			console.info( 'Content updated from collaborator 🌓' );
+
 			restoreSelection( cursorState, resetSelection );
 		}
 	}
@@ -145,7 +150,7 @@ const handleDataReceived = (
 
 interface DataManagerState {
 	isLockHolder: boolean;
-	awareness: CollaborativeState[ 'awareness' ];
+	awareness: AwarenessState;
 }
 
 const initialState: DataManagerState = {
@@ -156,7 +161,7 @@ const initialState: DataManagerState = {
 type ReducerAction =
 	| {
 			type: 'SET_AWARENESS';
-			payload: { awareness: CollaborativeState[ 'awareness' ] };
+			payload: { awareness: AwarenessState };
 	  }
 	| { type: 'LOCK_STATUS_UPDATED'; payload: { isLockHolder: boolean } };
 

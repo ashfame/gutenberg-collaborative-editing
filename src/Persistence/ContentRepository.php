@@ -6,10 +6,10 @@ use DotOrg\GCE\Utils;
 
 class ContentRepository {
 
-	public function save( $post_id, $user_id, $fingerprint, $content ) {
+	public function save( $post_id, $user_id, $fingerprint, $content, $title ) {
 		$transient_key = "gce_sync_content_{$post_id}";
 		$sync_data = [
-			'content'     => $content,
+			'content'     => [ 'html' => $content, 'title' => $title ],
 			'timestamp'   => microtime( true ),
 			'post_id'     => $post_id,
 			'user_id'     => $user_id,
@@ -21,7 +21,7 @@ class ContentRepository {
 		return [ $sync_data['snapshot_id'], $sync_data['timestamp'] ];
 	}
 
-	public function update_block( $post_id, $user_id, $fingerprint, $block_index, $content ) {
+	public function update_block( $post_id, $user_id, $fingerprint, $block_index, $block_content, $title ) {
 		$sync_data = $this->get( $post_id );
 
 		if ( false === $sync_data ) {
@@ -30,25 +30,27 @@ class ContentRepository {
 				$post_id,
 				$user_id,
 				$fingerprint,
-				get_post( $post_id )->post_content
+				get_post( $post_id )->post_content,
+				$title,
 			);
 			$sync_data = $this->get( $post_id );
 		}
 
 		$parsed_blocks = array_values( array_filter(
-			parse_blocks( $sync_data['content'] ?? '' ),
+			parse_blocks( $sync_data['content']['html'] ?? '' ),
 			function ( $block ) use ( $block_index ) {
 				return !empty( $block['blockName'] );
 			}
 		) );
 
-		$parsed_blocks[ $block_index ] = parse_blocks( $content )[0];
+		$parsed_blocks[ $block_index ] = parse_blocks( $block_content )[0];
 
 		return $this->save(
 			$post_id,
 			$user_id,
 			$fingerprint,
-			serialize_blocks( $parsed_blocks )
+			serialize_blocks( $parsed_blocks ),
+			$title,
 		);
 	}
 

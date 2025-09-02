@@ -1,5 +1,6 @@
 import logger from './logger';
 import { CursorState } from './hooks/types';
+import { TransportReceivedData } from './transports/types';
 
 /**
  * Syncs the editor content to the server.
@@ -30,7 +31,7 @@ export const syncContent = async (
 			formData.append( 'block_index', String( blockIndex ) );
 		}
 		formData.append( 'fingerprint', window.gce.fingerprint );
-		formData.append( 'content', JSON.stringify( content ) );
+		formData.append( 'content', content );
 
 		const response = await fetch( window.gce.ajaxUrl, {
 			method: 'POST',
@@ -105,14 +106,14 @@ export const syncAwareness = async (
  * @param {number} postId        The ID of the post.
  * @param {number} lastTimestamp The timestamp of the last received content update.
  * @param {Object} awarenessData The current awareness data of all users.
- * @return {Promise<object|null>} The data from the server, or null if there are no updates.
+ * @return {Promise<TransportReceivedData|null>} The data from the server, or null if there are no updates.
  * @throws {Error} If the polling request fails.
  */
 export const pollForUpdates = async (
 	postId: number,
 	lastTimestamp: number,
 	awarenessData: any
-): Promise< any | null > => {
+): Promise< TransportReceivedData | null > => {
 	if ( ! window.gce || ! postId ) {
 		return null;
 	}

@@ -53,6 +53,7 @@ export const useContentSyncer = ( {
 			return;
 		}
 
+		// Send full content
 		const contentStr = JSON.stringify( editorContent );
 
 		if ( contentStr !== syncState.current.lastContent ) {
@@ -65,7 +66,7 @@ export const useContentSyncer = ( {
 
 			// Schedule sync after 200ms delay
 			syncState.current.timeoutId = window.setTimeout( () => {
-				onSync( { content: editorContent } );
+				onSync( { content: contentStr } );
 			}, 200 );
 		}
 	}, [ postId, editorContent, isLockHolder, onSync, collaborationMode ] );
@@ -84,7 +85,12 @@ export const useContentSyncer = ( {
 			return;
 		}
 
-		const contentStr = blockContent;
+		// We only send the block content and not the entire editor content
+		// but title is always sent
+		const contentStr = JSON.stringify( {
+			html: blockContent,
+			title: editorContent.title,
+		} );
 
 		if ( contentStr !== syncState.current.lastContent ) {
 			syncState.current.lastContent = contentStr;
@@ -97,12 +103,19 @@ export const useContentSyncer = ( {
 			// Schedule sync after 200ms delay
 			syncState.current.timeoutId = window.setTimeout( () => {
 				onSync( {
-					content: blockContent,
+					content: contentStr,
 					blockIndex: cursorState.blockIndex,
 				} );
 			}, 200 );
 		}
-	}, [ postId, blockContent, cursorState, onSync, collaborationMode ] );
+	}, [
+		postId,
+		editorContent,
+		blockContent,
+		cursorState,
+		onSync,
+		collaborationMode,
+	] );
 
 	// Cleanup timeout on unmount
 	useEffect( () => {
