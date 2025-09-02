@@ -52,7 +52,14 @@ class PollingHandler {
 				$sync_data &&
 				(
 					$sync_data[ 'fingerprint' ] !== $fingerprint ||
-					$declared_snaphost_ids[ get_current_user_id() ] !== $sync_data[ 'snapshot_id']
+					(
+						isset( $declared_snaphost_ids[
+							get_current_user_id()
+						] ) &&
+						$declared_snaphost_ids[
+							get_current_user_id()
+						] !== $sync_data[ 'snapshot_id']
+					)
 				) &&
 				floatval( $sync_data[ 'timestamp' ] ) > $last_timestamp
 			) {
