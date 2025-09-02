@@ -16,6 +16,8 @@ if ( window.gce && window.gce.postId ) {
 	jQuery( document ).on(
 		'heartbeat-send',
 		function ( event: Event, data: any ) {
+			// eslint-disable-next-line no-console
+			console.log( '❤️' );
 			data.gce_post_id = window.gce.postId;
 			data.snapshot_id = window.gce.snapshotId;
 		}
