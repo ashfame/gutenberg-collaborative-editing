@@ -68,11 +68,6 @@ class ContentRepository {
 		return $value ? unserialize( $value ) : false;
 	}
 
-	public function get_last_saved_at( $post_id ) {
-		$sync_data = $this->get( $post_id );
-		return $sync_data ? $sync_data['timestamp'] : false;
-	}
-
 	public function cleanup() {
 		global $wpdb;
 

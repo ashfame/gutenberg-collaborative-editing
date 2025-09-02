@@ -39,14 +39,14 @@ class ContentSyncHandler {
 		$repo = new ContentRepository();
 
 		if ( $block_index === -1 ) {
-			$snapshot_id = $repo->save(
+			[ $snapshot_id, $saved_at_ts ] = $repo->save(
 				$post_id,
 				get_current_user_id(),
 				$fingerprint,
 				$content
 			);
 		} else {
-			$snapshot_id = $repo->update_block(
+			[ $snapshot_id, $saved_at_ts ] = $repo->update_block(
 				$post_id,
 				get_current_user_id(),
 				$fingerprint,
@@ -60,7 +60,7 @@ class ContentSyncHandler {
 
 		wp_send_json_success(
 			[
-				'timestamp'   => $repo->get_last_saved_at( $post_id ),
+				'timestamp'   => $saved_at_ts,
 				'snapshot_id' => $snapshot_id,
 				'message'     => 'Content synced successfully',
 			]
