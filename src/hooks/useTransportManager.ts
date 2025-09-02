@@ -1,10 +1,10 @@
 import { useEffect, useRef, useCallback } from '@wordpress/element';
-import { AjaxWithLongPollingTransport } from '../transports/AjaxWithLongPolling';
+import { AjaxWithLongPollingTransport } from '@/transports/AjaxWithLongPolling';
 import {
 	ITransport,
 	TransportAction,
 	TransportReceivedData,
-} from '../transports/types';
+} from '@/transports/types';
 
 export type OnDataReceivedCallback< T > = ( data: T ) => void;
 

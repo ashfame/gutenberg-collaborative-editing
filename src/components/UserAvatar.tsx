@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { Tooltip } from '@wordpress/components';
-import { User } from '../hooks/types';
+import { User } from '@/hooks/types';
 
 interface UserAvatarProps {
 	user: User;

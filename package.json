@@ -36,6 +36,8 @@
         "@wordpress/i18n": "^6.2.0",
         "@wordpress/plugins": "^7.29.0",
         "@wordpress/scripts": "^30.22.0",
+        "eslint-import-resolver-typescript": "^4.4.4",
+        "tsconfig-paths-webpack-plugin": "^4.2.0",
         "typescript": "^5.9.2"
     }
 }

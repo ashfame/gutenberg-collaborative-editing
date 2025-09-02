@@ -1,5 +1,5 @@
 import UserAvatar from './UserAvatar';
-import { UserAwareness } from '../hooks/types';
+import { UserAwareness } from '@/hooks/types';
 
 interface AvatarListProps {
 	users: {

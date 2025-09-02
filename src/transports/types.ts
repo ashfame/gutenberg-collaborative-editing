@@ -1,4 +1,4 @@
-import { AwarenessState, CursorState } from '../hooks/types';
+import { AwarenessState, CursorState } from '@/hooks/types';
 
 export type TransportAction = ContentTransportAction | AwarenessTransportAction;
 

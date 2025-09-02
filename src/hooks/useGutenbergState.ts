@@ -1,6 +1,6 @@
 import { useSelect } from '@wordpress/data';
 import { useMemo } from '@wordpress/element';
-import { getCursorState } from '../utils';
+import { getCursorState } from '@/utils';
 import { CursorState } from './types';
 import { store as coreStore } from '@wordpress/core-data';
 import { store as editorStore } from '@wordpress/editor';

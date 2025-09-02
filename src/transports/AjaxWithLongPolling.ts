@@ -1,4 +1,4 @@
-import { pollForUpdates, syncContent, syncAwareness } from '../api';
+import { pollForUpdates, syncContent, syncAwareness } from '@/api';
 import { ITransport, TransportAction } from './types';
 
 /**

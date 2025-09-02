@@ -1,8 +1,8 @@
 import { createPortal } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
-import { useMultiCursor } from '../useMultiCursor';
+import { useMultiCursor } from '@/useMultiCursor';
 import AvatarList from './AvatarList';
-import { CursorState, AwarenessState } from '../hooks/types';
+import { CursorState, AwarenessState } from '@/hooks/types';
 import { store as coreStore } from '@wordpress/core-data';
 
 interface PresenceUIProps {

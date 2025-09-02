@@ -8,9 +8,9 @@ import { useContentSyncer } from './useContentSyncer';
 import { useDispatch } from '@wordpress/data';
 import { parse, serialize } from '@wordpress/blocks';
 import { useCollaborationMode } from './useCollaborationMode';
-import { getCursorState, mergeBlocks } from '../utils';
+import { getCursorState, mergeBlocks } from '@/utils';
 import { CursorState, AwarenessState } from './types';
-import { TransportReceivedData } from '../transports/types';
+import { TransportReceivedData } from '@/transports/types';
 
 const restoreSelection = (
 	state: CursorState | null,
