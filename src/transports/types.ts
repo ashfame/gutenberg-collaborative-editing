@@ -19,8 +19,16 @@ export interface ContentSyncPayload {
 
 export interface TransportReceivedData {
 	awareness: AwarenessState;
-	content: string | null;
+	content: TransportReceivedDataContent | null;
 	modified: boolean;
+}
+
+export interface TransportReceivedDataContent {
+	content: {
+		title: string;
+		html: string;
+	}
+	timestamp: number;
 }
 
 export interface ITransport {
