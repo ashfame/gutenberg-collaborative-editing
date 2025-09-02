@@ -1,5 +1,6 @@
 import logger from './logger';
 import { CursorState } from './hooks/types';
+import { TransportReceivedData } from './transports/types';
 
 /**
  * Syncs the editor content to the server.
@@ -112,7 +113,7 @@ export const pollForUpdates = async (
 	postId: number,
 	lastTimestamp: number,
 	awarenessData: any
-): Promise< any | null > => {
+): Promise< TransportReceivedData | null > => {
 	if ( ! window.gce || ! postId ) {
 		return null;
 	}
