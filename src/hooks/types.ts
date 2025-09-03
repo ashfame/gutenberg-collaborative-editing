@@ -1,3 +1,5 @@
+export type CollaborationMode = 'BLOCK-LEVEL-LOCKS' | 'READ-ONLY-FOLLOW';
+
 export type CursorState =
 	| CollapsedCursorState
 	| SingleBlockSelectionCursorState
