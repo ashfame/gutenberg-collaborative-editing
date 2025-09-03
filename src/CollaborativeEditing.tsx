@@ -5,14 +5,14 @@ import { useEffect } from '@wordpress/element';
 import { lockEditor, releaseEditor } from './utils';
 
 export const CollaborativeEditing = () => {
-
 	const { collaborationMode, state, syncAwareness } = useDataManager();
 	const { isLockHolder, awareness } = state;
 
 	useEffect( () => {
 		const activeUsers = Object.fromEntries(
 			Object.entries( awareness ).filter( ( [ , userData ] ) => {
-				const heartbeatAge = Math.floor( Date.now() / 1000 ) - userData.heartbeat_ts;
+				const heartbeatAge =
+					Math.floor( Date.now() / 1000 ) - userData.heartbeat_ts;
 				return heartbeatAge < window.gce.awarenessTimeout;
 			} )
 		);

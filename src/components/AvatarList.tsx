@@ -13,7 +13,8 @@ const AvatarList = ( { users }: AvatarListProps ) => {
 	// Filter out stale presence
 	const activeUsers = Object.fromEntries(
 		Object.entries( users ).filter( ( [ , userData ] ) => {
-			const heartbeatAge = Math.floor( Date.now() / 1000 ) - userData.heartbeat_ts;
+			const heartbeatAge =
+				Math.floor( Date.now() / 1000 ) - userData.heartbeat_ts;
 			return heartbeatAge < window.gce.awarenessTimeout;
 		} )
 	);
