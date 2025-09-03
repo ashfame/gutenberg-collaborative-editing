@@ -38,7 +38,9 @@ body.gutenberg-collaborative-editing-readonly .block-editor-block-popover,
 body.gutenberg-collaborative-editing-readonly .editor-header__settings .interface-pinned-items,
 body.gutenberg-collaborative-editing-readonly .editor-header__toolbar,
 body.gutenberg-collaborative-editing-readonly .editor-post-publish-button,
-body.gutenberg-collaborative-editing-readonly .editor-post-save-draft {
+body.gutenberg-collaborative-editing-readonly .editor-post-publish-button__button,
+body.gutenberg-collaborative-editing-readonly .editor-post-save-draft,
+body.gutenberg-collaborative-editing-readonly .editor-post-saved-state {
 	display: none !important;
 }
 
