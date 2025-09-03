@@ -5,7 +5,7 @@ namespace DotOrg\GCE\Persistence;
 class AwarenessStateRepository {
 
 	const POSTMETA_KEY_AWARENESS = 'gce_awareness';
-	const ACTIVITY_TIMEOUT = 240; // seconds
+	const INACTIVITY_TIMEOUT = 240; // seconds
 	const COLORS = [
 		'#0073AA', // WordPress Blue - Primary accessible
 		'#008080', // Teal - Primary accessible
@@ -63,7 +63,7 @@ class AwarenessStateRepository {
 
 	private function filter_inactive_users( array $awareness_state ) : array {
 		foreach ( $awareness_state as $user_id => $user_state ) {
-			$active_threshold = $user_state[ 'heartbeat_ts' ] + self::ACTIVITY_TIMEOUT;
+			$active_threshold = $user_state[ 'heartbeat_ts' ] + self::INACTIVITY_TIMEOUT;
 			if ( $active_threshold < time() ) {
 				unset( $awareness_state[ $user_id ] );
 			}

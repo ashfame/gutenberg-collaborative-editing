@@ -45,7 +45,7 @@ class EditorAssets {
 				'syncContentAction'   => 'gce_sync_content',
 				'syncAwarenessAction' => 'gce_sync_awareness',
 				'pollAction'          => 'gce_poll',
-				'awarenessTimeout'    => AwarenessStateRepository::ACTIVITY_TIMEOUT,
+				'awarenessTimeout'    => AwarenessStateRepository::INACTIVITY_TIMEOUT,
 				'collaborationMode'   => Admin\Settings::get()[ 'collaboration_mode' ],
 			]
 		);

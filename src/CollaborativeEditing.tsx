@@ -5,7 +5,6 @@ import { useEffect } from '@wordpress/element';
 import { lockEditor, releaseEditor } from './utils';
 
 export const CollaborativeEditing = () => {
-	const INACTIVITY_TIMEOUT = 240; // seconds
 
 	const { collaborationMode, state, syncAwareness } = useDataManager();
 	const { isLockHolder, awareness } = state;
@@ -14,7 +13,7 @@ export const CollaborativeEditing = () => {
 		const activeUsers = Object.fromEntries(
 			Object.entries( awareness ).filter( ( [ , userData ] ) => {
 				const heartbeatAge = Math.floor( Date.now() / 1000 ) - userData.heartbeat_ts;
-				return heartbeatAge < INACTIVITY_TIMEOUT;
+				return heartbeatAge < window.gce.awarenessTimeout;
 			} )
 		);
 

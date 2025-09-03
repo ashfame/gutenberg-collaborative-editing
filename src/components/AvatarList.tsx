@@ -9,13 +9,12 @@ interface AvatarListProps {
 
 const AvatarList = ( { users }: AvatarListProps ) => {
 	const MAX_VISIBLE_AVATARS = 5;
-	const INACTIVITY_TIMEOUT = 240; // seconds
 
-	// Filter out stale presence based on INACTIVITY_TIMEOUT defined above
+	// Filter out stale presence
 	const activeUsers = Object.fromEntries(
 		Object.entries( users ).filter( ( [ , userData ] ) => {
 			const heartbeatAge = Math.floor( Date.now() / 1000 ) - userData.heartbeat_ts;
-			return heartbeatAge < INACTIVITY_TIMEOUT;
+			return heartbeatAge < window.gce.awarenessTimeout;
 		} )
 	);
 
