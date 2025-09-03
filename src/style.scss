@@ -1,50 +1,52 @@
 @import "./avatars";
 
-.editor-post-locked-modal {
-	display: none;
-}
-
+// Hide post lock modal as we have our own read-only mode.
+.editor-post-locked-modal,
 .components-modal__screen-overlay:has(.editor-post-locked-modal) {
 	display: none;
 }
 
-body.gutenberg-collaborative-editing .editor-document-bar {
-	display: none;
+body.gutenberg-collaborative-editing {
+	// Hide the top document bar to make space for presence UI.
+	.editor-document-bar {
+		display: none;
+	}
 }
 
-/* Simple read-only styles */
-body.gutenberg-collaborative-editing-readonly .editor-visual-editor {
-	position: relative;
-	cursor: not-allowed;
-	user-select: none;
-	-webkit-user-select: none;
-	-moz-user-select: none;
-	-ms-user-select: none;
-}
+/* Read-only styles */
+body.gutenberg-collaborative-editing-readonly {
+	.editor-visual-editor {
+		position: relative;
+		cursor: not-allowed;
+		user-select: none;
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
 
-body.gutenberg-collaborative-editing-readonly .editor-visual-editor::before {
-	content: "";
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	z-index: 999999;
-	pointer-events: none;
-}
+		// Overlay to prevent interaction.
+		&::before {
+			content: "";
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			z-index: 999999;
+			pointer-events: none;
+		}
+	}
 
-body.gutenberg-collaborative-editing-readonly .block-editor-block-contextual-toolbar,
-body.gutenberg-collaborative-editing-readonly .block-editor-block-popover,
-body.gutenberg-collaborative-editing-readonly .editor-header__settings .interface-pinned-items,
-body.gutenberg-collaborative-editing-readonly .editor-header__toolbar,
-body.gutenberg-collaborative-editing-readonly .editor-post-publish-button,
-body.gutenberg-collaborative-editing-readonly .editor-post-publish-button__button,
-body.gutenberg-collaborative-editing-readonly .editor-post-save-draft,
-body.gutenberg-collaborative-editing-readonly .editor-post-saved-state {
-	display: none !important;
-}
-
-.gutenberg-collaborative-editing-readonly {
+	// Hide various editor controls in read-only mode.
+	.block-editor-block-contextual-toolbar,
+	.block-editor-block-popover,
+	.editor-header__settings .interface-pinned-items,
+	.editor-header__toolbar,
+	.editor-post-publish-button,
+	.editor-post-publish-button__button,
+	.editor-post-save-draft,
+	.editor-post-saved-state {
+		display: none !important;
+	}
 
 	.editor-styles-wrapper {
 		pointer-events: none;
@@ -56,8 +58,8 @@ body.gutenberg-collaborative-editing-readonly .editor-post-saved-state {
 	width: 500px;
 }
 
+/* Remote Cursors and Selections */
 @keyframes blink {
-
 	0%,
 	100% {
 		opacity: 1;
@@ -102,6 +104,7 @@ body.gutenberg-collaborative-editing-readonly .editor-post-saved-state {
 	opacity: 0.3;
 }
 
+/* Read-only Badge */
 .gutenberg-collaborative-editing-readonly-badge {
 	display: flex;
 	align-items: center;
