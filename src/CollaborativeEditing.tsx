@@ -22,6 +22,10 @@ export const CollaborativeEditing = () => {
 		} else {
 			document.body.classList.remove( 'gutenberg-collaborative-editing' );
 		}
+
+		return () => {
+			document.body.classList.remove( 'gutenberg-collaborative-editing' );
+		};
 	}, [ awareness ] );
 
 	useEffect( () => {
