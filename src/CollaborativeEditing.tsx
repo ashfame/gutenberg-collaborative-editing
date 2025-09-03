@@ -5,14 +5,20 @@ import { useEffect } from '@wordpress/element';
 import { lockEditor, releaseEditor } from './utils';
 
 export const CollaborativeEditing = () => {
+	const INACTIVITY_TIMEOUT = 240; // seconds
+
 	const { collaborationMode, state, syncAwareness } = useDataManager();
 	const { isLockHolder, awareness } = state;
 
 	useEffect( () => {
-		/**
-		 * TODO: Filter out inactive users here for accuracy
-		 */
-		if ( Object.keys( awareness ).length > 0 ) {
+		const activeUsers = Object.fromEntries(
+			Object.entries( awareness ).filter( ( [ , userData ] ) => {
+				const heartbeatAge = Math.floor( Date.now() / 1000 ) - userData.heartbeat_ts;
+				return heartbeatAge < INACTIVITY_TIMEOUT;
+			} )
+		);
+
+		if ( Object.keys( activeUsers ).length > 1 ) {
 			document.body.classList.add( 'gutenberg-collaborative-editing' );
 		} else {
 			document.body.classList.remove( 'gutenberg-collaborative-editing' );
