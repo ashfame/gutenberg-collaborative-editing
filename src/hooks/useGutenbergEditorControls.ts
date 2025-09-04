@@ -1,5 +1,5 @@
 import { useEffect } from '@wordpress/element';
-import { CollaborationMode } from "@/hooks/types";
+import { CollaborationMode } from '@/hooks/types';
 
 export const useGutenbergEditorControls = (
 	collaborationMode: CollaborationMode,

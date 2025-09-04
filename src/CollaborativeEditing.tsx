@@ -3,8 +3,8 @@ import { PresenceUI } from './components/PresenceUI';
 import { ReadOnlyUI } from './components/ReadOnlyUI';
 import { useEffect } from '@wordpress/element';
 import { lockEditor, releaseEditor } from './utils';
-import { useCSSClassManager } from "@/hooks/useCSSClassManager";
-import { useGutenbergEditorControls } from "@/hooks/useGutenbergEditorControls";
+import { useCSSClassManager } from '@/hooks/useCSSClassManager';
+import { useGutenbergEditorControls } from '@/hooks/useGutenbergEditorControls';
 
 export const CollaborativeEditing = () => {
 	const { collaborationMode, state, syncAwareness } = useDataManager();

@@ -1,5 +1,5 @@
 import { useEffect } from '@wordpress/element';
-import { AwarenessState, CollaborationMode } from "@/hooks/types";
+import { AwarenessState, CollaborationMode } from '@/hooks/types';
 
 export const useCSSClassManager = (
 	collaborationMode: CollaborationMode,
@@ -26,7 +26,7 @@ export const useCSSClassManager = (
 		};
 	}, [ awareness ] );
 
-	useEffect(() => {
+	useEffect( () => {
 		if ( collaborationMode === 'BLOCK-LEVEL-LOCKS' ) {
 			return;
 		}
