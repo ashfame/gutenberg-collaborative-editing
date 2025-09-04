@@ -1,5 +1,5 @@
-import { createPortal } from '@wordpress/element';
-import { useSelect } from '@wordpress/data';
+import { createPortal, useEffect } from '@wordpress/element';
+import { useSelect, useDispatch } from '@wordpress/data';
 import { useMultiCursor } from '@/useMultiCursor';
 import AvatarList from './AvatarList';
 import { CursorState, AwarenessState } from '@/hooks/types';
@@ -14,6 +14,7 @@ export const PresenceUI = ( {
 	awarenessState,
 	syncAwareness,
 }: PresenceUIProps ) => {
+	const { setLockedBlocks } = useDispatch( 'gce' );
 	const { currentUserId } = useSelect(
 		( select ) => ( {
 			currentUserId: select( coreStore )?.getCurrentUser()?.id,
@@ -21,13 +22,40 @@ export const PresenceUI = ( {
 		[]
 	);
 
-	// Create a new object for awareness state to exclude the current user for rendering.
+	// Create a new object for awareness state to exclude the current user from rendering.
 	const otherUsers = { ...awarenessState };
 	if ( currentUserId ) {
 		delete otherUsers[ currentUserId ];
 	}
 
 	useMultiCursor( currentUserId, otherUsers, syncAwareness );
+
+	// Assume user's cursors carries edit intent
+	// so lock all blocks where cursors of other users are at
+	useEffect( () => {
+		const lockedBlocks: string[] = [];
+		Object.values( otherUsers ).forEach( ( user ) => {
+			const blockIndex =
+				'blockIndex' in user.cursor_state
+					? user.cursor_state.blockIndex
+					: user.cursor_state.blockIndexStart;
+
+			const existingBlocks = wp.data
+				.select( 'core/block-editor' )
+				.getBlocks();
+
+			const block = existingBlocks[ blockIndex ];
+			if ( block ) {
+				lockedBlocks.push( block.clientId );
+			}
+		} );
+		setLockedBlocks( lockedBlocks );
+
+		// Cleanup function to remove locks when users leave
+		return () => {
+			setLockedBlocks( [] );
+		};
+	}, [ otherUsers, setLockedBlocks ] );
 
 	if ( ! otherUsers || Object.keys( otherUsers ).length === 0 ) {
 		return null;

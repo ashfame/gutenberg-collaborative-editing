@@ -119,3 +119,9 @@ body.gutenberg-collaborative-editing-readonly {
 	border: 1px solid #ddd;
 	margin-right: 8px;
 }
+
+.gce-locked {
+	opacity: 0.7;
+	cursor: not-allowed;
+	background: #f0f0f0;
+}
