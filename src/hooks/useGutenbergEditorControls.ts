@@ -5,11 +5,11 @@ export const useGutenbergEditorControls = (
 	collaborationMode: CollaborationMode,
 	isLockHolder: boolean
 ) => {
-	if ( collaborationMode === 'BLOCK-LEVEL-LOCKS' ) {
-		return;
-	}
-
 	useEffect( () => {
+		if ( collaborationMode === 'BLOCK-LEVEL-LOCKS' ) {
+			return;
+		}
+
 		const {
 			lockPostAutosaving,
 			unlockPostAutosaving,
@@ -29,5 +29,5 @@ export const useGutenbergEditorControls = (
 			unlockPostAutosaving( 'gutenberg-collaborative-editing' );
 			unlockPostSaving( 'gutenberg-collaborative-editing' );
 		};
-	}, [ isLockHolder ] );
+	}, [ collaborationMode, isLockHolder ] );
 };
