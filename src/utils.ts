@@ -6,7 +6,16 @@ function preventEditing( e: Event ) {
 		return;
 	}
 
-	// Prevent all editing interactions
+	// Allow mouse events for text selection
+	if (
+		e.type === 'mousedown' ||
+		e.type === 'mousemove' ||
+		e.type === 'mouseup'
+	) {
+		return;
+	}
+
+	// Prevent all other editing interactions
 	e.preventDefault();
 	e.stopPropagation();
 	return false;

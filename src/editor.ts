@@ -14,7 +14,7 @@ const withLockedClass = createHigherOrderComponent( ( BlockListBlock ) => {
 			[]
 		);
 
-		const blockRef = useRef< HTMLElement >( null );
+		const wrapperRef = useRef< HTMLElement >( null );
 		const isLockedRef = useRef( false );
 
 		let className = props.className || '';
@@ -24,26 +24,50 @@ const withLockedClass = createHigherOrderComponent( ( BlockListBlock ) => {
 		}
 
 		useEffect( () => {
-			const element = blockRef.current;
-			if ( ! element ) {
+			const wrapper = wrapperRef.current;
+			if ( ! wrapper ) {
 				return;
 			}
+
+			// Find the actual block element within our wrapper
+			// The BlockListBlock renders a div with data-block attribute
+			const findBlockElement = ( container: HTMLElement ) => {
+				// Fall back to the block wrapper itself
+				const blockElement = container.querySelector(
+					'.wp-block'
+				) as HTMLElement;
+				if ( blockElement ) {
+					return blockElement;
+				}
+
+				// Last resort: return the container itself
+				return container;
+			};
+
+			const element = findBlockElement( wrapper );
 
 			if ( isLocked && ! isLockedRef.current ) {
 				// Block became locked - add event listeners
 				lockEditor( element );
 				isLockedRef.current = true;
 			} else if ( ! isLocked && isLockedRef.current ) {
-				// Block became unlocked - remove event listeners (if you implement releaseEditor)
+				// Block became unlocked - remove event listeners
 				releaseEditor( element );
 				isLockedRef.current = false;
 			}
 		}, [ isLocked ] );
 
-		const el = createElement( BlockListBlock, { ...props, className } );
+		const el = createElement( BlockListBlock, {
+			...props,
+			className,
+		} );
 
-		// Wrap in a div with ref to get DOM access for lockEditor
-		return createElement( 'div', { ref: blockRef }, el );
+		// Wrap in a div to get access to the DOM element without direct DOM queries
+		return createElement(
+			'div',
+			{ ref: wrapperRef, style: { display: 'contents' } },
+			el
+		);
 	};
 }, 'withLockedClass' );
 
