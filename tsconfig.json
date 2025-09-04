@@ -7,10 +7,10 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": "./",
     "paths": {
-      "*": ["node_modules/*"],
       "@/*": ["src/*"]
     }
   },

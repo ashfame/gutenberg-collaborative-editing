@@ -19,7 +19,7 @@
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": "wp-scripts lint-js --fix",
     "*.{css,scss}": "wp-scripts lint-style --fix",
-    "*.{ts,tsx}": "tsc --noEmit"
+    "*.{ts,tsx}": "./scripts/type-check-staged.sh"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
