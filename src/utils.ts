@@ -21,42 +21,31 @@ function preventEditing( e: Event ) {
 	return false;
 }
 
+const eventsToPrevent = [
+	'click',
+	'dblclick',
+	'keydown',
+	'keypress',
+	'keyup',
+	'input',
+	'change',
+	'paste',
+	'cut',
+	'copy',
+	'touchstart',
+	'touchend',
+];
+
 export function lockEditor( editorElement: HTMLElement ) {
-	editorElement.addEventListener( 'click', preventEditing, true );
-	editorElement.addEventListener( 'mousedown', preventEditing, true );
-	editorElement.addEventListener( 'mouseup', preventEditing, true );
-	editorElement.addEventListener( 'dblclick', preventEditing, true );
-	editorElement.addEventListener( 'keydown', preventEditing, true );
-	editorElement.addEventListener( 'keypress', preventEditing, true );
-	editorElement.addEventListener( 'keyup', preventEditing, true );
-	editorElement.addEventListener( 'input', preventEditing, true );
-	editorElement.addEventListener( 'change', preventEditing, true );
-	editorElement.addEventListener( 'paste', preventEditing, true );
-	editorElement.addEventListener( 'cut', preventEditing, true );
-	editorElement.addEventListener( 'copy', preventEditing, true );
-	editorElement.addEventListener( 'focus', preventEditing, true );
-	editorElement.addEventListener( 'focusin', preventEditing, true );
-	editorElement.addEventListener( 'touchstart', preventEditing, true );
-	editorElement.addEventListener( 'touchend', preventEditing, true );
+	eventsToPrevent.forEach( ( event ) => {
+		editorElement.addEventListener( event, preventEditing, true );
+	} );
 }
 
 export function releaseEditor( editorElement: HTMLElement ) {
-	editorElement.removeEventListener( 'click', preventEditing, true );
-	editorElement.removeEventListener( 'mousedown', preventEditing, true );
-	editorElement.removeEventListener( 'mouseup', preventEditing, true );
-	editorElement.removeEventListener( 'dblclick', preventEditing, true );
-	editorElement.removeEventListener( 'keydown', preventEditing, true );
-	editorElement.removeEventListener( 'keypress', preventEditing, true );
-	editorElement.removeEventListener( 'keyup', preventEditing, true );
-	editorElement.removeEventListener( 'input', preventEditing, true );
-	editorElement.removeEventListener( 'change', preventEditing, true );
-	editorElement.removeEventListener( 'paste', preventEditing, true );
-	editorElement.removeEventListener( 'cut', preventEditing, true );
-	editorElement.removeEventListener( 'copy', preventEditing, true );
-	editorElement.removeEventListener( 'focus', preventEditing, true );
-	editorElement.removeEventListener( 'focusin', preventEditing, true );
-	editorElement.removeEventListener( 'touchstart', preventEditing, true );
-	editorElement.removeEventListener( 'touchend', preventEditing, true );
+	eventsToPrevent.forEach( ( event ) => {
+		editorElement.removeEventListener( event, preventEditing, true );
+	} );
 }
 
 /**
