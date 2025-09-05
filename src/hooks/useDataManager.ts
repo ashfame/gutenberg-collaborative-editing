@@ -16,6 +16,7 @@ import { useCollaborationMode } from './useCollaborationMode';
 import { getCursorState, mergeBlocks } from '@/utils';
 import { CursorState, AwarenessState } from './types';
 import { TransportReceivedData } from '@/transports/types';
+import { useProactiveStalenessCheck } from './useProactiveStalenessCheck';
 
 const restoreSelection = (
 	state: CursorState | null,
@@ -217,6 +218,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	const [ state, dispatch ] = useReducer( reducer, initialState );
 	const { editPost } = useDispatch( 'core/editor' );
 	const { resetBlocks, resetSelection } = useDispatch( 'core/block-editor' );
+	const [ recalcTrigger, forceRecalculate ] = useReducer( ( x ) => x + 1, 0 );
 
 	const onDataReceived = useCallback(
 		( data: TransportReceivedData ) => {
@@ -286,8 +288,21 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		if ( typeof currentUserId === 'number' ) {
 			delete otherActiveUsers[ currentUserId ];
 		}
-		return { activeUsers, otherUsers, otherActiveUsers };
-	}, [ awareness, currentUserId ] );
+
+		return {
+			awareness,
+			activeUsers,
+			otherUsers,
+			otherActiveUsers,
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ awareness, currentUserId, recalcTrigger ] );
+
+	// Proactively check for stale users and trigger a state recalculation.
+	useProactiveStalenessCheck(
+		derivedState.otherActiveUsers,
+		forceRecalculate
+	);
 
 	useEffect( () => {
 		if ( currentUserId === null || ! postId ) {
