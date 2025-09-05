@@ -1,6 +1,8 @@
 import { registerPlugin } from '@wordpress/plugins';
 import { CollaborativeEditing } from './CollaborativeEditing';
 import './style.scss';
+import './store';
+import './editor';
 import domReady from '@wordpress/dom-ready';
 
 declare const jQuery: any;
