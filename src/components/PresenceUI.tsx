@@ -1,4 +1,4 @@
-import { createPortal, useEffect, useMemo } from '@wordpress/element';
+import { createPortal, useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useMultiCursor } from '@/useMultiCursor';
 import AvatarList from './AvatarList';
@@ -22,14 +22,7 @@ export const PresenceUI = ( {
 		[]
 	);
 
-	// Create a new object for awareness state to exclude the current user from rendering.
-	const otherUsers = useMemo( () => {
-		const users = { ...awarenessState };
-		if ( currentUserId ) {
-			delete users[ currentUserId ];
-		}
-		return users;
-	}, [ awarenessState, currentUserId ] );
+	const otherUsers = awarenessState;
 
 	useMultiCursor( currentUserId, otherUsers, syncAwareness );
 

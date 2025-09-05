@@ -3,18 +3,10 @@ import { AwarenessState, CollaborationMode } from '@/hooks/types';
 
 export const useCSSClassManager = (
 	collaborationMode: CollaborationMode,
-	awareness: AwarenessState,
+	activeUsers: AwarenessState,
 	isLockHolder: boolean
 ) => {
 	useEffect( () => {
-		const activeUsers = Object.fromEntries(
-			Object.entries( awareness ).filter( ( [ , userData ] ) => {
-				const heartbeatAge =
-					Math.floor( Date.now() / 1000 ) - userData.heartbeat_ts;
-				return heartbeatAge < window.gce.awarenessTimeout;
-			} )
-		);
-
 		if ( Object.keys( activeUsers ).length > 1 ) {
 			document.body.classList.add( 'gutenberg-collaborative-editing' );
 		} else {
@@ -24,7 +16,7 @@ export const useCSSClassManager = (
 		return () => {
 			document.body.classList.remove( 'gutenberg-collaborative-editing' );
 		};
-	}, [ awareness ] );
+	}, [ activeUsers ] );
 
 	useEffect( () => {
 		if ( collaborationMode === 'BLOCK-LEVEL-LOCKS' ) {

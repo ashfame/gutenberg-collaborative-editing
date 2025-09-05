@@ -8,9 +8,9 @@ import { useGutenbergEditorControls } from '@/hooks/useGutenbergEditorControls';
 
 export const CollaborativeEditing = () => {
 	const { collaborationMode, state, syncAwareness } = useDataManager();
-	const { isLockHolder, awareness } = state;
+	const { isLockHolder, activeUsers, otherActiveUsers } = state;
 
-	useCSSClassManager( collaborationMode, awareness, isLockHolder );
+	useCSSClassManager( collaborationMode, activeUsers, isLockHolder );
 	useGutenbergEditorControls( collaborationMode, isLockHolder );
 
 	useEffect( () => {
@@ -45,7 +45,7 @@ export const CollaborativeEditing = () => {
 	return (
 		<>
 			<PresenceUI
-				awarenessState={ awareness }
+				awarenessState={ otherActiveUsers }
 				syncAwareness={ syncAwareness }
 			/>
 			{ collaborationMode === 'READ-ONLY-FOLLOW' && (

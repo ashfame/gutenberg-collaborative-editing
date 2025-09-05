@@ -1,4 +1,9 @@
-import { useEffect, useReducer, useCallback } from '@wordpress/element';
+import {
+	useEffect,
+	useReducer,
+	useCallback,
+	useMemo,
+} from '@wordpress/element';
 import { useGutenbergState } from './useGutenbergState';
 import {
 	useTransportManager,
@@ -151,11 +156,17 @@ const handleDataReceived = (
 interface DataManagerState {
 	isLockHolder: boolean;
 	awareness: AwarenessState;
+	activeUsers: AwarenessState;
+	otherUsers: AwarenessState;
+	otherActiveUsers: AwarenessState;
 }
 
 const initialState: DataManagerState = {
 	isLockHolder: false,
 	awareness: {},
+	activeUsers: {},
+	otherUsers: {},
+	otherActiveUsers: {},
 };
 
 type ReducerAction =
@@ -249,6 +260,28 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		onSync: syncContent,
 	} );
 
+	const { awareness } = state;
+	const derivedState = useMemo( () => {
+		const activeUsers = Object.fromEntries(
+			Object.entries( awareness ).filter( ( [ , userData ] ) => {
+				const heartbeatAge =
+					Math.floor( Date.now() / 1000 ) - userData.heartbeat_ts;
+				return heartbeatAge < window.gce.awarenessTimeout;
+			} )
+		);
+
+		const otherUsers = { ...awareness };
+		if ( currentUserId ) {
+			delete otherUsers[ currentUserId ];
+		}
+
+		const otherActiveUsers = { ...activeUsers };
+		if ( currentUserId ) {
+			delete otherActiveUsers[ currentUserId ];
+		}
+		return { activeUsers, otherUsers, otherActiveUsers };
+	}, [ awareness, currentUserId ] );
+
 	useEffect( () => {
 		if ( currentUserId === null || ! postId ) {
 			return;
@@ -261,7 +294,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 
 	return {
 		collaborationMode,
-		state,
+		state: { ...state, ...derivedState },
 		syncAwareness,
 	};
 };
