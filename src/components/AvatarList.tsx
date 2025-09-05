@@ -10,21 +10,12 @@ interface AvatarListProps {
 const AvatarList = ( { users }: AvatarListProps ) => {
 	const MAX_VISIBLE_AVATARS = 5;
 
-	// Filter out stale presence
-	const activeUsers = Object.fromEntries(
-		Object.entries( users ).filter( ( [ , userData ] ) => {
-			const heartbeatAge =
-				Math.floor( Date.now() / 1000 ) - userData.heartbeat_ts;
-			return heartbeatAge < window.gce.awarenessTimeout;
-		} )
-	);
-
 	// Filter out excessive users beyond the defined limit in MAX_VISIBLE_AVATARS
 	const visibleUsers = Object.fromEntries(
-		Object.entries( activeUsers ).slice( 0, MAX_VISIBLE_AVATARS )
+		Object.entries( users ).slice( 0, MAX_VISIBLE_AVATARS )
 	);
 	const hiddenUsersCount =
-		Object.keys( activeUsers ).length - Object.keys( visibleUsers ).length;
+		Object.keys( users ).length - Object.keys( visibleUsers ).length;
 
 	return (
 		<ul className="gce-avatar-list">
