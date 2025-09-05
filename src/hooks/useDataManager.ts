@@ -262,21 +262,28 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 
 	const { awareness } = state;
 	const derivedState = useMemo( () => {
-		const activeUsers = Object.fromEntries(
-			Object.entries( awareness ).filter( ( [ , userData ] ) => {
+		// Build using reduce to preserve number keys and the AwarenessState type
+		const activeUsers = Object.keys( awareness ).reduce< AwarenessState >(
+			( acc, key ) => {
+				const userId = Number( key );
+				const userData = awareness[ userId ];
 				const heartbeatAge =
 					Math.floor( Date.now() / 1000 ) - userData.heartbeat_ts;
-				return heartbeatAge < window.gce.awarenessTimeout;
-			} )
+				if ( heartbeatAge < window.gce.awarenessTimeout ) {
+					acc[ userId ] = userData;
+				}
+				return acc;
+			},
+			{}
 		);
 
-		const otherUsers = { ...awareness };
-		if ( currentUserId ) {
+		const otherUsers: AwarenessState = { ...awareness };
+		if ( typeof currentUserId === 'number' ) {
 			delete otherUsers[ currentUserId ];
 		}
 
-		const otherActiveUsers = { ...activeUsers };
-		if ( currentUserId ) {
+		const otherActiveUsers: AwarenessState = { ...activeUsers };
+		if ( typeof currentUserId === 'number' ) {
 			delete otherActiveUsers[ currentUserId ];
 		}
 		return { activeUsers, otherUsers, otherActiveUsers };
