@@ -67,7 +67,7 @@ export const useGutenbergState = (): GutenbergState => {
 			editorContentTitle: contentTitle,
 			blocks: blockEditorSelect ? blockEditorSelect.getBlocks() : [],
 		};
-	}, );
+	} );
 
 	const editorContent = useMemo(
 		() => ( {
