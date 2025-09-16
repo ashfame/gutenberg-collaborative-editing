@@ -4,6 +4,7 @@ import { getCursorState } from '@/utils';
 import { CursorState } from './types';
 import { store as coreStore } from '@wordpress/core-data';
 import { store as editorStore } from '@wordpress/editor';
+import { store as blockEditorStore } from '@wordpress/block-editor';
 import { BlockInstance } from '@wordpress/blocks';
 
 interface GutenbergState {
@@ -31,7 +32,7 @@ export const useGutenbergState = (): GutenbergState => {
 	} = useSelect( ( select ) => {
 		const editorSelect = select( editorStore );
 		const coreSelect = select( coreStore );
-		const blockEditorSelect = select( 'core/block-editor' );
+		const blockEditorSelect = select( blockEditorStore );
 
 		const activePostLock = (
 			editorSelect as /** @type {import('@wordpress/editor').EditorSelector} */ any
@@ -65,9 +66,9 @@ export const useGutenbergState = (): GutenbergState => {
 			isLockHolder: ! isReadOnly,
 			editorContentHTML: contentHTML,
 			editorContentTitle: contentTitle,
-			blocks: blockEditorSelect ? blockEditorSelect.getBlocks() : [],
+			blocks: ( blockEditorSelect as any )?.getBlocks() || [],
 		};
-	} );
+	}, [] );
 
 	const editorContent = useMemo(
 		() => ( {
