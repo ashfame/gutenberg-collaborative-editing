@@ -7,7 +7,7 @@ export interface Block {
 	metadata?: Record< string, any >;
 }
 
-// Operations that can happen to blocks
+// Operations that can happen to a block
 export type InsertBlockOperation = {
 	type: 'insert';
 	index: number;

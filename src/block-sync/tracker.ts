@@ -29,7 +29,7 @@ export class BlockChangeTracker {
 	}
 
 	/**
-	 * Update blocks from editor and detect what changed
+	 * Update blocks from the editor and detect what changed
 	 * @param editorBlocks
 	 */
 	updateFromEditor( editorBlocks: Block[] ): BlockOperation[] {

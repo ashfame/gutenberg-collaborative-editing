@@ -18,7 +18,7 @@ import { getCursorState, mergeBlocks } from '@/utils';
 import { CursorState, AwarenessState } from './types';
 import { TransportReceivedData } from '@/transports/types';
 import { useProactiveStalenessCheck } from './useProactiveStalenessCheck';
-import { BlockChangeTracker, Block } from '../block-sync';
+import { BlockChangeTracker, Block } from '@/block-sync';
 
 const restoreSelection = (
 	state: CursorState | null,
