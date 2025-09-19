@@ -1,37 +1,40 @@
 import logger from './logger';
 import { CursorState } from './hooks/types';
-import { TransportReceivedData } from './transports/types';
+import { ContentSyncPayload, TransportReceivedData } from './transports/types';
 
 /**
  * Syncs the editor content to the server.
  *
- * @param {number} postId       The ID of the post.
- * @param {Object} content      The content to sync.
- * @param {number} [blockIndex] The index of the block to sync, if content is meant for the block as opposed to the full post content.
+ * @param {number} postId  The ID of the post.
+ * @param          payload
  * @return {Promise<void>}
  * @throws {Error} If the sync fails.
  */
 export const syncContent = async (
 	postId: number,
-	content: any,
-	blockIndex?: number
+	payload: ContentSyncPayload
 ): Promise< void > => {
 	if ( ! window.gce || ! postId ) {
 		return;
 	}
 
-	logger.debug( 'syncContent called with:', { content, blockIndex } );
+	logger.debug( 'syncContent called with:', payload );
 
 	try {
 		const formData = new FormData();
 		formData.append( 'action', window.gce.syncContentAction );
 		formData.append( 'nonce', window.gce.syncContentNonce );
 		formData.append( 'post_id', String( postId ) );
-		if ( blockIndex !== undefined ) {
-			formData.append( 'block_index', String( blockIndex ) );
-		}
 		formData.append( 'fingerprint', window.gce.fingerprint );
-		formData.append( 'content', content );
+
+		// Handle the payload based on its type.
+		if ( 'content' in payload ) {
+			// This is a FullContentSyncPayload.
+			formData.append( 'content', payload.content );
+		} else {
+			// This is a BlockOpPayload.
+			formData.append( 'block_op', JSON.stringify( payload ) );
+		}
 
 		const response = await fetch( window.gce.ajaxUrl, {
 			method: 'POST',

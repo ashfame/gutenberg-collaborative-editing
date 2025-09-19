@@ -82,11 +82,7 @@ export const AjaxWithLongPollingTransport = ( {
 		send: async ( action: TransportAction ): Promise< void > => {
 			switch ( action.type ) {
 				case 'content': {
-					await syncContent(
-						postId,
-						action.payload.content,
-						action.payload.blockIndex
-					);
+					await syncContent( postId, action.payload );
 					return;
 				}
 				case 'awareness': {
