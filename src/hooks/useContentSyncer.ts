@@ -1,10 +1,13 @@
 import { useEffect, useRef } from '@wordpress/element';
 import { CursorState } from './types';
+import { BlockChangeTracker, Block } from '@/block-sync';
+import { BlockInstance } from '@wordpress/blocks';
 
 interface UseContentSyncerConfig {
 	collaborationMode: string;
 	isLockHolder: boolean;
 	postId: number;
+	blocks: BlockInstance[];
 	editorContent: any;
 	blockContent: string; // current block content
 	cursorState: CursorState | null;
@@ -20,6 +23,7 @@ interface UseContentSyncerConfig {
  * @param root0.collaborationMode
  * @param root0.isLockHolder
  * @param root0.postId
+ * @param root0.blocks
  * @param root0.editorContent
  * @param root0.blockContent
  * @param root0.cursorState
@@ -29,15 +33,35 @@ export const useContentSyncer = ( {
 	collaborationMode,
 	isLockHolder,
 	postId,
+	blocks,
 	editorContent,
 	blockContent,
 	cursorState,
 	onSync,
 }: UseContentSyncerConfig ) => {
+	const tracker = useRef( new BlockChangeTracker() );
 	const syncState = useRef( {
 		timeoutId: null as number | null,
 		lastContent: '',
 	} );
+
+	useEffect( () => {
+		if ( ! blocks ) {
+			return;
+		}
+
+		// The tracker expects a simplified `Block` object.
+		const mappedBlocks: Block[] = blocks.map( ( block ) => ( {
+			clientId: block.clientId,
+			content: block.attributes,
+		} ) );
+
+		const operations = tracker.current.updateFromEditor( mappedBlocks );
+		if ( operations.length > 0 ) {
+			// eslint-disable-next-line no-console
+			console.log( 'Pending operations:', operations );
+		}
+	}, [ blocks ] );
 
 	// For full content sync every-time
 	useEffect( () => {

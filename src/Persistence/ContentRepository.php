@@ -40,7 +40,7 @@ class ContentRepository {
 		);
 	}
 
-	public function update_block( $post_id, $user_id, $fingerprint, $block_index, $block_content, $title = null ) {
+	public function update_block( $post_id, $user_id, $fingerprint, $block_index, $block_content, $title = null ) : array {
 		$sync_data = $this->get_or_init( $post_id, $user_id, $fingerprint, $title );
 
 		$parsed_blocks = $this->get_parsed_blocks( $sync_data );
@@ -56,7 +56,7 @@ class ContentRepository {
 		);
 	}
 
-	public function move_block( $post_id, $user_id, $fingerprint, $from_index, $to_index ) {
+	public function move_block( $post_id, $user_id, $fingerprint, $from_index, $to_index ) : array {
 		$sync_data = $this->get_or_init( $post_id, $user_id, $fingerprint );
 
 		$parsed_blocks = $this->get_parsed_blocks( $sync_data );
@@ -75,7 +75,7 @@ class ContentRepository {
 		);
 	}
 
-	public function delete_block( $post_id, $user_id, $fingerprint, $block_index ) {
+	public function delete_block( $post_id, $user_id, $fingerprint, $block_index ) : array {
 		$sync_data = $this->get_or_init( $post_id, $user_id, $fingerprint );
 
 		$parsed_blocks = $this->get_parsed_blocks( $sync_data );
