@@ -6,7 +6,7 @@ use DotOrg\GCE\Utils;
 
 class ContentRepository {
 
-	public function save( $post_id, $user_id, $fingerprint, $content, $title ) {
+	public function save( $post_id, $user_id, $fingerprint, $content, $title ) : array {
 		$transient_key = "gce_sync_content_{$post_id}";
 		$sync_data = [
 			'content'     => [ 'html' => $content, 'title' => $title ],
@@ -21,27 +21,29 @@ class ContentRepository {
 		return [ $sync_data['snapshot_id'], $sync_data['timestamp'] ];
 	}
 
-	public function update_block( $post_id, $user_id, $fingerprint, $block_index, $block_content, $title ) {
-		$sync_data = $this->get( $post_id );
+	public function add_block( $post_id, $user_id, $fingerprint, $block_index, $block_content ) : array {
+		$sync_data = $this->get_or_init( $post_id, $user_id, $fingerprint );
 
-		if ( false === $sync_data ) {
-			// ensure we have a full copy of the content
-			$this->save(
-				$post_id,
-				$user_id,
-				$fingerprint,
-				get_post( $post_id )->post_content,
-				$title,
-			);
-			$sync_data = $this->get( $post_id );
+		$parsed_blocks = $this->get_parsed_blocks( $sync_data );
+
+		$new_block = parse_blocks( $block_content )[0] ?? null;
+		if ( $new_block ) {
+			array_splice( $parsed_blocks, $block_index, 0, [ $new_block ] );
 		}
 
-		$parsed_blocks = array_values( array_filter(
-			parse_blocks( $sync_data['content']['html'] ?? '' ),
-			function ( $block ) use ( $block_index ) {
-				return !empty( $block['blockName'] );
-			}
-		) );
+		return $this->save(
+			$post_id,
+			$user_id,
+			$fingerprint,
+			serialize_blocks( $parsed_blocks ),
+			$sync_data['content']['title'] ?? get_the_title( $post_id )
+		);
+	}
+
+	public function update_block( $post_id, $user_id, $fingerprint, $block_index, $block_content, $title = null ) {
+		$sync_data = $this->get_or_init( $post_id, $user_id, $fingerprint, $title );
+
+		$parsed_blocks = $this->get_parsed_blocks( $sync_data );
 
 		$parsed_blocks[ $block_index ] = parse_blocks( $block_content )[0];
 
@@ -50,7 +52,73 @@ class ContentRepository {
 			$user_id,
 			$fingerprint,
 			serialize_blocks( $parsed_blocks ),
-			$title,
+			$title ?? $sync_data['content']['title'] ?? get_the_title( $post_id )
+		);
+	}
+
+	public function move_block( $post_id, $user_id, $fingerprint, $from_index, $to_index ) {
+		$sync_data = $this->get_or_init( $post_id, $user_id, $fingerprint );
+
+		$parsed_blocks = $this->get_parsed_blocks( $sync_data );
+
+		$block_to_move = array_splice( $parsed_blocks, $from_index, 1 );
+		if ( ! empty( $block_to_move ) ) {
+			array_splice( $parsed_blocks, $to_index, 0, $block_to_move );
+		}
+
+		return $this->save(
+			$post_id,
+			$user_id,
+			$fingerprint,
+			serialize_blocks( $parsed_blocks ),
+			$sync_data['content']['title'] ?? get_the_title( $post_id )
+		);
+	}
+
+	public function delete_block( $post_id, $user_id, $fingerprint, $block_index ) {
+		$sync_data = $this->get_or_init( $post_id, $user_id, $fingerprint );
+
+		$parsed_blocks = $this->get_parsed_blocks( $sync_data );
+
+		if ( isset( $parsed_blocks[ $block_index ] ) ) {
+			array_splice( $parsed_blocks, $block_index, 1 );
+		}
+
+		return $this->save(
+			$post_id,
+			$user_id,
+			$fingerprint,
+			serialize_blocks( $parsed_blocks ),
+			$sync_data['content']['title'] ?? get_the_title( $post_id )
+		);
+	}
+
+	private function get_or_init( $post_id, $user_id, $fingerprint, $title = null ) {
+		$sync_data = $this->get( $post_id );
+
+		if ( false === $sync_data ) {
+			// ensure we have a full copy of the content
+			$post = get_post( $post_id );
+			$this->save(
+				$post_id,
+				$user_id,
+				$fingerprint,
+				$post->post_content,
+				$title ?? $post->post_title
+			);
+			$sync_data = $this->get( $post_id );
+		}
+		return $sync_data;
+	}
+
+	private function get_parsed_blocks( $sync_data ) {
+		return array_values(
+			array_filter(
+				parse_blocks( $sync_data['content']['html'] ?? '' ),
+				function ( $block ) {
+					return ! empty( $block['blockName'] );
+				}
+			)
 		);
 	}
 

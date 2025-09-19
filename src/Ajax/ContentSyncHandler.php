@@ -40,23 +40,67 @@ class ContentSyncHandler {
 
 		$repo = new ContentRepository();
 
-		if ( is_null( $block_index ) ) {
+		if ( isset( $_POST['block_op'] ) ) {
+			$block_op = json_decode( wp_unslash( $_POST['block_op'] ), true );
+
+			if ( ! $block_op || ! isset( $block_op['op'] ) ) {
+				wp_send_json_error( [ 'message' => 'Invalid block operation data' ] );
+			}
+
+			switch ( $block_op['op'] ) {
+				case 'insert':
+					[ $snapshot_id, $saved_at_ts ] = $repo->add_block(
+						$post_id,
+						get_current_user_id(),
+						$fingerprint,
+						$block_op['blockIndex'],
+						$block_op['blockContent']
+					);
+					break;
+				case 'update':
+					[ $snapshot_id, $saved_at_ts ] = $repo->update_block(
+						$post_id,
+						get_current_user_id(),
+						$fingerprint,
+						$block_op['blockIndex'],
+						$block_op['blockContent'],
+						null // title is not sent for block-level updates.
+					);
+					break;
+				case 'move':
+					[ $snapshot_id, $saved_at_ts ] = $repo->move_block(
+						$post_id,
+						get_current_user_id(),
+						$fingerprint,
+						$block_op['fromBlockIndex'],
+						$block_op['toBlockIndex']
+					);
+					break;
+				case 'del':
+					[ $snapshot_id, $saved_at_ts ] = $repo->delete_block(
+						$post_id,
+						get_current_user_id(),
+						$fingerprint,
+						$block_op['blockIndex']
+					);
+					break;
+				default:
+					wp_send_json_error( [ 'message' => 'Unknown block operation' ] );
+			}
+		} elseif ( isset( $_POST['content'] ) ) {
+			$content = json_decode( wp_unslash( $_POST['content'] ), true );
+			if ( ! $content ) {
+				wp_send_json_error( [ 'message' => 'Invalid request data' ] );
+			}
 			[ $snapshot_id, $saved_at_ts ] = $repo->save(
 				$post_id,
 				get_current_user_id(),
 				$fingerprint,
-				$content[ 'html' ],
-				$content[ 'title' ],
+				$content['html'],
+				$content['title']
 			);
 		} else {
-			[ $snapshot_id, $saved_at_ts ] = $repo->update_block(
-				$post_id,
-				get_current_user_id(),
-				$fingerprint,
-				$block_index,
-				$content[ 'html' ],
-				$content[ 'title' ],
-			);
+			wp_send_json_error( [ 'message' => 'Invalid request data' ] );
 		}
 
 		// Since the user saved the content, we treat this as a declaration of this state of content
