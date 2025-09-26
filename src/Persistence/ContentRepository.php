@@ -93,7 +93,7 @@ class ContentRepository {
 		);
 	}
 
-	private function get_or_init( $post_id, $user_id, $fingerprint, $title = null ) {
+	public function get_or_init( $post_id, $user_id, $fingerprint, $title = null ) {
 		$sync_data = $this->get( $post_id );
 
 		if ( false === $sync_data ) {

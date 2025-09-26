@@ -47,7 +47,11 @@ class PollingHandler {
 		while ( ( microtime( true ) - $start_time ) < $max_wait ) {
 			wp_cache_delete( $post_id, 'post_meta' ); // for Awareness
 
-			$sync_data = $content_repo->get( $post_id );
+			$sync_data = $content_repo->get_or_init(
+				$post_id,
+				get_current_user_id(),
+				$fingerprint
+			);
 			if (
 				$sync_data &&
 				(

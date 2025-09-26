@@ -44,24 +44,7 @@ export const useContentSyncer = ( {
 		timeoutId: null as number | null,
 		lastContent: '',
 	} );
-
-	useEffect( () => {
-		if ( ! blocks ) {
-			return;
-		}
-
-		// The tracker expects a simplified `Block` object.
-		const mappedBlocks: Block[] = blocks.map( ( block ) => ( {
-			clientId: block.clientId,
-			content: block.attributes,
-		} ) );
-
-		const operations = tracker.current.updateFromEditor( mappedBlocks );
-		if ( operations.length > 0 ) {
-			// eslint-disable-next-line no-console
-			console.log( 'Pending operations:', operations );
-		}
-	}, [ blocks ] );
+	const isInitialMount = useRef( true );
 
 	// For full content sync every-time
 	useEffect( () => {
@@ -101,7 +84,29 @@ export const useContentSyncer = ( {
 			return;
 		}
 
+		if ( ! blocks || blocks.length === 0 ) {
+			return;
+		}
+
 		if ( collaborationMode !== 'BLOCK-LEVEL-LOCKS' ) {
+			return;
+		}
+
+		// The tracker expects a simplified `Block` object.
+		const mappedBlocks: Block[] = blocks.map( ( block ) => ( {
+			clientId: block.clientId,
+			content: block.attributes,
+		} ) );
+
+		if ( isInitialMount.current ) {
+			// On initial mount, update editor state as is (which has already
+			// been overwritten by shadow copy in useDataManager).
+			// This way,
+			// we can start tracking for block ops from this point onwards.
+			const operations = tracker.current.updateFromEditor( mappedBlocks );
+			// eslint-disable-next-line no-console
+			console.log( 'Pending operations - ignore@mount:', operations );
+			isInitialMount.current = false;
 			return;
 		}
 
@@ -109,29 +114,35 @@ export const useContentSyncer = ( {
 			return;
 		}
 
-		// We only send the block content and not the entire editor content
-		// but title is always sent
-		const contentStr = JSON.stringify( {
-			html: blockContent,
-			title: editorContent.title,
-		} );
-
-		if ( contentStr !== syncState.current.lastContent ) {
-			syncState.current.lastContent = contentStr;
-
-			// Clear existing timeout
-			if ( syncState.current.timeoutId ) {
-				clearTimeout( syncState.current.timeoutId );
-			}
-
-			// Schedule sync after 200ms delay
-			syncState.current.timeoutId = window.setTimeout( () => {
-				onSync( {
-					content: contentStr,
-					blockIndex: cursorState.blockIndex,
-				} );
-			}, 200 );
+		const operations = tracker.current.updateFromEditor( mappedBlocks );
+		if ( operations.length > 0 ) {
+			// eslint-disable-next-line no-console
+			console.log( 'Pending operations - needToSync:', operations );
 		}
+
+		// // We only send the block content and not the entire editor content
+		// // but title is always sent
+		// const contentStr = JSON.stringify( {
+		// 	html: blockContent,
+		// 	title: editorContent.title,
+		// } );
+		//
+		// if ( contentStr !== syncState.current.lastContent ) {
+		// 	syncState.current.lastContent = contentStr;
+		//
+		// 	// Clear existing timeout
+		// 	if ( syncState.current.timeoutId ) {
+		// 		clearTimeout( syncState.current.timeoutId );
+		// 	}
+		//
+		// 	// Schedule sync after 200ms delay
+		// 	syncState.current.timeoutId = window.setTimeout( () => {
+		// 		onSync( {
+		// 			content: contentStr,
+		// 			blockIndex: cursorState.blockIndex,
+		// 		} );
+		// 	}, 200 );
+		// }
 	}, [
 		postId,
 		editorContent,
@@ -139,6 +150,7 @@ export const useContentSyncer = ( {
 		cursorState,
 		onSync,
 		collaborationMode,
+		blocks,
 	] );
 
 	// Cleanup timeout on unmount
