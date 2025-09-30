@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { MultiCursor } from './MultiCursor';
-import { getCursorState } from './utils';
+import { useCursorState } from './hooks/useCursorState';
 import { CursorState, AwarenessState } from './hooks/types';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { store as coreStore } from '@wordpress/core-data';
@@ -13,6 +13,7 @@ export const useMultiCursor = (
 ) => {
 	const multiCursorRef = useRef< MultiCursor | null >( null );
 	const overlayRef = useRef< HTMLDivElement | null >( null );
+	const cursorState = useCursorState();
 
 	const { blockCount, currentUser } = useSelect( ( select ) => {
 		const editorSelect = select( blockEditorStore );
@@ -32,11 +33,14 @@ export const useMultiCursor = (
 		if ( ! syncAwareness || ! currentUser ) {
 			return;
 		}
-		const cursorState = getCursorState();
 		if ( cursorState ) {
 			syncAwareness( cursorState );
 		}
-	}, [ syncAwareness, currentUser ] );
+	}, [ syncAwareness, currentUser, cursorState ] );
+
+	useEffect( () => {
+		broadcastCursor();
+	}, [ broadcastCursor ] );
 
 	useEffect( () => {
 		// Don't do anything until the editor is ready.
@@ -93,24 +97,13 @@ export const useMultiCursor = (
 			}
 		}
 
-		// Set up event listeners to broadcast our own cursor.
-		const handleSelectionChange = () => broadcastCursor();
-		editorDocument.addEventListener(
-			'selectionchange',
-			handleSelectionChange
-		);
-
 		// Cleanup on unmount.
 		return () => {
-			editorDocument.removeEventListener(
-				'selectionchange',
-				handleSelectionChange
-			);
 			if ( overlayRef.current ) {
 				overlayRef.current.remove();
 			}
 			overlayRef.current = null;
 			multiCursorRef.current = null;
 		};
-	}, [ blockCount, currentUserId, awarenessState, broadcastCursor ] );
+	}, [ blockCount, currentUserId, awarenessState ] );
 };
