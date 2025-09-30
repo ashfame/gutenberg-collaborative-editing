@@ -136,7 +136,7 @@ const handleDataReceived = (
 			// The tracker expects a simplified `Block` object.
 			const mappedBlocks: Block[] = receivedBlocks.map( ( block ) => ( {
 				clientId: block.clientId,
-				content: block.attributes,
+				content: serialize( [ block ] ),
 			} ) );
 
 			if ( tracker.current ) {

@@ -135,11 +135,24 @@ export const mergeBlocks = (
 		existingBlocks[ engagedBlockIndex ]
 	) {
 		const engagedBlock = existingBlocks[ engagedBlockIndex ];
-		if ( blocksToSet.length > engagedBlockIndex ) {
-			blocksToSet[ engagedBlockIndex ] = engagedBlock;
+		const engagedBlockClientId = engagedBlock.clientId;
+
+		// Find the position of the engaged block in the new set.
+		const receivedEngagedBlockIndex = blocksToSet.findIndex(
+			( block ) => block.clientId === engagedBlockClientId
+		);
+
+		if ( receivedEngagedBlockIndex > -1 ) {
+			// If the engaged block exists in the new set, preserve its content.
+			blocksToSet[ receivedEngagedBlockIndex ] = engagedBlock;
 		} else {
-			// If the engaged block is outside the new set of blocks, append it.
-			blocksToSet.push( engagedBlock );
+			// If the engaged block was deleted, re-insert it at its original position.
+			// eslint-disable-next-line no-lonely-if
+			if ( blocksToSet.length > engagedBlockIndex ) {
+				blocksToSet.splice( engagedBlockIndex, 0, engagedBlock );
+			} else {
+				blocksToSet.push( engagedBlock );
+			}
 		}
 	}
 
