@@ -26,14 +26,15 @@ export const syncContent = async (
 		formData.append( 'nonce', window.gce.syncContentNonce );
 		formData.append( 'post_id', String( postId ) );
 		formData.append( 'fingerprint', window.gce.fingerprint );
+		formData.append( 'payloadType', payload.type );
 
 		// Handle the payload based on its type.
-		if ( 'content' in payload ) {
+		if ( payload.type === 'full' ) {
 			// This is a FullContentSyncPayload.
-			formData.append( 'content', payload.content );
-		} else {
+			formData.append( 'payload', payload.payload );
+		} else if ( payload.type === 'ops' ) {
 			// This is a BlockOpPayload.
-			formData.append( 'block_op', JSON.stringify( payload ) );
+			formData.append( 'payload', JSON.stringify( payload.payload ) );
 		}
 
 		const response = await fetch( window.gce.ajaxUrl, {

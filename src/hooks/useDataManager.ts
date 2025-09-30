@@ -3,6 +3,7 @@ import {
 	useReducer,
 	useCallback,
 	useMemo,
+	useRef,
 } from '@wordpress/element';
 import { useGutenbergState } from './useGutenbergState';
 import {
@@ -15,8 +16,9 @@ import { parse, serialize } from '@wordpress/blocks';
 import { useCollaborationMode } from './useCollaborationMode';
 import { getCursorState, mergeBlocks } from '@/utils';
 import { CursorState, AwarenessState } from './types';
-import { TransportReceivedData } from '@/transports/types';
+import { TransportReceivedData, ContentSyncPayload } from '@/transports/types';
 import { useProactiveStalenessCheck } from './useProactiveStalenessCheck';
+import { BlockChangeTracker, Block } from '@/block-sync';
 
 const restoreSelection = (
 	state: CursorState | null,
@@ -100,7 +102,8 @@ const handleDataReceived = (
 	}
 
 	const { awareness, content, modified } = data;
-	const { editPost, resetBlocks, resetSelection, dispatch } = dependencies;
+	const { editPost, resetBlocks, resetSelection, dispatch, tracker } =
+		dependencies;
 
 	if ( modified && content && content.content ) {
 		const receivedContent = content.content;
@@ -129,6 +132,16 @@ const handleDataReceived = (
 				cursorState && 'blockIndex' in cursorState
 					? cursorState.blockIndex
 					: undefined;
+
+			// The tracker expects a simplified `Block` object.
+			const mappedBlocks: Block[] = receivedBlocks.map( ( block ) => ( {
+				clientId: block.clientId,
+				content: block.attributes,
+			} ) );
+
+			if ( tracker.current ) {
+				tracker.current.resetState( mappedBlocks );
+			}
 
 			const blocksToSet = mergeBlocks(
 				existingBlocks,
@@ -220,6 +233,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	const { editPost } = useDispatch( 'core/editor' );
 	const { resetBlocks, resetSelection } = useDispatch( 'core/block-editor' );
 	const [ recalcTrigger, forceRecalculate ] = useReducer( ( x ) => x + 1, 0 );
+	const tracker = useRef( new BlockChangeTracker() );
 
 	const onDataReceived = useCallback(
 		( data: TransportReceivedData ) => {
@@ -228,9 +242,10 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 				resetBlocks,
 				resetSelection,
 				dispatch,
+				tracker,
 			} );
 		},
-		[ editPost, resetBlocks, resetSelection, dispatch ]
+		[ editPost, resetBlocks, resetSelection, dispatch, tracker ]
 	);
 
 	const { send } = useTransportManager( {
@@ -244,7 +259,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	};
 
 	const syncContent = useCallback(
-		( payload: { content: any; blockIndex?: number } ) => {
+		( payload: ContentSyncPayload ) => {
 			if ( ! document.hasFocus() ) {
 				return;
 			}
@@ -262,6 +277,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		blockContent: blockContent || '',
 		cursorState,
 		onSync: syncContent,
+		tracker,
 	} );
 
 	const { awareness } = state;

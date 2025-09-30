@@ -15,9 +15,14 @@ export interface ContentTransportAction {
 /**
  * ContentSync payload
  */
-export type ContentSyncPayload = FullContentSyncPayload | BlockOpPayload;
+export type ContentSyncPayload = FullContentSyncPayload | BlockOpsPayload;
 export interface FullContentSyncPayload {
-	content: string;
+	type: 'full';
+	payload: string;
+}
+export interface BlockOpsPayload {
+	type: 'ops';
+	payload: BlockOpPayload[];
 }
 export type BlockOpPayload =
 	| BlockOpAddPayload

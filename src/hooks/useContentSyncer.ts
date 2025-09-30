@@ -1,7 +1,16 @@
 import { useEffect, useRef } from '@wordpress/element';
 import { CursorState } from './types';
 import { BlockChangeTracker, Block } from '@/block-sync';
-import { BlockInstance } from '@wordpress/blocks';
+import { BlockInstance, serialize } from '@wordpress/blocks';
+import {
+	BlockOpAddPayload,
+	BlockOpDelPayload,
+	BlockOpMovePayload,
+	BlockOpUpdatePayload,
+	ContentSyncPayload,
+	BlockOpPayload,
+	BlockOpsPayload,
+} from '@/transports/types';
 
 interface UseContentSyncerConfig {
 	collaborationMode: string;
@@ -11,7 +20,8 @@ interface UseContentSyncerConfig {
 	editorContent: any;
 	blockContent: string; // current block content
 	cursorState: CursorState | null;
-	onSync: ( payload: { content: any; blockIndex?: number } ) => void;
+	onSync: ( payload: ContentSyncPayload ) => void;
+	tracker: React.RefObject< BlockChangeTracker >;
 }
 
 /**
@@ -28,6 +38,7 @@ interface UseContentSyncerConfig {
  * @param root0.blockContent
  * @param root0.cursorState
  * @param root0.onSync
+ * @param root0.tracker
  */
 export const useContentSyncer = ( {
 	collaborationMode,
@@ -38,8 +49,8 @@ export const useContentSyncer = ( {
 	blockContent,
 	cursorState,
 	onSync,
+	tracker,
 }: UseContentSyncerConfig ) => {
-	const tracker = useRef( new BlockChangeTracker() );
 	const syncState = useRef( {
 		timeoutId: null as number | null,
 		lastContent: '',
@@ -73,7 +84,7 @@ export const useContentSyncer = ( {
 
 			// Schedule sync after 200ms delay
 			syncState.current.timeoutId = window.setTimeout( () => {
-				onSync( { content: contentStr } );
+				onSync( { type: 'full', payload: contentStr } );
 			}, 200 );
 		}
 	}, [ postId, editorContent, isLockHolder, onSync, collaborationMode ] );
@@ -95,7 +106,7 @@ export const useContentSyncer = ( {
 		// The tracker expects a simplified `Block` object.
 		const mappedBlocks: Block[] = blocks.map( ( block ) => ( {
 			clientId: block.clientId,
-			content: block.attributes,
+			content: serialize( [ block ] ),
 		} ) );
 
 		if ( isInitialMount.current ) {
@@ -103,9 +114,12 @@ export const useContentSyncer = ( {
 			// been overwritten by shadow copy in useDataManager).
 			// This way,
 			// we can start tracking for block ops from this point onwards.
-			const operations = tracker.current.updateFromEditor( mappedBlocks );
-			// eslint-disable-next-line no-console
-			console.log( 'Pending operations - ignore@mount:', operations );
+			if ( tracker.current ) {
+				const operations =
+					tracker.current.updateFromEditor( mappedBlocks );
+				// eslint-disable-next-line no-console
+				console.log( 'Pending operations - ignore@mount:', operations );
+			}
 			isInitialMount.current = false;
 			return;
 		}
@@ -114,10 +128,62 @@ export const useContentSyncer = ( {
 			return;
 		}
 
-		const operations = tracker.current.updateFromEditor( mappedBlocks );
-		if ( operations.length > 0 ) {
-			// eslint-disable-next-line no-console
-			console.log( 'Pending operations - needToSync:', operations );
+		if ( tracker.current ) {
+			const operations = tracker.current.updateFromEditor( mappedBlocks );
+			if ( operations.length > 0 ) {
+				const ops: BlockOpPayload[] = [];
+				// eslint-disable-next-line no-console
+				console.log( 'Pending operations - needToSync:', operations );
+				operations.forEach( ( op ) => {
+					const timestamp = Date.now();
+					switch ( op.type ) {
+						case 'insert': {
+							const payload: BlockOpAddPayload = {
+								op: 'insert',
+								blockIndex: op.index,
+								blockContent: op.block.content,
+								timestamp,
+							};
+							ops.push( payload );
+							break;
+						}
+						case 'update': {
+							const payload: BlockOpUpdatePayload = {
+								op: 'update',
+								blockIndex: op.index,
+								blockContent: op.block.content,
+								timestamp,
+							};
+							ops.push( payload );
+							break;
+						}
+						case 'delete': {
+							const payload: BlockOpDelPayload = {
+								op: 'del',
+								blockIndex: op.index,
+								timestamp,
+							};
+							ops.push( payload );
+							break;
+						}
+						case 'move': {
+							const payload: BlockOpMovePayload = {
+								op: 'move',
+								fromBlockIndex: op.fromIndex,
+								toBlockIndex: op.toIndex,
+								timestamp,
+							};
+							ops.push( payload );
+							break;
+						}
+					}
+				} );
+				const payload: BlockOpsPayload = {
+					type: 'ops',
+					payload: ops,
+				};
+				onSync( payload );
+			}
 		}
 
 		// // We only send the block content and not the entire editor content
@@ -151,6 +217,7 @@ export const useContentSyncer = ( {
 		onSync,
 		collaborationMode,
 		blocks,
+		tracker,
 	] );
 
 	// Cleanup timeout on unmount

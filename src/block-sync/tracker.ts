@@ -45,8 +45,16 @@ export class BlockChangeTracker {
 			newBlocksMap.set( block.clientId, { block, index } );
 		} );
 
+		const prevBlocks = Array.from( this.previousSnapshot.values() ).sort(
+			( a, b ) => a.index - b.index
+		);
+		const prevBlockIds = prevBlocks.map( ( item ) => item.block.clientId );
+		const editorBlockIds = editorBlocks.map( ( b ) => b.clientId );
+		const lcsIds = new Set( this.findLCS( prevBlockIds, editorBlockIds ) );
+
 		// Detect deletions and moves
-		this.previousSnapshot.forEach( ( { block, index }, clientId ) => {
+		prevBlocks.forEach( ( { block, index } ) => {
+			const { clientId } = block;
 			if ( ! newBlocksMap.has( clientId ) ) {
 				// Block was deleted
 				operations.push( {
@@ -55,18 +63,16 @@ export class BlockChangeTracker {
 					block,
 					timestamp,
 				} );
-			} else {
+			} else if ( ! lcsIds.has( clientId ) ) {
 				const newData = newBlocksMap.get( clientId )!;
-				if ( newData.index !== index ) {
-					// Block was moved
-					operations.push( {
-						type: 'move',
-						fromIndex: index,
-						toIndex: newData.index,
-						block: newData.block,
-						timestamp,
-					} );
-				}
+				// Block was moved
+				operations.push( {
+					type: 'move',
+					fromIndex: index,
+					toIndex: newData.index,
+					block: newData.block,
+					timestamp,
+				} );
 			}
 		} );
 
@@ -82,10 +88,11 @@ export class BlockChangeTracker {
 					block,
 					timestamp,
 				} );
-			} else if ( previous.index === index ) {
-				// Check if content changed (same position)
+			} else if ( lcsIds.has( clientId ) ) {
+				// Check if content changed (only for non-moved blocks)
 				if (
-					JSON.stringify( previous.block ) !== JSON.stringify( block )
+					JSON.stringify( previous.block.content ) !==
+					JSON.stringify( block.content )
 				) {
 					operations.push( {
 						type: 'update',
@@ -135,5 +142,53 @@ export class BlockChangeTracker {
 
 	getCurrentBlocks(): Block[] {
 		return this.currentBlocks.map( ( b ) => ( { ...b } ) );
+	}
+
+	private findLCS< T >( a: T[], b: T[] ): T[] {
+		const m = a.length;
+		const n = b.length;
+		const dp = Array( m + 1 )
+			.fill( 0 )
+			.map( () => Array( n + 1 ).fill( 0 ) );
+
+		for ( let i = 1; i <= m; i++ ) {
+			for ( let j = 1; j <= n; j++ ) {
+				if ( a[ i - 1 ] === b[ j - 1 ] ) {
+					dp[ i ][ j ] = dp[ i - 1 ][ j - 1 ] + 1;
+				} else {
+					dp[ i ][ j ] = Math.max(
+						dp[ i - 1 ][ j ],
+						dp[ i ][ j - 1 ]
+					);
+				}
+			}
+		}
+
+		// Backtrack to find the LCS
+		const lcs: T[] = [];
+		let i = m;
+		let j = n;
+		while ( i > 0 && j > 0 ) {
+			if ( a[ i - 1 ] === b[ j - 1 ] ) {
+				lcs.unshift( a[ i - 1 ] );
+				i--;
+				j--;
+			} else if ( dp[ i - 1 ][ j ] > dp[ i ][ j - 1 ] ) {
+				i--;
+			} else {
+				j--;
+			}
+		}
+		return lcs;
+	}
+
+	/**
+	 * Reset the tracker's state to a new set of blocks.
+	 * @param newBlocks The new blocks to set as the current state.
+	 */
+	resetState( newBlocks: Block[] ): void {
+		this.currentBlocks = newBlocks.map( ( b ) => ( { ...b } ) );
+		this.pendingOperations = [];
+		this.takeSnapshot();
 	}
 }
