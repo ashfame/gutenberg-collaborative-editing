@@ -227,6 +227,11 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		blocks,
 	} = useGutenbergState();
 
+	const cursorStateRef = useRef( cursorState );
+	useEffect( () => {
+		cursorStateRef.current = cursorState;
+	}, [ cursorState ] );
+
 	const postId = window.gce.postId;
 
 	const [ state, dispatch ] = useReducer( reducer, initialState );
@@ -246,17 +251,10 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 					dispatch,
 					tracker,
 				},
-				cursorState
+				cursorStateRef.current
 			);
 		},
-		[
-			editPost,
-			resetBlocks,
-			resetSelection,
-			dispatch,
-			tracker,
-			cursorState,
-		]
+		[ editPost, resetBlocks, resetSelection, dispatch, tracker ]
 	);
 
 	const { send } = useTransportManager( {
