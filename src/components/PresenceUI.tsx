@@ -1,26 +1,21 @@
 import { createPortal, useEffect } from '@wordpress/element';
-import { useSelect, useDispatch } from '@wordpress/data';
+import { useDispatch } from '@wordpress/data';
 import { useMultiCursor } from '@/useMultiCursor';
 import AvatarList from './AvatarList';
 import { CursorState, AwarenessState } from '@/hooks/types';
-import { store as coreStore } from '@wordpress/core-data';
 
 interface PresenceUIProps {
 	awarenessState: AwarenessState;
 	syncAwareness: ( awareness: CursorState ) => void;
+	currentUserId: number | null;
 }
 
 export const PresenceUI = ( {
 	awarenessState,
 	syncAwareness,
+	currentUserId,
 }: PresenceUIProps ) => {
 	const { setLockedBlocks } = useDispatch( 'gce' );
-	const { currentUserId } = useSelect(
-		( select ) => ( {
-			currentUserId: select( coreStore )?.getCurrentUser()?.id,
-		} ),
-		[]
-	);
 
 	const otherUsers = awarenessState;
 
@@ -31,6 +26,11 @@ export const PresenceUI = ( {
 	useEffect( () => {
 		const lockedBlocks: string[] = [];
 		Object.values( otherUsers ).forEach( ( user ) => {
+			if ( ! user.cursor_state ) {
+				// eslint-disable-next-line no-console
+				console.log( '🚧 when is this happening?', user );
+				return;
+			}
 			const blockIndex =
 				'blockIndex' in user.cursor_state
 					? user.cursor_state.blockIndex

@@ -2,7 +2,6 @@ import { useSelect } from '@wordpress/data';
 import { useMemo } from '@wordpress/element';
 import { useCursorState } from './useCursorState';
 import { CursorState } from './types';
-import { store as coreStore } from '@wordpress/core-data';
 import { store as editorStore } from '@wordpress/editor';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { BlockInstance } from '@wordpress/blocks';
@@ -21,54 +20,42 @@ interface GutenbergState {
  *
  * This hook centralizes all interactions with the `@wordpress/data` store,
  * providing a clean and isolated way to access editor-specific data.
+ * @param currentUserId
  */
-export const useGutenbergState = (): GutenbergState => {
-	const {
-		currentUserId,
-		isLockHolder,
-		editorContentHTML,
-		editorContentTitle,
-		blocks,
-	} = useSelect( ( select ) => {
-		const editorSelect = select( editorStore );
-		const coreSelect = select( coreStore );
-		const blockEditorSelect = select( blockEditorStore );
+export const useGutenbergState = (
+	currentUserId: number | null
+): GutenbergState => {
+	const { isLockHolder, editorContentHTML, editorContentTitle, blocks } =
+		useSelect(
+			( select ) => {
+				const editorSelect = select( editorStore ) as any;
+				const blockEditorSelect = select( blockEditorStore ) as any;
 
-		const activePostLock = (
-			editorSelect as /** @type {import('@wordpress/editor').EditorSelector} */ any
-		 ).getActivePostLock();
-		const currentUser = (
-			coreSelect as /** @type {import('@wordpress/core-data').CoreDataSelector} */ any
-		 ).getCurrentUser();
-		const CUID = currentUser?.id || null;
-		const lockHolderId = activePostLock
-			? parseInt( activePostLock.split( ':' ).pop() )
-			: null;
+				const activePostLock = editorSelect.getActivePostLock();
+				const lockHolderId = activePostLock
+					? parseInt( activePostLock.split( ':' ).pop() )
+					: null;
 
-		// The user who doesn't have the lock can't query the active lock,
-		// so we can't get the lock owner. If the lock owner is null,
-		// we treat it as a read-only state for the current user.
-		const isReadOnly =
-			lockHolderId === null ||
-			( lockHolderId !== null && CUID !== lockHolderId );
+				// The user who doesn't have the lock can't query the active lock,
+				// so we can't get the lock owner. If the lock owner is null,
+				// we treat it as a read-only state for the current user.
+				const isReadOnly =
+					lockHolderId === null ||
+					( lockHolderId !== null && currentUserId !== lockHolderId );
 
-		const contentHTML =
-			(
-				editorSelect as /** @type {import('@wordpress/editor').EditorSelector} */ any
-			 ).getEditedPostContent() || '';
-		const contentTitle =
-			(
-				editorSelect as /** @type {import('@wordpress/editor').EditorSelector} */ any
-			 ).getEditedPostAttribute( 'title' ) || '';
+				const contentHTML = editorSelect.getEditedPostContent() || '';
+				const contentTitle =
+					editorSelect.getEditedPostAttribute( 'title' ) || '';
 
-		return {
-			currentUserId: CUID,
-			isLockHolder: ! isReadOnly,
-			editorContentHTML: contentHTML,
-			editorContentTitle: contentTitle,
-			blocks: ( blockEditorSelect as any )?.getBlocks() || [],
-		};
-	}, [] );
+				return {
+					isLockHolder: ! isReadOnly,
+					editorContentHTML: contentHTML,
+					editorContentTitle: contentTitle,
+					blocks: blockEditorSelect.getBlocks() || [],
+				};
+			},
+			[ currentUserId ]
+		);
 
 	const editorContent = useMemo(
 		() => ( {

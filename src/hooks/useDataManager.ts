@@ -215,17 +215,12 @@ function reducer( state: DataManagerState, action: ReducerAction ) {
  * @param transport
  */
 export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
+	const currentUserId = window.gce.currentUserId;
 	const [ collaborationMode ] = useCollaborationMode();
 
 	// Get all required data in a single useSelect
-	const {
-		currentUserId,
-		isLockHolder,
-		editorContent,
-		blockContent,
-		cursorState,
-		blocks,
-	} = useGutenbergState();
+	const { isLockHolder, editorContent, blockContent, cursorState, blocks } =
+		useGutenbergState( currentUserId );
 
 	const cursorStateRef = useRef( cursorState );
 	useEffect( () => {
@@ -263,9 +258,12 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		onDataReceived,
 	} as UseTransportManagerConfig< TransportReceivedData > );
 
-	const syncAwareness = ( awareness: CursorState ) => {
-		send( { type: 'awareness', payload: awareness } );
-	};
+	const syncAwareness = useCallback(
+		( awareness: CursorState ) => {
+			send( { type: 'awareness', payload: awareness } );
+		},
+		[ send ]
+	);
 
 	const syncContent = useCallback(
 		( payload: ContentSyncPayload ) => {
@@ -342,6 +340,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	}, [ isLockHolder, currentUserId, postId ] );
 
 	return {
+		currentUserId,
 		collaborationMode,
 		state: { ...state, ...derivedState },
 		syncAwareness,

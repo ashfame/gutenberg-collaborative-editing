@@ -4,7 +4,6 @@ import { MultiCursor } from './MultiCursor';
 import { useCursorState } from './hooks/useCursorState';
 import { CursorState, AwarenessState } from './hooks/types';
 import { store as blockEditorStore } from '@wordpress/block-editor';
-import { store as coreStore } from '@wordpress/core-data';
 
 export const useMultiCursor = (
 	currentUserId: number | null,
@@ -15,28 +14,23 @@ export const useMultiCursor = (
 	const overlayRef = useRef< HTMLDivElement | null >( null );
 	const cursorState = useCursorState();
 
-	const { blockCount, currentUser } = useSelect( ( select ) => {
-		const editorSelect = select( blockEditorStore );
-		const coreSelect = select( coreStore );
+	const { blockCount } = useSelect( ( select ) => {
+		const blockEditorSelect = select( blockEditorStore ) as any;
+
 		return {
-			blockCount: (
-				editorSelect as /** @type {import('@wordpress/block-editor').BlockEditorSelector} */ any
-			 ).getBlockCount(),
-			currentUser: (
-				coreSelect as /** @type {import('@wordpress/core-data').CoreDataSelector} */ any
-			 ).getCurrentUser(),
+			blockCount: blockEditorSelect.getBlockCount(),
 		};
 	}, [] );
 
 	// Function to broadcast the current user's cursor state.
 	const broadcastCursor = useCallback( () => {
-		if ( ! syncAwareness || ! currentUser ) {
+		if ( ! syncAwareness || ! currentUserId ) {
 			return;
 		}
 		if ( cursorState ) {
 			syncAwareness( cursorState );
 		}
-	}, [ syncAwareness, currentUser, cursorState ] );
+	}, [ syncAwareness, currentUserId, cursorState ] );
 
 	useEffect( () => {
 		broadcastCursor();
