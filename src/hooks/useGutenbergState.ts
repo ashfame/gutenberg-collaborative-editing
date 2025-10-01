@@ -1,6 +1,6 @@
 import { useSelect } from '@wordpress/data';
 import { useMemo } from '@wordpress/element';
-import { getCursorState } from '@/utils';
+import { useCursorState } from './useCursorState';
 import { CursorState } from './types';
 import { store as coreStore } from '@wordpress/core-data';
 import { store as editorStore } from '@wordpress/editor';
@@ -78,7 +78,7 @@ export const useGutenbergState = (): GutenbergState => {
 		[ editorContentHTML, editorContentTitle ]
 	);
 
-	const cursorState: CursorState | null = getCursorState();
+	const cursorState: CursorState | null = useCursorState();
 
 	let blockContent: string | null = null;
 	if ( cursorState && 'blockIndex' in cursorState && blocks ) {

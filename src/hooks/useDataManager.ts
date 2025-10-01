@@ -14,7 +14,7 @@ import { useContentSyncer } from './useContentSyncer';
 import { useDispatch } from '@wordpress/data';
 import { parse, serialize } from '@wordpress/blocks';
 import { useCollaborationMode } from './useCollaborationMode';
-import { getCursorState, mergeBlocks } from '@/utils';
+import { mergeBlocks } from '@/utils';
 import { CursorState, AwarenessState } from './types';
 import { TransportReceivedData, ContentSyncPayload } from '@/transports/types';
 import { useProactiveStalenessCheck } from './useProactiveStalenessCheck';
@@ -95,7 +95,8 @@ const restoreSelection = (
 
 const handleDataReceived = (
 	data: TransportReceivedData,
-	dependencies: any
+	dependencies: any,
+	cursorState: CursorState | null
 ) => {
 	if ( ! data ) {
 		return;
@@ -107,7 +108,6 @@ const handleDataReceived = (
 
 	if ( modified && content && content.content ) {
 		const receivedContent = content.content;
-		const cursorState = getCursorState();
 
 		if ( ! receivedContent || ! ( 'html' in receivedContent ) ) {
 			return;
@@ -227,6 +227,11 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		blocks,
 	} = useGutenbergState();
 
+	const cursorStateRef = useRef( cursorState );
+	useEffect( () => {
+		cursorStateRef.current = cursorState;
+	}, [ cursorState ] );
+
 	const postId = window.gce.postId;
 
 	const [ state, dispatch ] = useReducer( reducer, initialState );
@@ -237,13 +242,17 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 
 	const onDataReceived = useCallback(
 		( data: TransportReceivedData ) => {
-			handleDataReceived( data, {
-				editPost,
-				resetBlocks,
-				resetSelection,
-				dispatch,
-				tracker,
-			} );
+			handleDataReceived(
+				data,
+				{
+					editPost,
+					resetBlocks,
+					resetSelection,
+					dispatch,
+					tracker,
+				},
+				cursorStateRef.current
+			);
 		},
 		[ editPost, resetBlocks, resetSelection, dispatch, tracker ]
 	);
