@@ -215,7 +215,7 @@ function reducer( state: DataManagerState, action: ReducerAction ) {
  * @param transport
  */
 export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
-	const currentUserId = window.gce.currentUserId;
+	const currentUserId = Number( window.gce.currentUserId );
 	const [ collaborationMode ] = useCollaborationMode();
 
 	// Get all required data in a single useSelect
