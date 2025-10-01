@@ -15,23 +15,33 @@ export const useCursorState = (): CursorState | null => {
 		) as /** @type {import('@wordpress/block-editor').BlockEditorSelector} */ any;
 
 		const selectionStart = editorSelector.getSelectionStart();
-
 		if ( ! selectionStart?.clientId ) {
 			return null;
 		}
 
-		const blocks = editorSelector.getBlockOrder();
 		const selectionEnd = editorSelector.getSelectionEnd();
+		if (
+			selectionStart.offset === undefined ||
+			selectionEnd.offset === undefined
+		) {
+			return null;
+		}
+
+		const blocks = editorSelector.getBlockOrder();
 		const sameBlock = selectionStart.clientId === selectionEnd.clientId;
 
 		if ( sameBlock ) {
 			const blockIndex = blocks.indexOf( selectionStart.clientId );
 			if ( selectionStart.offset === selectionEnd.offset ) {
+				if ( selectionStart.offset === undefined ) {
+					return null;
+				}
 				return {
 					blockIndex,
 					cursorPos: selectionStart.offset,
 				};
 			}
+
 			return {
 				blockIndex,
 				cursorPosStart: selectionStart.offset,
