@@ -7,7 +7,8 @@ import { useCSSClassManager } from '@/hooks/useCSSClassManager';
 import { useGutenbergEditorControls } from '@/hooks/useGutenbergEditorControls';
 
 export const CollaborativeEditing = () => {
-	const { collaborationMode, state, syncAwareness } = useDataManager();
+	const { currentUserId, collaborationMode, state, syncAwareness } =
+		useDataManager();
 	const { isLockHolder, activeUsers, otherActiveUsers } = state;
 
 	useCSSClassManager( collaborationMode, activeUsers, isLockHolder );
@@ -47,6 +48,7 @@ export const CollaborativeEditing = () => {
 			<PresenceUI
 				awarenessState={ otherActiveUsers }
 				syncAwareness={ syncAwareness }
+				currentUserId={ currentUserId }
 			/>
 			{ collaborationMode === 'READ-ONLY-FOLLOW' && (
 				<ReadOnlyUI isReadOnly={ ! isLockHolder } />

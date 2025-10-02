@@ -3,6 +3,7 @@ import {
 	useReducer,
 	useCallback,
 	useMemo,
+	useRef,
 } from '@wordpress/element';
 import { useGutenbergState } from './useGutenbergState';
 import {
@@ -13,10 +14,11 @@ import { useContentSyncer } from './useContentSyncer';
 import { useDispatch } from '@wordpress/data';
 import { parse, serialize } from '@wordpress/blocks';
 import { useCollaborationMode } from './useCollaborationMode';
-import { getCursorState, mergeBlocks } from '@/utils';
+import { mergeBlocks } from '@/utils';
 import { CursorState, AwarenessState } from './types';
-import { TransportReceivedData } from '@/transports/types';
+import { TransportReceivedData, ContentSyncPayload } from '@/transports/types';
 import { useProactiveStalenessCheck } from './useProactiveStalenessCheck';
+import { BlockChangeTracker, Block } from '@/block-sync';
 
 const restoreSelection = (
 	state: CursorState | null,
@@ -93,18 +95,19 @@ const restoreSelection = (
 
 const handleDataReceived = (
 	data: TransportReceivedData,
-	dependencies: any
+	dependencies: any,
+	cursorState: CursorState | null
 ) => {
 	if ( ! data ) {
 		return;
 	}
 
 	const { awareness, content, modified } = data;
-	const { editPost, resetBlocks, resetSelection, dispatch } = dependencies;
+	const { editPost, resetBlocks, resetSelection, dispatch, tracker } =
+		dependencies;
 
 	if ( modified && content && content.content ) {
 		const receivedContent = content.content;
-		const cursorState = getCursorState();
 
 		if ( ! receivedContent || ! ( 'html' in receivedContent ) ) {
 			return;
@@ -129,6 +132,16 @@ const handleDataReceived = (
 				cursorState && 'blockIndex' in cursorState
 					? cursorState.blockIndex
 					: undefined;
+
+			// The tracker expects a simplified `Block` object.
+			const mappedBlocks: Block[] = receivedBlocks.map( ( block ) => ( {
+				clientId: block.clientId,
+				content: serialize( [ block ] ),
+			} ) );
+
+			if ( tracker.current ) {
+				tracker.current.resetState( mappedBlocks );
+			}
 
 			const blocksToSet = mergeBlocks(
 				existingBlocks,
@@ -202,16 +215,17 @@ function reducer( state: DataManagerState, action: ReducerAction ) {
  * @param transport
  */
 export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
+	const currentUserId = Number( window.gce.currentUserId );
 	const [ collaborationMode ] = useCollaborationMode();
 
 	// Get all required data in a single useSelect
-	const {
-		currentUserId,
-		isLockHolder,
-		editorContent,
-		blockContent,
-		cursorState,
-	} = useGutenbergState();
+	const { isLockHolder, editorContent, blockContent, cursorState, blocks } =
+		useGutenbergState( currentUserId );
+
+	const cursorStateRef = useRef( cursorState );
+	useEffect( () => {
+		cursorStateRef.current = cursorState;
+	}, [ cursorState ] );
 
 	const postId = window.gce.postId;
 
@@ -219,17 +233,23 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	const { editPost } = useDispatch( 'core/editor' );
 	const { resetBlocks, resetSelection } = useDispatch( 'core/block-editor' );
 	const [ recalcTrigger, forceRecalculate ] = useReducer( ( x ) => x + 1, 0 );
+	const tracker = useRef( new BlockChangeTracker() );
 
 	const onDataReceived = useCallback(
 		( data: TransportReceivedData ) => {
-			handleDataReceived( data, {
-				editPost,
-				resetBlocks,
-				resetSelection,
-				dispatch,
-			} );
+			handleDataReceived(
+				data,
+				{
+					editPost,
+					resetBlocks,
+					resetSelection,
+					dispatch,
+					tracker,
+				},
+				cursorStateRef.current
+			);
 		},
-		[ editPost, resetBlocks, resetSelection, dispatch ]
+		[ editPost, resetBlocks, resetSelection, dispatch, tracker ]
 	);
 
 	const { send } = useTransportManager( {
@@ -238,12 +258,15 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		onDataReceived,
 	} as UseTransportManagerConfig< TransportReceivedData > );
 
-	const syncAwareness = ( awareness: CursorState ) => {
-		send( { type: 'awareness', payload: awareness } );
-	};
+	const syncAwareness = useCallback(
+		( awareness: CursorState ) => {
+			send( { type: 'awareness', payload: awareness } );
+		},
+		[ send ]
+	);
 
 	const syncContent = useCallback(
-		( payload: { content: any; blockIndex?: number } ) => {
+		( payload: ContentSyncPayload ) => {
 			if ( ! document.hasFocus() ) {
 				return;
 			}
@@ -256,10 +279,12 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		collaborationMode,
 		isLockHolder,
 		postId,
+		blocks,
 		editorContent,
 		blockContent: blockContent || '',
 		cursorState,
 		onSync: syncContent,
+		tracker,
 	} );
 
 	const { awareness } = state;
@@ -315,6 +340,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	}, [ isLockHolder, currentUserId, postId ] );
 
 	return {
+		currentUserId,
 		collaborationMode,
 		state: { ...state, ...derivedState },
 		syncAwareness,

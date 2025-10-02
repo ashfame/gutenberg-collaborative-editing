@@ -14,16 +14,13 @@ class ContentSyncHandler {
 		$collaboration_mode = Admin\Settings::get()[ 'collaboration_mode' ];
 
 		$post_id     = intval( $_POST[ 'post_id' ] ?? 0 );
-		$block_index = isset( $_POST[ 'block_index' ] )
-			? intval( $_POST[ 'block_index' ] )
-			: null;
 		$fingerprint = $_POST[ 'fingerprint' ] ?? null;
-		$content     = json_decode(
-			wp_unslash( $_POST[ 'content' ] ?? '{}' ),
+		$payload     = json_decode(
+			wp_unslash( $_POST[ 'payload' ] ?? '{}' ),
 			true
 		);
 
-		if ( ! $post_id || ! $content ) {
+		if ( ! $post_id || ! $payload ) {
 			wp_send_json_error( [ 'message' => 'Invalid request data' ] );
 		}
 
@@ -40,23 +37,73 @@ class ContentSyncHandler {
 
 		$repo = new ContentRepository();
 
-		if ( is_null( $block_index ) ) {
+		if ( isset( $_POST[ 'payloadType' ] ) && $_POST[ 'payloadType' ] === 'ops' ) {
+			$block_ops = json_decode( wp_unslash( $_POST[ 'payload' ] ), true );
+
+			if ( ! is_array( $block_ops ) ) {
+				wp_send_json_error( [ 'message' => 'Invalid block operations data' ] );
+			}
+
+			foreach ( $block_ops as $block_op ) {
+				if ( ! is_array( $block_op ) || ! isset( $block_op[ 'op' ] ) ) {
+					wp_send_json_error( [ 'message' => 'Invalid block operation data in batch' ] );
+				}
+
+				switch ( $block_op[ 'op' ] ) {
+					case 'insert':
+						[ $snapshot_id, $saved_at_ts ] = $repo->add_block(
+							$post_id,
+							get_current_user_id(),
+							$fingerprint,
+							$block_op[ 'blockIndex' ],
+							$block_op[ 'blockContent' ]
+						);
+						break;
+					case 'update':
+						[ $snapshot_id, $saved_at_ts ] = $repo->update_block(
+							$post_id,
+							get_current_user_id(),
+							$fingerprint,
+							$block_op[ 'blockIndex' ],
+							$block_op[ 'blockContent' ],
+							null // title is not sent for block-level updates.
+						);
+						break;
+					case 'move':
+						[ $snapshot_id, $saved_at_ts ] = $repo->move_block(
+							$post_id,
+							get_current_user_id(),
+							$fingerprint,
+							$block_op[ 'fromBlockIndex' ],
+							$block_op[ 'toBlockIndex' ]
+						);
+						break;
+					case 'del':
+						[ $snapshot_id, $saved_at_ts ] = $repo->delete_block(
+							$post_id,
+							get_current_user_id(),
+							$fingerprint,
+							$block_op[ 'blockIndex' ]
+						);
+						break;
+					default:
+						wp_send_json_error( [ 'message' => 'Unknown block operation' ] );
+				}
+			}
+		} else if ( isset( $_POST[ 'payloadType' ] ) && $_POST[ 'payloadType' ] === 'full' ) {
+			$content = json_decode( wp_unslash( $_POST[ 'payload' ] ), true );
+			if ( ! $content ) {
+				wp_send_json_error( [ 'message' => 'Invalid request data' ] );
+			}
 			[ $snapshot_id, $saved_at_ts ] = $repo->save(
 				$post_id,
 				get_current_user_id(),
 				$fingerprint,
 				$content[ 'html' ],
-				$content[ 'title' ],
+				$content[ 'title' ]
 			);
 		} else {
-			[ $snapshot_id, $saved_at_ts ] = $repo->update_block(
-				$post_id,
-				get_current_user_id(),
-				$fingerprint,
-				$block_index,
-				$content[ 'html' ],
-				$content[ 'title' ],
-			);
+			wp_send_json_error( [ 'message' => 'Invalid request data' ] );
 		}
 
 		// Since the user saved the content, we treat this as a declaration of this state of content
