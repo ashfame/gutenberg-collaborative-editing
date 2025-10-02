@@ -15,164 +15,1207 @@ describe( 'mergeBlocks', () => {
 	const blockB = createBlock( 'b', 'Block B' );
 	const blockC = createBlock( 'c', 'Block C' );
 	const blockD = createBlock( 'd', 'Block D' );
+	const blockE = createBlock( 'e', 'Block E' );
 
 	// We assume the engaged block has some modified content
+	const engagedBlockA = createBlock( 'a', 'Engaged AAAA' );
 	const engagedBlockB = createBlock( 'b', 'Engaged BBBB' );
+	const engagedBlockC = createBlock( 'c', 'Engaged CCCC' );
+	const engagedBlockD = createBlock( 'd', 'Engaged DDDD' );
+	const engagedBlockE = createBlock( 'e', 'Engaged EEEE' );
 
 	describe( 'when a block is moved', () => {
-		// A block is moved up or down
 		describe( 'swapping two blocks', () => {
-			const received = [ blockA, blockC, blockB ]; // B and C swapped
+			describe( 'in the middle of the block list (B and C swapped)', () => {
+				const existing = [ blockA, blockB, blockC, blockD ];
+				const received = [ blockA, blockC, blockB, blockD ]; // B and C swapped
 
-			it( 'should work when no block is engaged', () => {
-				const engagedIndex = -1;
-				const existing = [ blockA, blockB, blockC ];
-				const result = mergeBlocks( existing, received, engagedIndex );
-				expect( result.map( ( b ) => b.clientId ) ).toEqual( [
-					'a',
-					'c',
-					'b',
-				] );
-				expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
-				expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
-				expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+				it( 'should work when no block is engaged', () => {
+					const engagedIndex = -1;
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'c',
+						'b',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an uninvolved block is engaged (unmodified)', () => {
+					const engagedIndex = 0; // Engage A
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'c',
+						'b',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an uninvolved block is engaged (modified)', () => {
+					const engagedIndex = 0; // Engage A
+					const localExisting = [
+						engagedBlockA,
+						blockB,
+						blockC,
+						blockD,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'c',
+						'b',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe(
+						'Engaged AAAA'
+					);
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an involved block is engaged (unmodified)', () => {
+					const engagedIndex = 1; // Engage B
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'c',
+						'b',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an involved block is engaged (modified)', () => {
+					const engagedIndex = 1; // Engage B
+					const localExisting = [
+						blockA,
+						engagedBlockB,
+						blockC,
+						blockD,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'c',
+						'b',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe(
+						'Engaged BBBB'
+					);
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+				} );
 			} );
 
-			it( 'should work when an uninvolved block is engaged (unmodified)', () => {
-				const engagedIndex = 0; // Engage A
-				const existing = [ blockA, blockB, blockC ];
-				const result = mergeBlocks( existing, received, engagedIndex );
-				expect( result.map( ( b ) => b.clientId ) ).toEqual( [
-					'a',
-					'c',
-					'b',
-				] );
-				expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
-				expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
-				expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
-			} );
-			it( 'should work when an uninvolved block is engaged (modified)', () => {
-				const engagedIndex = 0; // Engage A
-				const existing = [
-					createBlock( 'a', 'Engaged AAAA' ),
-					blockB,
-					blockC,
-				];
-				const result = mergeBlocks( existing, received, engagedIndex );
-				expect( result.map( ( b ) => b.clientId ) ).toEqual( [
-					'a',
-					'c',
-					'b',
-				] );
-				expect( result[ 0 ].attributes.content ).toBe( 'Engaged AAAA' );
-				expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
-				expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+			describe( 'the first two blocks (A and B swapped)', () => {
+				const existing = [ blockA, blockB, blockC, blockD ];
+				const received = [ blockB, blockA, blockC, blockD ]; // A and B swapped
+				it( 'should work when no block is engaged', () => {
+					const engagedIndex = -1;
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'a',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an uninvolved block is engaged (unmodified)', () => {
+					const engagedIndex = 2; // Engage C
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'a',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an uninvolved block is engaged (modified)', () => {
+					const engagedIndex = 2; // Engage C
+					const localExisting = [
+						blockA,
+						blockB,
+						engagedBlockC,
+						blockD,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'a',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 2 ].attributes.content ).toBe(
+						'Engaged CCCC'
+					);
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an involved block is engaged (unmodified)', () => {
+					const engagedIndex = 0; // Engage A
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'a',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an involved block is engaged (modified)', () => {
+					const engagedIndex = 0; // Engage A
+					const localExisting = [
+						engagedBlockA,
+						blockB,
+						blockC,
+						blockD,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'a',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 1 ].attributes.content ).toBe(
+						'Engaged AAAA'
+					);
+					expect( result[ 2 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+				} );
 			} );
 
-			it( 'should handle moved block with fresh clientIds and preserve engaged content', () => {
-				const engagedIndex = 1; // B engaged
-				const existing = [
-					createBlock( 'a', 'Block A' ),
-					createBlock( 'b', 'Block B' ),
-					createBlock( 'c', 'Block C' ),
-					createBlock( 'd', 'Block D' ),
-				];
-				// eslint-disable-next-line @typescript-eslint/no-shadow
-				const received = [
-					createBlock( 'new-a', 'Block A' ),
-					createBlock( 'new-c', 'Block C' ),
-					createBlock( 'new-b', 'Block B' ),
-					createBlock( 'new-d', 'Block D' ),
-				]; // B and C swapped
-				const result = mergeBlocks( existing, received, engagedIndex );
-				expect( result.map( ( b ) => b.clientId ) ).toEqual( [
-					'new-a',
-					'new-c',
-					'b',
-					'new-d',
-				] );
-
-				// Also ensure content of all blocks are as expected
-				expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
-				expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
-				expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
-				expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+			describe( 'the last two blocks (C and D swapped)', () => {
+				const existing = [ blockA, blockB, blockC, blockD ];
+				const received = [ blockA, blockB, blockD, blockC ]; // C and D swapped
+				it( 'should work when no block is engaged', () => {
+					const engagedIndex = -1;
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'd',
+						'c',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+				} );
+				it( 'should work when an uninvolved block is engaged (unmodified)', () => {
+					const engagedIndex = 0; // Engage A
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'd',
+						'c',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+				} );
+				it( 'should work when an uninvolved block is engaged (modified)', () => {
+					const engagedIndex = 0; // Engage A
+					const localExisting = [
+						engagedBlockA,
+						blockB,
+						blockC,
+						blockD,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'd',
+						'c',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe(
+						'Engaged AAAA'
+					);
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+				} );
+				it( 'should work when an involved block is engaged (unmodified)', () => {
+					const engagedIndex = 3; // Engage D
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'd',
+						'c',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+				} );
+				it( 'should work when an involved block is engaged (modified)', () => {
+					const engagedIndex = 3; // Engage D
+					const localExisting = [
+						blockA,
+						blockB,
+						blockC,
+						engagedBlockD,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'd',
+						'c',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe(
+						'Engaged DDDD'
+					);
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+				} );
 			} );
 		} );
 
-		describe( 'from start to end', () => {
-			const received = [ blockB, blockC, blockA ];
+		describe( 'dragging and dropping a block', () => {
+			const existing = [ blockA, blockB, blockC, blockD, blockE ];
 
-			it( 'should work when a moved block is engaged (modified)', () => {
-				const engagedIndex = 0; // Engage A
-				const localEngagedBlockA = createBlock(
-					'a',
-					'Engaged Block A'
-				);
-				const existing = [ localEngagedBlockA, blockB, blockC ];
-				const result = mergeBlocks( existing, received, engagedIndex );
-				expect( result.map( ( b ) => b.clientId ) ).toEqual( [
-					'b',
-					'c',
-					'a',
-				] );
-				expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
-				expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
-				expect( result[ 2 ].attributes.content ).toBe(
-					'Engaged Block A'
-				);
+			describe( 'from the middle to another place in the middle (B from index 1 to 3)', () => {
+				const received = [ blockA, blockC, blockD, blockB, blockE ];
+				it( 'should work when no block is engaged', () => {
+					const engagedIndex = -1;
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'c',
+						'd',
+						'b',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
+				it( 'should work when an uninvolved block is engaged (unmodified)', () => {
+					const engagedIndex = 0; // Engage A
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'c',
+						'd',
+						'b',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
+				it( 'should work when an uninvolved block is engaged (modified)', () => {
+					const engagedIndex = 0; // Engage A
+					const localExisting = [
+						engagedBlockA,
+						blockB,
+						blockC,
+						blockD,
+						blockE,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'c',
+						'd',
+						'b',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe(
+						'Engaged AAAA'
+					);
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
+				it( 'should work when an involved block is engaged (unmodified)', () => {
+					const engagedIndex = 1; // Engage B
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'c',
+						'd',
+						'b',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
+				it( 'should work when an involved block is engaged (modified)', () => {
+					const engagedIndex = 1; // Engage B
+					const localExisting = [
+						blockA,
+						engagedBlockB,
+						blockC,
+						blockD,
+						blockE,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'c',
+						'd',
+						'b',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe(
+						'Engaged BBBB'
+					);
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
 			} );
 
-			it( 'should work when a moved block is engaged (unmodified)', () => {
-				const engagedIndex = 0; // Engage A
-				const existing = [ blockA, blockB, blockC ];
-				const result = mergeBlocks( existing, received, engagedIndex );
-				expect( result.map( ( b ) => b.clientId ) ).toEqual( [
-					'b',
-					'c',
-					'a',
-				] );
-				expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
-				expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
-				expect( result[ 2 ].attributes.content ).toBe( 'Block A' );
+			describe( 'from the middle to the top (C from index 2 to 0)', () => {
+				const received = [ blockC, blockA, blockB, blockD, blockE ];
+				it( 'should work when no block is engaged', () => {
+					const engagedIndex = -1;
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'c',
+						'a',
+						'b',
+						'd',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
+				it( 'should work when an uninvolved block is engaged (unmodified)', () => {
+					const engagedIndex = 0; // Engage A
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'c',
+						'a',
+						'b',
+						'd',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
+				it( 'should work when an uninvolved block is engaged (modified)', () => {
+					const engagedIndex = 0; // Engage A
+					const localExisting = [
+						engagedBlockA,
+						blockB,
+						blockC,
+						blockD,
+						blockE,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'c',
+						'a',
+						'b',
+						'd',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 1 ].attributes.content ).toBe(
+						'Engaged AAAA'
+					);
+					expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
+				it( 'should work when an involved block is engaged (unmodified)', () => {
+					const engagedIndex = 2; // Engage C
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'c',
+						'a',
+						'b',
+						'd',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
+				it( 'should work when an involved block is engaged (modified)', () => {
+					const engagedIndex = 2; // Engage C
+					const localExisting = [
+						blockA,
+						blockB,
+						engagedBlockC,
+						blockD,
+						blockE,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'c',
+						'a',
+						'b',
+						'd',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe(
+						'Engaged CCCC'
+					);
+					expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
 			} );
-		} );
 
-		describe( 'from end to start', () => {
-			const received = [ blockC, blockA, blockB ];
-
-			it( 'should work when a moved block is engaged (modified)', () => {
-				const engagedIndex = 2; // Engage C
-				const localEngagedBlockC = createBlock(
-					'c',
-					'Engaged Block C'
-				);
-				const existing = [ blockA, blockB, localEngagedBlockC ];
-				const result = mergeBlocks( existing, received, engagedIndex );
-				expect( result.map( ( b ) => b.clientId ) ).toEqual( [
-					'c',
-					'a',
-					'b',
-				] );
-				expect( result[ 0 ].attributes.content ).toBe(
-					'Engaged Block C'
-				);
-				expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
-				expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+			describe( 'from the middle to the bottom (C from index 2 to 4)', () => {
+				const received = [ blockA, blockB, blockD, blockE, blockC ];
+				it( 'should work when no block is engaged', () => {
+					const engagedIndex = -1;
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'd',
+						'e',
+						'c',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block C' );
+				} );
+				it( 'should work when an uninvolved block is engaged (unmodified)', () => {
+					const engagedIndex = 0; // Engage A
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'd',
+						'e',
+						'c',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block C' );
+				} );
+				it( 'should work when an uninvolved block is engaged (modified)', () => {
+					const engagedIndex = 0; // Engage A
+					const localExisting = [
+						engagedBlockA,
+						blockB,
+						blockC,
+						blockD,
+						blockE,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'd',
+						'e',
+						'c',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe(
+						'Engaged AAAA'
+					);
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block C' );
+				} );
+				it( 'should work when an involved block is engaged (unmodified)', () => {
+					const engagedIndex = 2; // Engage C
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'd',
+						'e',
+						'c',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block C' );
+				} );
+				it( 'should work when an involved block is engaged (modified)', () => {
+					const engagedIndex = 2; // Engage C
+					const localExisting = [
+						blockA,
+						blockB,
+						engagedBlockC,
+						blockD,
+						blockE,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'd',
+						'e',
+						'c',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 4 ].attributes.content ).toBe(
+						'Engaged CCCC'
+					);
+				} );
 			} );
 
-			it( 'should work when a moved block is engaged (unmodified)', () => {
-				const engagedIndex = 2; // Engage C
-				const existing = [ blockA, blockB, blockC ];
-				const result = mergeBlocks( existing, received, engagedIndex );
-				expect( result.map( ( b ) => b.clientId ) ).toEqual( [
-					'c',
-					'a',
-					'b',
-				] );
-				expect( result[ 0 ].attributes.content ).toBe( 'Block C' );
-				expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
-				expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+			describe( 'from the top to the middle (A from index 0 to 2)', () => {
+				const received = [ blockB, blockC, blockA, blockD, blockE ];
+				it( 'should work when no block is engaged', () => {
+					const engagedIndex = -1;
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'c',
+						'a',
+						'd',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
+				it( 'should work when an uninvolved block is engaged (unmodified)', () => {
+					const engagedIndex = 1; // Engage B
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'c',
+						'a',
+						'd',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
+				it( 'should work when an uninvolved block is engaged (modified)', () => {
+					const engagedIndex = 1; // Engage B
+					const localExisting = [
+						blockA,
+						engagedBlockB,
+						blockC,
+						blockD,
+						blockE,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'c',
+						'a',
+						'd',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe(
+						'Engaged BBBB'
+					);
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
+				it( 'should work when an involved block is engaged (unmodified)', () => {
+					const engagedIndex = 0; // Engage A
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'c',
+						'a',
+						'd',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
+				it( 'should work when an involved block is engaged (modified)', () => {
+					const engagedIndex = 0; // Engage A
+					const localExisting = [
+						engagedBlockA,
+						blockB,
+						blockC,
+						blockD,
+						blockE,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'c',
+						'a',
+						'd',
+						'e',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe(
+						'Engaged AAAA'
+					);
+					expect( result[ 3 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block E' );
+				} );
+			} );
+
+			describe( 'from the top to the bottom (A from index 0 to 4)', () => {
+				const received = [ blockB, blockC, blockD, blockE, blockA ];
+				it( 'should work when no block is engaged', () => {
+					const engagedIndex = -1;
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'c',
+						'd',
+						'e',
+						'a',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block A' );
+				} );
+				it( 'should work when an uninvolved block is engaged (unmodified)', () => {
+					const engagedIndex = 1; // Engage B
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'c',
+						'd',
+						'e',
+						'a',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block A' );
+				} );
+				it( 'should work when an uninvolved block is engaged (modified)', () => {
+					const engagedIndex = 1; // Engage B
+					const localExisting = [
+						blockA,
+						engagedBlockB,
+						blockC,
+						blockD,
+						blockE,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'c',
+						'd',
+						'e',
+						'a',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe(
+						'Engaged BBBB'
+					);
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block A' );
+				} );
+				it( 'should work when an involved block is engaged (unmodified)', () => {
+					const engagedIndex = 0; // Engage A
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'c',
+						'd',
+						'e',
+						'a',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block A' );
+				} );
+				it( 'should work when an involved block is engaged (modified)', () => {
+					const engagedIndex = 0; // Engage A
+					const localExisting = [
+						engagedBlockA,
+						blockB,
+						blockC,
+						blockD,
+						blockE,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'b',
+						'c',
+						'd',
+						'e',
+						'a',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block D' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 4 ].attributes.content ).toBe(
+						'Engaged AAAA'
+					);
+				} );
+			} );
+
+			describe( 'from the bottom to the middle (E from index 4 to 2)', () => {
+				const received = [ blockA, blockB, blockE, blockC, blockD ];
+				it( 'should work when no block is engaged', () => {
+					const engagedIndex = -1;
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'e',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an uninvolved block is engaged (unmodified)', () => {
+					const engagedIndex = 0; // Engage A
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'e',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an uninvolved block is engaged (modified)', () => {
+					const engagedIndex = 0; // Engage A
+					const localExisting = [
+						engagedBlockA,
+						blockB,
+						blockC,
+						blockD,
+						blockE,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'e',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe(
+						'Engaged AAAA'
+					);
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an involved block is engaged (unmodified)', () => {
+					const engagedIndex = 4; // Engage E
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'e',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an involved block is engaged (modified)', () => {
+					const engagedIndex = 4; // Engage E
+					const localExisting = [
+						blockA,
+						blockB,
+						blockC,
+						blockD,
+						engagedBlockE,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'a',
+						'b',
+						'e',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 2 ].attributes.content ).toBe(
+						'Engaged EEEE'
+					);
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block D' );
+				} );
+			} );
+
+			describe( 'from the bottom to the top (E from index 4 to 0)', () => {
+				const received = [ blockE, blockA, blockB, blockC, blockD ];
+				it( 'should work when no block is engaged', () => {
+					const engagedIndex = -1;
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'e',
+						'a',
+						'b',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an uninvolved block is engaged (unmodified)', () => {
+					const engagedIndex = 1; // Engage B
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'e',
+						'a',
+						'b',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an uninvolved block is engaged (modified)', () => {
+					const engagedIndex = 1; // Engage B
+					const localExisting = [
+						blockA,
+						engagedBlockB,
+						blockC,
+						blockD,
+						blockE,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'e',
+						'a',
+						'b',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 2 ].attributes.content ).toBe(
+						'Engaged BBBB'
+					);
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an involved block is engaged (unmodified)', () => {
+					const engagedIndex = 4; // Engage E
+					const result = mergeBlocks(
+						existing,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'e',
+						'a',
+						'b',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe( 'Block E' );
+					expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block D' );
+				} );
+				it( 'should work when an involved block is engaged (modified)', () => {
+					const engagedIndex = 4; // Engage E
+					const localExisting = [
+						blockA,
+						blockB,
+						blockC,
+						blockD,
+						engagedBlockE,
+					];
+					const result = mergeBlocks(
+						localExisting,
+						received,
+						engagedIndex
+					);
+					expect( result.map( ( b ) => b.clientId ) ).toEqual( [
+						'e',
+						'a',
+						'b',
+						'c',
+						'd',
+					] );
+					expect( result[ 0 ].attributes.content ).toBe(
+						'Engaged EEEE'
+					);
+					expect( result[ 1 ].attributes.content ).toBe( 'Block A' );
+					expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+					expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
+					expect( result[ 4 ].attributes.content ).toBe( 'Block D' );
+				} );
 			} );
 		} );
 	} );
