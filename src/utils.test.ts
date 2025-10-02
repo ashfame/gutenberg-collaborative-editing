@@ -15,46 +15,57 @@ describe( 'mergeBlocks', () => {
 	const blockB = createBlock( 'b', 'Block B' );
 	const blockC = createBlock( 'c', 'Block C' );
 	const blockD = createBlock( 'd', 'Block D' );
+
+	// We assume the engaged block has some modified content
 	const engagedBlockB = createBlock( 'b', 'Engaged Block B' );
 
 	describe( 'when a block is moved', () => {
-		const receivedBlocks = [ blockA, blockC, blockB ]; // B and C swapped
+		const received = [ blockA, blockC, blockB ]; // B and C swapped
 
 		it( 'should work when no block is engaged', () => {
-			const existingBlocks = [ blockA, blockB, blockC ];
-			const result = mergeBlocks( existingBlocks, receivedBlocks, -1 );
+			const engagedBlockIndex = -1;
+			const existing = [ blockA, blockB, blockC ];
+			const result = mergeBlocks( existing, received, engagedBlockIndex );
 			expect( result.map( ( b ) => b.clientId ) ).toEqual( [
 				'a',
 				'c',
 				'b',
 			] );
+			expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+			expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+			expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
 		} );
 
 		it( 'should work when an uninvolved block is engaged', () => {
-			const existingBlocks = [ blockA, blockB, blockC ];
-			const result = mergeBlocks( existingBlocks, receivedBlocks, 0 ); // Engage A
+			const engagedBlockIndex = 0; // Engage A
+			const existing = [ blockA, blockB, blockC ];
+			const result = mergeBlocks( existing, received, engagedBlockIndex );
 			expect( result.map( ( b ) => b.clientId ) ).toEqual( [
 				'a',
 				'c',
 				'b',
 			] );
+			expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+			expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
+			expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
 		} );
 
 		it( 'should handle moved block with fresh clientIds and preserve engaged content', () => {
-			const existingBlocks = [
+			const engagedBlockIndex = 1; // B engaged
+			const existing = [
 				createBlock( 'a', 'Block A' ),
 				createBlock( 'b', 'Block B' ),
 				createBlock( 'c', 'Block C' ),
 				createBlock( 'd', 'Block D' ),
 			];
 			// eslint-disable-next-line @typescript-eslint/no-shadow
-			const receivedBlocks = [
+			const received = [
 				createBlock( 'new-a', 'Block A' ),
 				createBlock( 'new-c', 'Block C' ),
 				createBlock( 'new-b', 'Block B' ),
 				createBlock( 'new-d', 'Block D' ),
 			]; // B and C swapped
-			const result = mergeBlocks( existingBlocks, receivedBlocks, 1 ); // B engaged
+			const result = mergeBlocks( existing, received, engagedBlockIndex );
 			expect( result.map( ( b ) => b.clientId ) ).toEqual( [
 				'new-a',
 				'new-c',
@@ -75,23 +86,30 @@ describe( 'mergeBlocks', () => {
 	} );
 
 	describe( 'when a block is deleted', () => {
-		const receivedBlocks = [ blockA, blockC ]; // B deleted
+		const received = [ blockA, blockC ]; // B deleted
 
 		it( 'should work when no block is engaged', () => {
-			const existingBlocks = [ blockA, blockB, blockC ];
-			const result = mergeBlocks( existingBlocks, receivedBlocks, -1 );
+			const engagedBlockIndex = -1;
+			const existing = [ blockA, blockB, blockC ];
+			const result = mergeBlocks( existing, received, engagedBlockIndex );
 			expect( result.map( ( b ) => b.clientId ) ).toEqual( [ 'a', 'c' ] );
+			expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+			expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
 		} );
 
 		it( 'should work when an uninvolved block is engaged', () => {
-			const existingBlocks = [ blockA, blockB, blockC ];
-			const result = mergeBlocks( existingBlocks, receivedBlocks, 0 ); // Engage A
+			const engagedBlockIndex = 0; // Engage A
+			const existing = [ blockA, blockB, blockC ];
+			const result = mergeBlocks( existing, received, engagedBlockIndex );
 			expect( result.map( ( b ) => b.clientId ) ).toEqual( [ 'a', 'c' ] );
+			expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+			expect( result[ 1 ].attributes.content ).toBe( 'Block C' );
 		} );
 
 		it( 'should re-insert a deleted engaged block', () => {
-			const existingBlocks = [ blockA, engagedBlockB, blockC ];
-			const result = mergeBlocks( existingBlocks, receivedBlocks, 1 ); // Engage B
+			const engagedBlockIndex = 1; // Engage B
+			const existing = [ blockA, engagedBlockB, blockC ];
+			const result = mergeBlocks( existing, received, engagedBlockIndex );
 			expect( result.map( ( b ) => b.clientId ) ).toEqual( [
 				'a',
 				'b',
@@ -103,35 +121,46 @@ describe( 'mergeBlocks', () => {
 			expect( mergedEngagedBlock?.attributes.content ).toBe(
 				'Engaged Block B'
 			);
+			expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+			expect( result[ 2 ].attributes.content ).toBe( 'Block C' );
 		} );
 	} );
 
 	describe( 'when a block is replaced', () => {
-		const receivedBlocks = [ blockA, blockD, blockC ]; // B replaced with D
+		const received = [ blockA, blockD, blockC ]; // B replaced with D
 
 		it( 'should work when no block is engaged', () => {
-			const existingBlocks = [ blockA, blockB, blockC ];
-			const result = mergeBlocks( existingBlocks, receivedBlocks, -1 );
+			const engagedBlockIndex = -1;
+			const existing = [ blockA, blockB, blockC ];
+			const result = mergeBlocks( existing, received, engagedBlockIndex );
 			expect( result.map( ( b ) => b.clientId ) ).toEqual( [
 				'a',
 				'd',
 				'c',
 			] );
+			expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+			expect( result[ 1 ].attributes.content ).toBe( 'Block D' );
+			expect( result[ 2 ].attributes.content ).toBe( 'Block C' );
 		} );
 
 		it( 'should work when an uninvolved block is engaged', () => {
-			const existingBlocks = [ blockA, blockB, blockC ];
-			const result = mergeBlocks( existingBlocks, receivedBlocks, 0 ); // Engage A
+			const engagedBlockIndex = 0; // Engage A
+			const existing = [ blockA, blockB, blockC ];
+			const result = mergeBlocks( existing, received, engagedBlockIndex );
 			expect( result.map( ( b ) => b.clientId ) ).toEqual( [
 				'a',
 				'd',
 				'c',
 			] );
+			expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+			expect( result[ 1 ].attributes.content ).toBe( 'Block D' );
+			expect( result[ 2 ].attributes.content ).toBe( 'Block C' );
 		} );
 
 		it( 'should re-insert a replaced engaged block', () => {
-			const existingBlocks = [ blockA, engagedBlockB, blockC ];
-			const result = mergeBlocks( existingBlocks, receivedBlocks, 1 ); // Engage B
+			const engagedBlockIndex = 1; // Engage B
+			const existing = [ blockA, engagedBlockB, blockC ];
+			const result = mergeBlocks( existing, received, engagedBlockIndex );
 			expect( result.map( ( b ) => b.clientId ) ).toEqual( [
 				'a',
 				'b',
@@ -143,32 +172,44 @@ describe( 'mergeBlocks', () => {
 			expect( mergedEngagedBlock?.attributes.content ).toBe(
 				'Engaged Block B'
 			);
+			expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+			expect( result[ 2 ].attributes.content ).toBe( 'Block C' );
 		} );
 	} );
 
 	describe( 'when a block is inserted', () => {
-		const receivedBlocks = [ blockA, blockD, blockB, blockC ]; // D inserted
+		const received = [ blockA, blockD, blockB, blockC ]; // D inserted
 
 		it( 'should work when no block is engaged', () => {
-			const existingBlocks = [ blockA, blockB, blockC ];
-			const result = mergeBlocks( existingBlocks, receivedBlocks, -1 );
+			const engagedBlockIndex = -1;
+			const existing = [ blockA, blockB, blockC ];
+			const result = mergeBlocks( existing, received, engagedBlockIndex );
 			expect( result.map( ( b ) => b.clientId ) ).toEqual( [
 				'a',
 				'd',
 				'b',
 				'c',
 			] );
+			expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+			expect( result[ 1 ].attributes.content ).toBe( 'Block D' );
+			expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+			expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
 		} );
 
 		it( 'should work when an uninvolved block is engaged', () => {
-			const existingBlocks = [ blockA, blockB, blockC ];
-			const result = mergeBlocks( existingBlocks, receivedBlocks, 0 ); // Engage A
+			const engagedBlockIndex = 0; // Engage A
+			const existing = [ blockA, blockB, blockC ];
+			const result = mergeBlocks( existing, received, engagedBlockIndex );
 			expect( result.map( ( b ) => b.clientId ) ).toEqual( [
 				'a',
 				'd',
 				'b',
 				'c',
 			] );
+			expect( result[ 0 ].attributes.content ).toBe( 'Block A' );
+			expect( result[ 1 ].attributes.content ).toBe( 'Block D' );
+			expect( result[ 2 ].attributes.content ).toBe( 'Block B' );
+			expect( result[ 3 ].attributes.content ).toBe( 'Block C' );
 		} );
 	} );
 } );
