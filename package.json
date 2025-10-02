@@ -14,7 +14,8 @@
     "packages-update": "wp-scripts packages-update",
     "wp-env": "wp-env",
     "type-check": "tsc --noEmit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test": "jest"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": "wp-scripts lint-js --fix",
@@ -22,6 +23,7 @@
     "*.{ts,tsx}": "./scripts/type-check-staged.sh"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.12",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@types/wordpress__block-editor": "^11.5.17",
@@ -45,6 +47,7 @@
     "eslint-import-resolver-typescript": "^4.4.4",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.6",
+    "ts-jest": "^29.2.3",
     "tsconfig-paths-webpack-plugin": "^4.2.0",
     "typescript": "^5.9.2"
   }

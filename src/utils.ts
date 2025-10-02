@@ -81,20 +81,35 @@ export const mergeBlocks = (
 		const engagedBlockClientId = engagedBlock.clientId;
 
 		// Find the position of the engaged block in the new set.
-		const receivedEngagedBlockIndex = blocksToSet.findIndex(
+		let receivedEngagedBlockIndex = blocksToSet.findIndex(
 			( block ) => block.clientId === engagedBlockClientId
 		);
+
+		// If not found by client ID, try to find by content. This handles cases
+		// where blocks are recreated with new client IDs.
+		if (
+			receivedEngagedBlockIndex === -1 &&
+			engagedBlock.originalContent
+		) {
+			receivedEngagedBlockIndex = blocksToSet.findIndex(
+				( block ) =>
+					block.originalContent === engagedBlock.originalContent
+			);
+		}
 
 		if ( receivedEngagedBlockIndex > -1 ) {
 			// If the engaged block exists in the new set, preserve its content.
 			blocksToSet[ receivedEngagedBlockIndex ] = engagedBlock;
 		} else {
-			// If the engaged block was deleted, re-insert it at its original position.
+			// If the engaged block was deleted, we re-insert it. If it was
+			// replaced, we replace the new block with the engaged block.
 			// eslint-disable-next-line no-lonely-if
-			if ( blocksToSet.length > engagedBlockIndex ) {
+			if ( blocksToSet.length === existingBlocks.length - 1 ) {
+				// Deletion
 				blocksToSet.splice( engagedBlockIndex, 0, engagedBlock );
 			} else {
-				blocksToSet.push( engagedBlock );
+				// Replacement
+				blocksToSet.splice( engagedBlockIndex, 1, engagedBlock );
 			}
 		}
 	}
