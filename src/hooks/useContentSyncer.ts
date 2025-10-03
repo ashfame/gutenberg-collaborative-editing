@@ -135,6 +135,13 @@ export const useContentSyncer = ( {
 		}
 
 		if ( tracker.current ) {
+			// Skip processing if we're receiving content from other users
+			// to prevent duplicate operations
+			if ( tracker.current.isReceivingContent ) {
+				tracker.current.isReceivingContent = false;
+				return;
+			}
+
 			const operations = tracker.current.updateFromEditor( mappedBlocks );
 			if ( operations.length > 0 ) {
 				const ops: BlockOpPayload[] = [];

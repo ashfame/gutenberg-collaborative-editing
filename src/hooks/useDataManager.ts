@@ -140,7 +140,13 @@ const handleDataReceived = (
 			} ) );
 
 			if ( tracker.current ) {
+				// Reset the tracker to prevent detecting changes that were already processed
+				// by mergeBlocks. This prevents duplicate operations from being sent.
 				tracker.current.resetState( mappedBlocks );
+
+				// Mark that we're receiving content from other users to prevent
+				// the useContentSyncer from detecting these changes as local changes
+				tracker.current.isReceivingContent = true;
 			}
 
 			const blocksToSet = mergeBlocks(

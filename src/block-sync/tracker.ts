@@ -9,6 +9,7 @@ export class BlockChangeTracker {
 		new Map();
 	private currentBlocks: TrackedBlock[] = [];
 	private pendingOperations: BlockOperation[] = [];
+	public isReceivingContent: boolean = false;
 
 	constructor( initialBlocks: Block[] = [] ) {
 		this.currentBlocks = initialBlocks.map( ( b ) => ( { ...b } ) );
