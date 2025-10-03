@@ -9,6 +9,7 @@ export type CursorState =
 export interface CollapsedCursorState {
 	blockIndex: number;
 	cursorPos: number;
+	timestamp: number;
 }
 
 // Cursor State 2: A selection within a single block.
@@ -16,6 +17,7 @@ export interface SingleBlockSelectionCursorState {
 	blockIndex: number;
 	cursorPosStart: number;
 	cursorPosEnd: number;
+	timestamp: number;
 }
 
 // Cursor State 3: A selection spanning multiple blocks.
@@ -24,6 +26,7 @@ export interface MultiBlockSelectionCursorState {
 	blockIndexEnd: number;
 	cursorPosStart: number;
 	cursorPosEnd: number;
+	timestamp: number;
 }
 
 export interface User {
