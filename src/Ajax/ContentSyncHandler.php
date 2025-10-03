@@ -15,12 +15,24 @@ class ContentSyncHandler {
 
 		$post_id     = intval( $_POST[ 'post_id' ] ?? 0 );
 		$fingerprint = $_POST[ 'fingerprint' ] ?? null;
-		$payload     = json_decode(
-			wp_unslash( $_POST[ 'payload' ] ?? '{}' ),
-			true
-		);
+		
+		// Only validate JSON payload for 'full' and 'ops' types
+		if ( isset( $_POST[ 'payloadType' ] ) && $_POST[ 'payloadType' ] === 'title' ) {
+			$payload = $_POST[ 'payload' ] ?? '';
+			if ( empty( $payload ) ) {
+				wp_send_json_error( [ 'message' => 'Invalid request data' ] );
+			}
+		} else {
+			$payload = json_decode(
+				wp_unslash( $_POST[ 'payload' ] ?? '{}' ),
+				true
+			);
+			if ( ! $post_id || ! $payload ) {
+				wp_send_json_error( [ 'message' => 'Invalid request data' ] );
+			}
+		}
 
-		if ( ! $post_id || ! $payload ) {
+		if ( ! $post_id ) {
 			wp_send_json_error( [ 'message' => 'Invalid request data' ] );
 		}
 
@@ -65,8 +77,7 @@ class ContentSyncHandler {
 							get_current_user_id(),
 							$fingerprint,
 							$block_op[ 'blockIndex' ],
-							$block_op[ 'blockContent' ],
-							null // title is not sent for block-level updates.
+							$block_op[ 'blockContent' ]
 						);
 						break;
 					case 'move':
@@ -101,6 +112,38 @@ class ContentSyncHandler {
 				$fingerprint,
 				$content[ 'html' ],
 				$content[ 'title' ]
+			);
+		} else if ( isset( $_POST[ 'payloadType' ] ) && $_POST[ 'payloadType' ] === 'title' ) {
+			$title = $_POST[ 'payload' ] ?? '';
+			
+			// Security checks for title
+			if ( empty( $title ) ) {
+				wp_send_json_error( [ 'message' => 'Title cannot be empty' ] );
+			}
+			
+			// Sanitize the title
+			$title = sanitize_text_field( $title );
+			
+			// Validate title length (WordPress default is 255 characters)
+			if ( strlen( $title ) > 255 ) {
+				wp_send_json_error( [ 'message' => 'Title is too long (maximum 255 characters)' ] );
+			}
+			
+			// Check if title contains only valid characters (no HTML/scripts)
+			if ( $title !== wp_strip_all_tags( $title ) ) {
+				wp_send_json_error( [ 'message' => 'Title contains invalid characters' ] );
+			}
+			
+			// Additional security: Check for potential XSS attempts
+			if ( preg_match( '/<script|javascript:|on\w+\s*=/i', $title ) ) {
+				wp_send_json_error( [ 'message' => 'Title contains potentially malicious content' ] );
+			}
+			
+			[ $snapshot_id, $saved_at_ts ] = $repo->update_title(
+				$post_id,
+				get_current_user_id(),
+				$fingerprint,
+				$title
 			);
 		} else {
 			wp_send_json_error( [ 'message' => 'Invalid request data' ] );

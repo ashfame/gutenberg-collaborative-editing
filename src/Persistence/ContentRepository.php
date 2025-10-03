@@ -40,8 +40,8 @@ class ContentRepository {
 		);
 	}
 
-	public function update_block( $post_id, $user_id, $fingerprint, $block_index, $block_content, $title = null ) : array {
-		$sync_data = $this->get_or_init( $post_id, $user_id, $fingerprint, $title );
+	public function update_block( $post_id, $user_id, $fingerprint, $block_index, $block_content ) : array {
+		$sync_data = $this->get_or_init( $post_id, $user_id, $fingerprint );
 
 		$parsed_blocks = $this->get_parsed_blocks( $sync_data );
 
@@ -52,7 +52,7 @@ class ContentRepository {
 			$user_id,
 			$fingerprint,
 			serialize_blocks( $parsed_blocks ),
-			$title ?? $sync_data['content']['title'] ?? get_the_title( $post_id )
+			$sync_data['content']['title'] ?? get_the_title( $post_id )
 		);
 	}
 
@@ -90,6 +90,18 @@ class ContentRepository {
 			$fingerprint,
 			serialize_blocks( $parsed_blocks ),
 			$sync_data['content']['title'] ?? get_the_title( $post_id )
+		);
+	}
+
+	public function update_title( $post_id, $user_id, $fingerprint, $title ) : array {
+		$sync_data = $this->get_or_init( $post_id, $user_id, $fingerprint );
+		
+		return $this->save(
+			$post_id,
+			$user_id,
+			$fingerprint,
+			$sync_data['content']['html'] ?? '',
+			$title
 		);
 	}
 

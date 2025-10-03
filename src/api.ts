@@ -5,20 +5,20 @@ import { ContentSyncPayload, TransportReceivedData } from './transports/types';
 /**
  * Syncs the editor content to the server.
  *
- * @param {number} postId  The ID of the post.
- * @param          payload
+ * @param {number} postId      The ID of the post.
+ * @param          syncPayload
  * @return {Promise<void>}
  * @throws {Error} If the sync fails.
  */
 export const syncContent = async (
 	postId: number,
-	payload: ContentSyncPayload
+	syncPayload: ContentSyncPayload
 ): Promise< void > => {
 	if ( ! window.gce || ! postId ) {
 		return;
 	}
 
-	logger.debug( 'syncContent called with:', payload );
+	logger.debug( 'syncContent called with:', syncPayload );
 
 	try {
 		const formData = new FormData();
@@ -26,15 +26,18 @@ export const syncContent = async (
 		formData.append( 'nonce', window.gce.syncContentNonce );
 		formData.append( 'post_id', String( postId ) );
 		formData.append( 'fingerprint', window.gce.fingerprint );
-		formData.append( 'payloadType', payload.type );
+		formData.append( 'payloadType', syncPayload.type );
 
 		// Handle the payload based on its type.
-		if ( payload.type === 'full' ) {
+		if ( syncPayload.type === 'full' ) {
 			// This is a FullContentSyncPayload.
-			formData.append( 'payload', payload.payload );
-		} else if ( payload.type === 'ops' ) {
-			// This is a BlockOpPayload.
-			formData.append( 'payload', JSON.stringify( payload.payload ) );
+			formData.append( 'payload', syncPayload.payload );
+		} else if ( syncPayload.type === 'ops' ) {
+			// This is a BlockOpsPayload.
+			formData.append( 'payload', JSON.stringify( syncPayload.payload ) );
+		} else if ( syncPayload.type === 'title' ) {
+			// This is a TitleSyncPayload.
+			formData.append( 'payload', syncPayload.payload );
 		}
 
 		const response = await fetch( window.gce.ajaxUrl, {

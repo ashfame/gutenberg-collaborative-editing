@@ -10,6 +10,8 @@ import {
 	ContentSyncPayload,
 	BlockOpPayload,
 	BlockOpsPayload,
+	TitleSyncPayload,
+	FullContentSyncPayload,
 } from '@/transports/types';
 
 interface UseContentSyncerConfig {
@@ -54,6 +56,7 @@ export const useContentSyncer = ( {
 	const syncState = useRef( {
 		timeoutId: null as number | null,
 		lastContent: '',
+		lastTitle: '',
 	} );
 	const isInitialMount = useRef( true );
 
@@ -84,7 +87,10 @@ export const useContentSyncer = ( {
 
 			// Schedule sync after 200ms delay
 			syncState.current.timeoutId = window.setTimeout( () => {
-				onSync( { type: 'full', payload: contentStr } );
+				onSync( {
+					type: 'full',
+					payload: contentStr,
+				} as FullContentSyncPayload );
 			}, 200 );
 		}
 	}, [ postId, editorContent, isLockHolder, onSync, collaborationMode ] );
@@ -178,11 +184,10 @@ export const useContentSyncer = ( {
 						}
 					}
 				} );
-				const payload: BlockOpsPayload = {
+				onSync( {
 					type: 'ops',
 					payload: ops,
-				};
-				onSync( payload );
+				} as BlockOpsPayload );
 			}
 		}
 
@@ -218,6 +223,35 @@ export const useContentSyncer = ( {
 		collaborationMode,
 		blocks,
 		tracker,
+	] );
+
+	// Separate title sync for block-level collaboration mode
+	useEffect( () => {
+		if (
+			! postId ||
+			collaborationMode !== 'BLOCK-LEVEL-LOCKS' ||
+			! isLockHolder
+		) {
+			return;
+		}
+
+		// Only sync if title has actually changed
+		if (
+			editorContent.title &&
+			editorContent.title !== syncState.current.lastTitle
+		) {
+			syncState.current.lastTitle = editorContent.title;
+			onSync( {
+				type: 'title',
+				payload: editorContent.title,
+			} as TitleSyncPayload );
+		}
+	}, [
+		postId,
+		editorContent.title,
+		collaborationMode,
+		isLockHolder,
+		onSync,
 	] );
 
 	// Cleanup timeout on unmount
