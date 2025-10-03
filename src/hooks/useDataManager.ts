@@ -132,6 +132,14 @@ const handleDataReceived = (
 				cursorState && 'blockIndex' in cursorState
 					? cursorState.blockIndex
 					: undefined;
+			const lockedBlocks = wp.data.select( 'gce' ).getLockedBlocks();
+			const engagedBlockClientId =
+				engagedBlockIndex !== undefined
+					? existingBlocks[ engagedBlockIndex ]?.clientId
+					: undefined;
+			const isEngagedBlockLocked =
+				engagedBlockClientId &&
+				lockedBlocks.includes( engagedBlockClientId );
 
 			// The tracker expects a simplified `Block` object.
 			const mappedBlocks: Block[] = receivedBlocks.map( ( block ) => ( {
@@ -152,7 +160,7 @@ const handleDataReceived = (
 			const blocksToSet = mergeBlocks(
 				existingBlocks,
 				receivedBlocks,
-				engagedBlockIndex ?? -1
+				isEngagedBlockLocked ? -1 : engagedBlockIndex ?? -1
 			);
 
 			resetBlocks( blocksToSet );
