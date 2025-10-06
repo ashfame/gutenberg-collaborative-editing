@@ -12,6 +12,7 @@
     "lint:css:fix": "wp-scripts lint-style --fix",
     "start": "wp-scripts start",
     "packages-update": "wp-scripts packages-update",
+    "package": "./scripts/package.sh",
     "wp-env": "wp-env",
     "type-check": "tsc --noEmit",
     "prepare": "husky",
