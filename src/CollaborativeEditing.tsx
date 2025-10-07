@@ -9,7 +9,7 @@ import { useGutenbergEditorControls } from '@/hooks/useGutenbergEditorControls';
 export const CollaborativeEditing = () => {
 	const { currentUserId, collaborationMode, state, syncAwareness } =
 		useDataManager();
-	const { isLockHolder, activeUsers, otherActiveUsers } = state;
+	const { isLockHolder, activeUsers } = state;
 
 	useCSSClassManager( collaborationMode, activeUsers, isLockHolder );
 	useGutenbergEditorControls( collaborationMode, isLockHolder );
@@ -46,7 +46,7 @@ export const CollaborativeEditing = () => {
 	return (
 		<>
 			<PresenceUI
-				awarenessState={ otherActiveUsers }
+				awarenessState={ state.activeUsers }
 				syncAwareness={ syncAwareness }
 				currentUserId={ currentUserId }
 			/>

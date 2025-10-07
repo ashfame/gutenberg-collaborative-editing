@@ -4,6 +4,7 @@ import { useMultiCursor } from '@/useMultiCursor';
 import AvatarList from './AvatarList';
 import { CursorState, AwarenessState } from '@/hooks/types';
 import { useCursorState } from '@/hooks/useCursorState';
+import isEqual from 'lodash.isequal';
 
 interface Occupant {
 	userId: number | null;
@@ -31,7 +32,15 @@ export const PresenceUI = ( {
 		{}
 	);
 
-	const otherUsers = awarenessState;
+	const allUsers = awarenessState;
+	const currentUser = currentUserId ? allUsers[ currentUserId ] : null;
+	const otherUsers = Object.keys( allUsers ).reduce( ( acc, key ) => {
+		const userId = Number( key );
+		if ( userId !== currentUserId ) {
+			acc[ userId ] = allUsers[ userId ];
+		}
+		return acc;
+	}, {} as AwarenessState );
 
 	useMultiCursor( currentUserId, otherUsers, syncAwareness );
 
@@ -89,7 +98,7 @@ export const PresenceUI = ( {
 			) {
 				newBlockOccupants[ blockIndex ].push( {
 					userId: user.user_data.id,
-					timestamp: user.cursor_state.timestamp,
+					timestamp: user.cursor_ts,
 				} );
 			}
 		} );
@@ -118,15 +127,18 @@ export const PresenceUI = ( {
 					( o: Occupant ) => o.userId === currentUserId
 				)
 			) {
-				if ( currentUserCursorState?.timestamp ) {
+				if ( currentUser ) {
 					newBlockOccupants[ currentUserBlockIndex ].push( {
 						userId: currentUserId,
-						timestamp: currentUserCursorState.timestamp,
+						timestamp: currentUser.cursor_ts,
 					} );
 				}
 			}
 		}
-		setBlockOccupants( newBlockOccupants );
+
+		if ( ! isEqual( blockOccupants, newBlockOccupants ) ) {
+			setBlockOccupants( newBlockOccupants );
+		}
 
 		// Determine locked blocks
 		const lockedBlocks: string[] = [];

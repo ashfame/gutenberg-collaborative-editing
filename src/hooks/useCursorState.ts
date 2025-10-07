@@ -39,7 +39,6 @@ export const useCursorState = (): CursorState | null => {
 				return {
 					blockIndex,
 					cursorPos: selectionStart.offset,
-					timestamp: Date.now(),
 				};
 			}
 
@@ -47,7 +46,6 @@ export const useCursorState = (): CursorState | null => {
 				blockIndex,
 				cursorPosStart: selectionStart.offset,
 				cursorPosEnd: selectionEnd.offset,
-				timestamp: Date.now(),
 			};
 		}
 		const blockIndexStart = blocks.indexOf( selectionStart.clientId );
@@ -57,7 +55,6 @@ export const useCursorState = (): CursorState | null => {
 			blockIndexEnd,
 			cursorPosStart: selectionStart.offset,
 			cursorPosEnd: selectionEnd.offset,
-			timestamp: Date.now(),
 		};
 	}, [] );
 };
