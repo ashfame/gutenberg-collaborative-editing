@@ -300,8 +300,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 			( acc, key ) => {
 				const userId = Number( key );
 				const userData = awareness[ userId ];
-				const heartbeatAge =
-					Math.floor( Date.now() / 1000 ) - userData.heartbeat_ts;
+				const heartbeatAge = Date.now() - userData.heartbeat_ts;
 				if ( heartbeatAge < window.gce.awarenessTimeout ) {
 					acc[ userId ] = userData;
 				}

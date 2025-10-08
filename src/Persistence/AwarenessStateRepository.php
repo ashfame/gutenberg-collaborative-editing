@@ -2,10 +2,12 @@
 
 namespace DotOrg\GCE\Persistence;
 
+use DotOrg\GCE\Utils;
+
 class AwarenessStateRepository {
 
 	const POSTMETA_KEY_AWARENESS = 'gce_awareness';
-	const INACTIVITY_TIMEOUT = 240; // seconds
+	const INACTIVITY_TIMEOUT = 240000; // milliseconds
 	const COLORS = [
 		'#0073AA', // WordPress Blue - Primary accessible
 		'#008080', // Teal - Primary accessible
@@ -27,7 +29,7 @@ class AwarenessStateRepository {
 			$awareness_state = [];
 		}
 
-		$ts           = time();
+		$ts           = Utils::getTimestamp();
 		$cursor_ts    = $ts;
 		$block_ts     = $ts;
 		$heartbeat_ts = $ts;
@@ -83,7 +85,7 @@ class AwarenessStateRepository {
 	private function filter_inactive_users( array $awareness_state ) : array {
 		foreach ( $awareness_state as $user_id => $user_state ) {
 			$active_threshold = $user_state[ 'heartbeat_ts' ] + self::INACTIVITY_TIMEOUT;
-			if ( $active_threshold < time() ) {
+			if ( $active_threshold < Utils::getTimestamp() ) {
 				unset( $awareness_state[ $user_id ] );
 			}
 		}
@@ -126,7 +128,7 @@ class AwarenessStateRepository {
 		if ( ! isset( $awareness_state[ $user_id ] ) ) {
 			$awareness_state[ $user_id ] = [];
 		}
-		$awareness_state[ $user_id ][ 'heartbeat_ts' ] = time();
+		$awareness_state[ $user_id ][ 'heartbeat_ts' ] = Utils::getTimestamp();
 		update_post_meta( $post_id, self::POSTMETA_KEY_AWARENESS, $awareness_state );
 	}
 
