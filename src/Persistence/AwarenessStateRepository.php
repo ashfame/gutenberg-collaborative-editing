@@ -27,11 +27,30 @@ class AwarenessStateRepository {
 			$awareness_state = [];
 		}
 
-		$ts                          = time();
+		$ts           = time();
+		$cursor_ts    = $ts;
+		$block_ts     = $ts;
+		$heartbeat_ts = $ts;
+
+		// are we updating the cursor state in the same block?
+		// if so, we need to preserve block_ts
+		if ( isset( $awareness_state[ $user_id ][ 'cursor_state' ] ) ) {
+			$existing_state = $awareness_state[ $user_id ][ 'cursor_state' ];
+			if (
+				isset( $existing_state[ 'blockIndex' ] ) &&
+				isset( $cursor_state[ 'blockIndex' ] ) &&
+				$cursor_state[ 'blockIndex' ] === $existing_state[ 'blockIndex' ] &&
+				isset( $awareness_state[ $user_id ][ 'block_ts' ] ) && $awareness_state[ $user_id ][ 'block_ts' ]
+			) {
+				$block_ts = $awareness_state[ $user_id ][ 'block_ts' ];
+			}
+		}
+
 		$awareness_state[ $user_id ] = [
 			'cursor_state' => $cursor_state,
-			'cursor_ts'    => $ts,
-			'heartbeat_ts' => $ts,
+			'cursor_ts'    => $cursor_ts,
+			'block_ts'     => $block_ts,
+			'heartbeat_ts' => $heartbeat_ts,
 			'color'        => $this->get_color( $user_id, $awareness_state ),
 		];
 		update_post_meta( $post_id, self::POSTMETA_KEY_AWARENESS, $awareness_state );

@@ -8,13 +8,18 @@ import { useGutenbergEditorControls } from '@/hooks/useGutenbergEditorControls';
 import { useBlockLocking } from './hooks/useBlockLocking';
 
 export const CollaborativeEditing = () => {
-	const { currentUserId, collaborationMode, state, syncAwareness } =
-		useDataManager();
+	const {
+		currentUserId,
+		cursorState,
+		collaborationMode,
+		state,
+		syncAwareness,
+	} = useDataManager();
 	const { isLockHolder, activeUsers, otherActiveUsers } = state;
 
 	useCSSClassManager( collaborationMode, activeUsers, isLockHolder );
 	useGutenbergEditorControls( collaborationMode, isLockHolder );
-	useBlockLocking( otherActiveUsers );
+	useBlockLocking( cursorState, otherActiveUsers );
 
 	useEffect( () => {
 		if ( collaborationMode === 'BLOCK-LEVEL-LOCKS' ) {

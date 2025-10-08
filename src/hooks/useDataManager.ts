@@ -347,6 +347,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 
 	return {
 		currentUserId,
+		cursorState,
 		collaborationMode,
 		state: { ...state, ...derivedState },
 		syncAwareness,
