@@ -19,7 +19,7 @@ class Utils {
 	 * @return int
 	 */
 	public static function getTimestamp() {
-		$date = new DateTimeImmutable();
+		$date = new \DateTimeImmutable();
 		return (int) $date->format('Uv');
 	}
 
