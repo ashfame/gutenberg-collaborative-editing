@@ -18,7 +18,7 @@ class Utils {
 	 * Return timestamp in milliseconds
 	 * @return int
 	 */
-	public static function getTimestamp() {
+	public static function getTimestamp() : int {
 		$date = new \DateTimeImmutable();
 		return (int) $date->format('Uv');
 	}
