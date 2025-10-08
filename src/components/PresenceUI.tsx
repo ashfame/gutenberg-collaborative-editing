@@ -2,7 +2,6 @@ import { createPortal } from '@wordpress/element';
 import { useMultiCursor } from '@/useMultiCursor';
 import AvatarList from './AvatarList';
 import { CursorState, AwarenessState } from '@/hooks/types';
-import { useBlockLocking } from '@/hooks/useBlockLocking';
 
 interface PresenceUIProps {
 	awarenessState: AwarenessState;
@@ -18,7 +17,6 @@ export const PresenceUI = ( {
 	const otherUsers = awarenessState;
 
 	useMultiCursor( currentUserId, otherUsers, syncAwareness );
-	useBlockLocking( otherUsers );
 
 	if ( ! otherUsers || Object.keys( otherUsers ).length === 0 ) {
 		return null;
