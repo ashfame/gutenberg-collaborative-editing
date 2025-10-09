@@ -20,6 +20,7 @@ import { TransportReceivedData, ContentSyncPayload } from '@/transports/types';
 import { useProactiveStalenessCheck } from './useProactiveStalenessCheck';
 import { BlockChangeTracker, Block } from '@/block-sync';
 import { isEqual } from 'lodash';
+import { useBlockLocking } from './useBlockLocking';
 
 const restoreSelection = (
 	state: CursorState | null,
@@ -342,6 +343,8 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		forceRecalculate
 	);
 
+	useBlockLocking( cursorState, derivedState.otherActiveUsers ?? {}, blocks );
+
 	useEffect( () => {
 		if ( currentUserId === null || ! postId ) {
 			return;
@@ -354,9 +357,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 
 	return {
 		currentUserId,
-		cursorState,
 		collaborationMode,
-		blocks,
 		state: { ...state, ...derivedState },
 		syncAwareness,
 	};

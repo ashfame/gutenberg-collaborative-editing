@@ -5,22 +5,14 @@ import { useEffect } from '@wordpress/element';
 import { lockEditor, releaseEditor } from './utils';
 import { useCSSClassManager } from '@/hooks/useCSSClassManager';
 import { useGutenbergEditorControls } from '@/hooks/useGutenbergEditorControls';
-import { useBlockLocking } from './hooks/useBlockLocking';
 
 export const CollaborativeEditing = () => {
-	const {
-		currentUserId,
-		cursorState,
-		collaborationMode,
-		blocks,
-		state,
-		syncAwareness,
-	} = useDataManager();
+	const { currentUserId, collaborationMode, state, syncAwareness } =
+		useDataManager();
 	const { isLockHolder, activeUsers, otherActiveUsers } = state;
 
 	useCSSClassManager( collaborationMode, activeUsers, isLockHolder );
 	useGutenbergEditorControls( collaborationMode, isLockHolder );
-	useBlockLocking( cursorState, otherActiveUsers, blocks );
 
 	useEffect( () => {
 		if ( collaborationMode === 'BLOCK-LEVEL-LOCKS' ) {
