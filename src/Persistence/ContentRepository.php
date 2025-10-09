@@ -10,7 +10,7 @@ class ContentRepository {
 		$transient_key = "gce_sync_content_{$post_id}";
 		$sync_data = [
 			'content'     => [ 'html' => $content, 'title' => $title ],
-			'timestamp'   => microtime( true ),
+			'timestamp'   => Utils::getTimestamp(),
 			'post_id'     => $post_id,
 			'user_id'     => $user_id,
 			'fingerprint' => $fingerprint,

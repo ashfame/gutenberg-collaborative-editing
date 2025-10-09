@@ -27,15 +27,18 @@ export interface MultiBlockSelectionCursorState {
 }
 
 export interface User {
-	id: number;
+	id: UserId;
 	name: string;
 	slug: string;
 	avatar: string;
 }
 
+export type UserId = number;
+
 export interface UserAwareness {
 	cursor_state: CursorState;
-	cursor_ts: number;
+	cursor_ts: number; // timestamp for cursor state
+	block_ts: number; // timestamp for when the current block was engaged
 	heartbeat_ts: number;
 	user_data: User;
 	color: string;

@@ -14,4 +14,13 @@ class Utils {
 		return $randomString;
 	}
 
+	/**
+	 * Return timestamp in milliseconds
+	 * @return int
+	 */
+	public static function getTimestamp() : int {
+		$date = new \DateTimeImmutable();
+		return (int) $date->format('Uv');
+	}
+
 }

@@ -50,6 +50,10 @@
     "lint-staged": "^16.1.6",
     "ts-jest": "^29.2.3",
     "tsconfig-paths-webpack-plugin": "^4.2.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "@types/lodash": "^4.17.20"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21"
   }
 }

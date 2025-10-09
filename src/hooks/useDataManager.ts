@@ -19,6 +19,7 @@ import { CursorState, AwarenessState } from './types';
 import { TransportReceivedData, ContentSyncPayload } from '@/transports/types';
 import { useProactiveStalenessCheck } from './useProactiveStalenessCheck';
 import { BlockChangeTracker, Block } from '@/block-sync';
+import { isEqual } from 'lodash';
 
 const restoreSelection = (
 	state: CursorState | null,
@@ -240,6 +241,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	const { resetBlocks, resetSelection } = useDispatch( 'core/block-editor' );
 	const [ recalcTrigger, forceRecalculate ] = useReducer( ( x ) => x + 1, 0 );
 	const tracker = useRef( new BlockChangeTracker() );
+	const derivedStateRef = useRef< Partial< DataManagerState > >( {} );
 
 	const onDataReceived = useCallback(
 		( data: TransportReceivedData ) => {
@@ -300,8 +302,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 			( acc, key ) => {
 				const userId = Number( key );
 				const userData = awareness[ userId ];
-				const heartbeatAge =
-					Math.floor( Date.now() / 1000 ) - userData.heartbeat_ts;
+				const heartbeatAge = Date.now() - userData.heartbeat_ts;
 				if ( heartbeatAge < window.gce.awarenessTimeout ) {
 					acc[ userId ] = userData;
 				}
@@ -320,18 +321,24 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 			delete otherActiveUsers[ currentUserId ];
 		}
 
-		return {
+		const newDerivedState = {
 			awareness,
 			activeUsers,
 			otherUsers,
 			otherActiveUsers,
 		};
+
+		if ( isEqual( derivedStateRef.current, newDerivedState ) ) {
+			return derivedStateRef.current;
+		}
+		derivedStateRef.current = newDerivedState;
+		return newDerivedState;
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ awareness, currentUserId, recalcTrigger ] );
 
 	// Proactively check for stale users and trigger a state recalculation.
 	useProactiveStalenessCheck(
-		derivedState.otherActiveUsers,
+		derivedState.otherActiveUsers ?? {},
 		forceRecalculate
 	);
 
@@ -347,7 +354,9 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 
 	return {
 		currentUserId,
+		cursorState,
 		collaborationMode,
+		blocks,
 		state: { ...state, ...derivedState },
 		syncAwareness,
 	};
