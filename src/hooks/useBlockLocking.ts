@@ -37,22 +37,20 @@ export const useBlockLocking = (
 			}
 
 			if ( 'blockIndex' in user.cursor_state ) {
+				const blockIndex = user.cursor_state.blockIndex;
 				if (
 					trackedCurrentUser &&
 					'blockIndex' in trackedCurrentUser &&
-					trackedCurrentUser.blockIndex ===
-						user.cursor_state.blockIndex
+					trackedCurrentUser.blockIndex === blockIndex
 				) {
 					// which one has the older timestamp?
-					if ( user.cursor_ts < trackedCurrentUser.blockTs ) {
-						targetBlocks[ user.cursor_state.blockIndex ] =
-							user.user_data.id;
+					if ( user.block_ts < trackedCurrentUser.blockTs ) {
+						targetBlocks[ blockIndex ] = user.user_data.id;
 					}
 					// if the current user is the one who has the older timestamp,
 					// we do not need locks for ourselves, so do nothing
 				} else {
-					targetBlocks[ user.cursor_state.blockIndex ] =
-						user.user_data.id;
+					targetBlocks[ blockIndex ] = user.user_data.id;
 				}
 			}
 		} );
