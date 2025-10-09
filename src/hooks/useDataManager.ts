@@ -145,11 +145,22 @@ const handleDataReceived = (
 				tracker.current.isReceivingContent = true;
 			}
 
-			const blocksToSet = mergeBlocks(
-				existingBlocks,
-				receivedBlocks,
-				engagedBlockIndex ?? -1
+			const lockedBlocks = wp.data.select( 'gce' ).getLockedBlocks();
+			const engagedBlock =
+				engagedBlockIndex !== undefined
+					? existingBlocks[ engagedBlockIndex ]
+					: undefined;
+			const isEngagedBlockLocked = !! (
+				engagedBlock && lockedBlocks.includes( engagedBlock.clientId )
 			);
+
+			const blocksToSet = isEngagedBlockLocked
+				? receivedBlocks
+				: mergeBlocks(
+						existingBlocks,
+						receivedBlocks,
+						engagedBlockIndex ?? -1
+				  );
 
 			resetBlocks( blocksToSet );
 			editPost( {
