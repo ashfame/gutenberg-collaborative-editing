@@ -2,10 +2,12 @@ import { useEffect } from '@wordpress/element';
 import { useDispatch } from '@wordpress/data';
 import { AwarenessState, CursorState, UserId } from '@/hooks/types';
 import { useTrackedCurrentUser } from './useTrackedCurrentUser';
+import { BlockInstance } from '@wordpress/blocks';
 
 export const useBlockLocking = (
 	currentUser: CursorState | null,
-	otherUsers: AwarenessState
+	otherUsers: AwarenessState,
+	blocks: BlockInstance[]
 ) => {
 	const { setLockedBlocks } = useDispatch( 'gce' );
 
@@ -14,7 +16,7 @@ export const useBlockLocking = (
 	useEffect( () => {
 		// target blocks which are locked by other users
 		const targetBlocks: {
-			[ blockIndex: string ]: UserId; // we currently don't use the userId,
+			[ blockIndex: number ]: UserId; // we currently don't use the userId,
 			// but it's here for future use for cases where we want to highlight the user who locked the block
 		} = {};
 
@@ -55,12 +57,8 @@ export const useBlockLocking = (
 			}
 		} );
 
-		const existingBlocks = wp.data
-			.select( 'core/block-editor' )
-			.getBlocks();
-
 		Object.entries( targetBlocks ).forEach( ( [ blockIndex ] ) => {
-			const block = existingBlocks[ blockIndex ];
+			const block = blocks[ Number( blockIndex ) ];
 			if ( block ) {
 				lockedBlocks.push( block.clientId );
 			}
@@ -72,5 +70,5 @@ export const useBlockLocking = (
 		return () => {
 			setLockedBlocks( [] );
 		};
-	}, [ otherUsers, setLockedBlocks, trackedCurrentUser ] );
+	}, [ trackedCurrentUser, otherUsers, blocks, setLockedBlocks ] );
 };
