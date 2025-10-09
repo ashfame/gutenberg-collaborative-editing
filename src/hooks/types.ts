@@ -47,3 +47,11 @@ export interface UserAwareness {
 export interface AwarenessState {
 	[ userId: number ]: UserAwareness;
 }
+
+export interface DataManagerState {
+	isLockHolder: boolean;
+	awareness: AwarenessState;
+	activeUsers: AwarenessState;
+	otherUsers: AwarenessState;
+	otherActiveUsers: AwarenessState;
+}

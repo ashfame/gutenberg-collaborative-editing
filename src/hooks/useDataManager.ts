@@ -1,10 +1,4 @@
-import {
-	useEffect,
-	useReducer,
-	useCallback,
-	useMemo,
-	useRef,
-} from '@wordpress/element';
+import { useEffect, useReducer, useCallback, useRef } from '@wordpress/element';
 import { useGutenbergState } from './useGutenbergState';
 import {
 	useTransportManager,
@@ -15,12 +9,12 @@ import { useDispatch } from '@wordpress/data';
 import { parse, serialize } from '@wordpress/blocks';
 import { useCollaborationMode } from './useCollaborationMode';
 import { mergeBlocks } from '@/utils';
-import { CursorState, AwarenessState } from './types';
+import { CursorState, AwarenessState, DataManagerState } from './types';
 import { TransportReceivedData, ContentSyncPayload } from '@/transports/types';
 import { useProactiveStalenessCheck } from './useProactiveStalenessCheck';
 import { BlockChangeTracker, Block } from '@/block-sync';
-import { isEqual } from 'lodash';
 import { useBlockLocking } from './useBlockLocking';
+import { useDerivedAwarenessState } from './useDerivedAwarenessState';
 
 const restoreSelection = (
 	state: CursorState | null,
@@ -175,14 +169,6 @@ const handleDataReceived = (
 	}
 };
 
-interface DataManagerState {
-	isLockHolder: boolean;
-	awareness: AwarenessState;
-	activeUsers: AwarenessState;
-	otherUsers: AwarenessState;
-	otherActiveUsers: AwarenessState;
-}
-
 const initialState: DataManagerState = {
 	isLockHolder: false,
 	awareness: {},
@@ -240,9 +226,12 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	const [ state, dispatch ] = useReducer( reducer, initialState );
 	const { editPost } = useDispatch( 'core/editor' );
 	const { resetBlocks, resetSelection } = useDispatch( 'core/block-editor' );
+
+	// This state var is used to trigger a recalculation of derived state on
+	// the basis of staleness of the user cursor state
 	const [ recalcTrigger, forceRecalculate ] = useReducer( ( x ) => x + 1, 0 );
+
 	const tracker = useRef( new BlockChangeTracker() );
-	const derivedStateRef = useRef< Partial< DataManagerState > >( {} );
 
 	const onDataReceived = useCallback(
 		( data: TransportReceivedData ) => {
@@ -297,45 +286,11 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	} );
 
 	const { awareness } = state;
-	const derivedState = useMemo( () => {
-		// Build using reduce to preserve number keys and the AwarenessState type
-		const activeUsers = Object.keys( awareness ).reduce< AwarenessState >(
-			( acc, key ) => {
-				const userId = Number( key );
-				const userData = awareness[ userId ];
-				const heartbeatAge = Date.now() - userData.heartbeat_ts;
-				if ( heartbeatAge < window.gce.awarenessTimeout ) {
-					acc[ userId ] = userData;
-				}
-				return acc;
-			},
-			{}
-		);
-
-		const otherUsers: AwarenessState = { ...awareness };
-		if ( typeof currentUserId === 'number' ) {
-			delete otherUsers[ currentUserId ];
-		}
-
-		const otherActiveUsers: AwarenessState = { ...activeUsers };
-		if ( typeof currentUserId === 'number' ) {
-			delete otherActiveUsers[ currentUserId ];
-		}
-
-		const newDerivedState = {
-			awareness,
-			activeUsers,
-			otherUsers,
-			otherActiveUsers,
-		};
-
-		if ( isEqual( derivedStateRef.current, newDerivedState ) ) {
-			return derivedStateRef.current;
-		}
-		derivedStateRef.current = newDerivedState;
-		return newDerivedState;
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [ awareness, currentUserId, recalcTrigger ] );
+	const derivedState = useDerivedAwarenessState(
+		awareness,
+		currentUserId,
+		recalcTrigger
+	);
 
 	// Proactively check for stale users and trigger a state recalculation.
 	useProactiveStalenessCheck(
