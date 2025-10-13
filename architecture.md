@@ -137,7 +137,26 @@ These are pure, presentational components.
 
 #### 2.2.1 MultiCursor
 
-Don't modify the MultiCursor class, just report issues if you notice any in its logic (these would need to be tested separately before accepting). Just make changes how its used in useMultiCursor.js
+The multi-cursor feature is managed by a combination of the `useMultiCursor` hook and the `MultiCursor` vanilla JavaScript class. This separation allows the React component world to interact cleanly with the complex and performance-sensitive logic of calculating cursor positions and manipulating the DOM.
+
+-   **`useMultiCursor` (Hook)**:
+    -   **Responsibility**: Acts as a bridge between the React application and the `MultiCursor` class.
+    -   **Logic**:
+        -   It is used within the `PresenceUI` component.
+        -   It initializes and tears down the cursor overlay element in the DOM.
+        -   It instantiates the `MultiCursor` class, passing it the required DOM elements.
+        -   It uses `useCursorState` to track the local user's cursor position and broadcasts it to other users.
+        -   It receives the awareness state (containing cursor data from other users) and passes it to the `MultiCursor` instance for rendering.
+
+-   **`MultiCursor` (Class)**:
+    -   **Responsibility**: To perform the heavy lifting of calculating cursor and selection rectangle positions and rendering them on an overlay. It is designed to be independent of React.
+    -   **Logic**:
+        -   It maintains a map of active users and their cursor states.
+        -   Contains complex logic to traverse the DOM of the Gutenberg editor's rich text fields to find the precise pixel coordinates (`x`, `y`) for a given text offset.
+        -   It creates and appends `<div>` elements to the overlay to represent other users' cursors and selections.
+        -   It handles both single-point cursors and multi-line/multi-block selections.
+
+The documentation for this class states not to modify it directly but to report issues, as its logic is complex and requires careful testing. Changes to cursor behavior should primarily be made in how `useMultiCursor` interacts with it.
 
 ## 3. The `DataManager`
 
@@ -231,5 +250,17 @@ We can create several implementations of this interface.
 The `DataManager` will be responsible for instantiating the correct transport based on the configuration passed to it.
 
 ## 5. Refactoring Plan
+
+This section outlines potential areas for future refactoring to improve the codebase's maintainability, testability, and robustness.
+
+### 5.1. Decouple from Global `window.gce` Object
+
+-   **Problem**: Many hooks and components currently access configuration and state (e.g., `postId`, `currentUserId`, `collaborationMode`) directly from the global `window.gce` object. This creates a tight coupling to the global scope, making components harder to test in isolation and less reusable.
+-   **Proposed Solution**: Introduce a React Context (e.g., `CollaborativeEditingContext`) at the top level of the `CollaborativeEditing` component. This context would hold all the initial configuration data. Components and hooks would then use a `useCollaborativeEditingContext` hook to access this data instead of reading from the global `window` object. This would follow React best practices and improve dependency injection.
+
+### 5.2. Encapsulate Editor DOM Interactions
+
+-   **Problem**: Several hooks (`useMultiCursor`, `CollaborativeEditing`) perform direct queries and manipulation of the Gutenberg editor's DOM (e.g., `document.querySelector`). This is often necessary for integrating with a complex non-React environment like the editor, but it can be brittle if the editor's class names or structure change.
+-   **Proposed Solution**: Create a dedicated hook, such as `useEditorDOM`, whose sole responsibility is to manage interactions with the editor's DOM. This hook could provide stable references to key elements (like the editor wrapper, iframe document, etc.) and expose a clear API for other hooks to use. This would centralize the fragile DOM-related code, making it easier to update if the editor's markup changes.
 
 
