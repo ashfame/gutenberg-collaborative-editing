@@ -4,11 +4,30 @@ This document outlines the architecture for the Gutenberg Collaborative Editing 
 
 ## 1. High-Level Overview
 
-The architecture is centered around a `DataManager` model. This model acts as the central hub for all data communication with the backend, managing both incoming data (state updates) and outgoing data (user actions).
+For collaborative editing, we are offering two different modes as of today.
+One is "Read-only Follow" mode, where one user makes the edit and others participate in a read-only view of the content being modified in realtime.
+Another is "Block-level Locks" mode, where a user acquires lock on the block they are engaging with so that only they can edit it.
 
-UI components are kept "dumb," meaning they are only responsible for rendering the state they are given via props and reporting user actions back to the `DataManager`. They do not contain any data-fetching or state management logic themselves.
+To sync the content between multiple users/clients, we maintain a shadow copy of the post content, which is kept updated as users/clients make their modifications.
+This is currently saved as transients, but will be moved to a persistent storage in the future.
+This shadow copy is served to all clients as it gets modified, acting as the source of truth.
 
-This approach decouples the UI from the data layer, allowing either to be changed independently. For example, we can change the data transport mechanism from long-polling to WebSockets without making any changes to the UI components.
+As of today, on the basis of collaboration mode, users editing content can either send the full copy of the modified content to the server (as in Read-only Follow mode), or only send the content of the particular block that they are engaged in (as in Block-level Locks mode).
+To receive content updates, users received the full updated content at that given time, so a client always has a fully intact copy of the post.
+
+In the future, both modes would merge into a user level mode, where users collaborate with edit intention by default, but can switch to a "Viewing" mode, which would be equivalent to the existing "Read-only Follow" mode.
+This would encourage refactoring of the content sending mechanism, and just sending the block level copy would become the only way to send content updates.
+
+On the client side, the client parses the entire content into blocks and then overwrites the content of all blocks except the one it is currently editing. And as you can imagine for "Read-only Follow" mode, we overwrite the entire post/page content with the new content.
+
+All the communication happens via a Transport layer, which is designed to be configurable.
+So, it can be either a long-polling mechanism, or just a static file requested repeatedly or a WebSocket mechanism.
+
+Transport layer also allows transmission of the user's awareness state (cursor state along with user details) to the server.
+Using this, we render cursors of other users on the page, which is done by an overlay technique where we draw fake cursors as per their cursor state.
+
+As of today, we only have a long-polling mechanism as our transport layer, which uses AJAX calls to submit data, and a long polling request to receive data.
+This allows us to cater to every kind of hosting environment. Long polling enables us to respond very quickly as the shadow copy is updated.
 
 ### Architecture Diagram
 
@@ -58,30 +77,20 @@ graph TD
 
 ## 2. Core Components & Concepts
 
+The architecture is centered around a `DataManager` model.
+This model acts as the central hub for all data communication with the backend, managing both incoming data (state updates) and outgoing data (user actions).
+
+UI components are kept "dumb," meaning they are only responsible for rendering the state they are given via props and reporting user actions back to the `DataManager`.
+They do not contain any data-fetching or state management logic themselves.
+
+This approach decouples the UI from the data layer, allowing either to be changed independently.
+
 ### 2.1. `CollaborativeEditing` Component
 
-This is the top-level React component for the plugin, injected into the Gutenberg editor.
+This is the top-level React component, registered as a plugin in the Gutenberg editor.
 
--   **Responsibility**: To orchestrate the entire collaborative UI.
+-   **Responsibility**: Orchestrate the entire collaborative experience.
 -   **Logic**: It will use the main `useDataManager` hook to get the shared state and the functions to update it. It will then pass this state down to its child UI components.
--   **Example**:
-    ```javascript
-    import { useDataManager } from './hooks/useDataManager';
-    import { PresenceUI } from './components/PresenceUI';
-    import { ReadOnlyUI } from './components/ReadOnlyUI';
-
-    export const CollaborativeEditing = () => {
-        const { state } = useDataManager({ transport: 'long-polling' });
-
-        return (
-            <>
-                <PresenceUI awarenessState={state.awareness} />
-                <ReadOnlyUI isReadOnly={state.isReadOnly} />
-                {/* Future components would be added here */}
-            </>
-        );
-    };
-    ```
 
 ### 2.2. UI Components (`PresenceUI`, `MultiCursor`, `AvatarList`, etc.)
 
@@ -89,23 +98,6 @@ These are pure, presentational components.
 
 -   **Responsibility**: To render a piece of the UI based on the props they receive. They should be stateless wherever possible.
 -   **Data Flow**: They receive state as props from `CollaborativeEditing`. If they need to trigger a state change (e.g., user moves the cursor), they call a function (also received via props) from the `DataManager`'s API.
--   **Example (`MultiCursor`):**
-    ```javascript
-    // Receives syncAwareness function to report its own state
-    export const MultiCursor = ({ awarenessState, syncAwareness }) => {
-        // Logic to update its own cursor position and call syncAwareness
-        // ...
-
-        // Renders the cursors of other users from awarenessState
-        return (
-            <>
-                {Object.values(awarenessState.users).map(user => (
-                    <Cursor key={user.id} data={user.cursor} />
-                ))}
-            </>
-        )
-    };
-    ```
 
 #### 2.2.1 MultiCursor
 
@@ -130,29 +122,6 @@ This hook is the single source of truth for the client application.
 ### 3.2. State Management
 
 The internal state of the `DataManager` will be managed by a `useReducer` hook for predictable state transitions.
-
--   **State Shape**:
-    ```typescript
-    interface CollaborativeState {
-        isReadOnly: boolean;
-        isSynced: boolean;
-        lockHolder: User | null;
-        awareness: {
-            [userId: string]: AwarenessInfo;
-        };
-        // ... other state properties
-    }
-
-    interface AwarenessInfo {
-        user: User;
-        cursor: {
-            x: number;
-            y: number;
-            selection?: any;
-        };
-        // ... other awareness properties
-    }
-    ```
 
 ### 3.3. Data Submission (`Data Sync`)
 
@@ -205,29 +174,4 @@ The `DataManager` will be responsible for instantiating the correct transport ba
 
 ## 5. Refactoring Plan
 
-To transition the existing codebase to this architecture, the following steps should be taken:
 
-1.  **Create `architecture.md`**: Establish this document as the source of truth. (Done)
-2.  **Implement the Transport Interface**:
-    -   Create a new directory `src/transports`.
-    -   Define the `ITransport` interface.
-    -   Refactor the existing polling logic from `usePollingForUpdates.js` into a new `src/transports/LongPollingTransport.js` that implements the interface.
-3.  **Create the `DataManager`**:
-    -   Create a new `src/hooks/useDataManager.js`.
-    -   Implement the `useReducer` for state management.
-    -   Implement the logic to instantiate and use the configured transport.
-    -   Expose the `state` and the `sync` functions.
-4.  **Refactor `CollaborativeEditing.js`**:
-    -   Update it to use the `useDataManager` hook.
-    -   Remove any direct calls to data-fetching hooks.
-    -   Pass state and sync functions down to child components as props.
-5.  **Refactor UI Components**:
-    -   Modify `MultiCursor` and other components to be "dumb." They should expect all data and functions via props.
-    -   Remove `useCollaborativeEditingData`, `useContentSync`, etc., from these components.
-6.  **Integrate Existing UI**:
-    -   Create the `PresenceUI` component.
-    -   Move `AvatarList` and the refactored `MultiCursor` inside `PresenceUI`.
-    -   Ensure the `awarenessState` is correctly passed down and rendered.
-7.  **Cleanup**:
-    -   Remove the old, now unused hooks (`usePollingForUpdates`, `useAwarenessSync`, `useContentSync`).
-    -   Delete any other redundant code.
