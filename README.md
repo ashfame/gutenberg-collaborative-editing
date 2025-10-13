@@ -6,7 +6,7 @@
 - Tested up to: 6.8.2
 - Requires PHP: 7.4
 - License: [GPLv2](http://www.gnu.org/licenses/gpl-2.0.html)
-- Stable tag: 0.0.1
+- Stable tag: 0.1.0
 - GitHub Plugin URI: https://github.com/ashfame/gutenberg-collaborative-editing
 
 Enable collaborative editing in Gutenberg
@@ -54,6 +54,10 @@ add_filter( 'gutenberg_collabrative_editing_enabled', function ( $post, $user_id
 ~~~
 
 ## Changelog
+
+### 0.1.0
+
+- Offers a functional collaborative editing experience, with certain edge cases
 
 ### 0.0.1
 
