@@ -4,47 +4,102 @@ This document outlines the architecture for the Gutenberg Collaborative Editing 
 
 ## 1. High-Level Overview
 
-The architecture is centered around a `DataManager` model. This model acts as the central hub for all data communication with the backend, managing both incoming data (state updates) and outgoing data (user actions).
+For collaborative editing, we are offering two different modes as of today.
+One is "Read-only Follow" mode, where one user makes the edit and others participate in a read-only view of the content being modified in realtime.
+Another is "Block-level Locks" mode, where a user acquires lock on the block they are engaging with so that only they can edit it.
 
-UI components are kept "dumb," meaning they are only responsible for rendering the state they are given via props and reporting user actions back to the `DataManager`. They do not contain any data-fetching or state management logic themselves.
+To sync the content between multiple users/clients, we maintain a shadow copy of the post content, which is kept updated as users/clients make their modifications.
+This is currently saved as transients, but will be moved to a persistent storage in the future.
+This shadow copy is served to all clients as it gets modified, acting as the source of truth.
 
-This approach decouples the UI from the data layer, allowing either to be changed independently. For example, we can change the data transport mechanism from long-polling to WebSockets without making any changes to the UI components.
+As of today, on the basis of collaboration mode, users editing content can either send the full copy of the modified content to the server (as in Read-only Follow mode), or only send the content of the particular block that they are engaged in (as in Block-level Locks mode).
+To receive content updates, users received the full updated content at that given time, so a client always has a fully intact copy of the post.
+
+In the future, both modes would merge into a user level mode, where users collaborate with edit intention by default, but can switch to a "Viewing" mode, which would be equivalent to the existing "Read-only Follow" mode.
+This would encourage refactoring of the content sending mechanism, and just sending the block level copy would become the only way to send content updates.
+
+On the client side, the client parses the entire content into blocks and then overwrites the content of all blocks except the one it is currently editing. And as you can imagine for "Read-only Follow" mode, we overwrite the entire post/page content with the new content.
+
+All the communication happens via a Transport layer, which is designed to be configurable.
+So, it can be either a long-polling mechanism, or just a static file requested repeatedly or a WebSocket mechanism.
+
+Transport layer also allows transmission of the user's awareness state (cursor state along with user details) to the server.
+Using this, we render cursors of other users on the page, which is done by an overlay technique where we draw fake cursors as per their cursor state.
+
+As of today, we only have a long-polling mechanism as our transport layer, which uses AJAX calls to submit data, and a long polling request to receive data.
+This allows us to cater to every kind of hosting environment. Long polling enables us to respond very quickly as the shadow copy is updated.
 
 ### Architecture Diagram
 
 ```mermaid
 graph TD
-    subgraph Client-Side Application
+    subgraph "Client-Side Application"
         A[Gutenberg Editor] --> B(CollaborativeEditing Component);
 
-        subgraph UI Components
-            direction LR
-            C(PresenceUI)
-            D(MultiCursor)
-            E(ReadOnlyUI)
-            F(SuggestionModeUI - Future)
-        end
-
-        subgraph DataManager
+        subgraph "UI Components"
             direction TB
-            G(State Management <br/> e.g., useReducer)
-            H(Data Sync API <br/> for sending updates)
-            I(Data Provider <br/> for receiving updates)
-            J(Transport Layer <br/> Pluggable: Long Poll, WebSocket, etc.)
+            
+            subgraph "Presence"
+                direction LR
+                C(PresenceUI) --> AL(AvatarList)
+                AL --> UA(UserAvatar)
+            end
+            
+            subgraph "Multi-Cursor Display"
+                 direction TB
+                 UMC_Hook(useMultiCursor)
+                 MC_Class(MultiCursor Class)
+                 UCS_Hook(useCursorState)
+                 UMC_Hook -- "instantiates" --> MC_Class
+                 UMC_Hook -- "uses" --> UCS_Hook
+            end
 
-            I --> G;
-            H --> J;
-            I --> J;
+            C -- "uses" --> UMC_Hook
+            
+            E(ReadOnlyUI)
         end
 
-        B --> DataManager;
-        DataManager -- State --> C;
-        DataManager -- State --> D;
-        DataManager -- State --> E;
-        DataManager -- State --> F;
+        subgraph "DataManager (Conceptual Group of Hooks)"
+            UDM(useDataManager - Orchestrator)
+            
+            subgraph "Specialized Data Hooks"
+                direction TB
+                UGS(useGutenbergState)
+                UTM(useTransportManager)
+                UCS(useContentSyncer)
+                UBL(useBlockLocking)
+                UDAS(useDerivedAwarenessState)
+            end
+        end
+        
+        subgraph "UI Logic Hooks"
+             UCCM(useCSSClassManager)
+             UGEC(useGutenbergEditorControls)
+        end
+        
+        subgraph "Transport Layer"
+             J(Pluggable: Long Poll, etc.)
+        end
 
-        C -- User Actions --> H;
-        D -- User Actions --> H;
+        B -- "uses" --> UDM;
+        B -- "uses" --> UCCM;
+        B -- "uses" --> UGEC;
+        
+        UDM -- "State & Callbacks" --> B;
+
+        B -- "Props" --> C;
+        B -- "Props" --> D;
+        B -- "Props" --> E;
+
+        UDM -- "composes" --> UGS;
+        UDM -- "composes" --> UTM;
+        UDM -- "composes" --> UCS;
+        UDM -- "composes" --> UBL;
+        UDM -- "composes" --> UDAS;
+        
+        A -- "Editor State" --> UGS;
+        UCS -- "sends updates via" --> UTM;
+        UTM -- "manages" --> J;
     end
 
     subgraph Backend
@@ -53,115 +108,106 @@ graph TD
 
     J <--> K;
 
-    style DataManager fill:#f9f,stroke:#333,stroke-width:2px
+    style UDM fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
 ## 2. Core Components & Concepts
 
+The architecture is centered around a `DataManager` model.
+This model acts as the central hub for all data communication with the backend, managing both incoming data (state updates) and outgoing data (user actions).
+
+UI components are kept "dumb," meaning they are only responsible for rendering the state they are given via props and reporting user actions back to the `DataManager`.
+They do not contain any data-fetching or state management logic themselves.
+
+This approach decouples the UI from the data layer, allowing either to be changed independently.
+
 ### 2.1. `CollaborativeEditing` Component
 
-This is the top-level React component for the plugin, injected into the Gutenberg editor.
+This is the top-level React component, registered as a plugin in the Gutenberg editor.
 
--   **Responsibility**: To orchestrate the entire collaborative UI.
--   **Logic**: It will use the main `useDataManager` hook to get the shared state and the functions to update it. It will then pass this state down to its child UI components.
--   **Example**:
-    ```javascript
-    import { useDataManager } from './hooks/useDataManager';
-    import { PresenceUI } from './components/PresenceUI';
-    import { ReadOnlyUI } from './components/ReadOnlyUI';
-
-    export const CollaborativeEditing = () => {
-        const { state } = useDataManager({ transport: 'long-polling' });
-
-        return (
-            <>
-                <PresenceUI awarenessState={state.awareness} />
-                <ReadOnlyUI isReadOnly={state.isReadOnly} />
-                {/* Future components would be added here */}
-            </>
-        );
-    };
-    ```
+-   **Responsibility**: Orchestrate the entire collaborative experience.
+-   **Logic**: It will use the main `useDataManager` hook to get the shared state and the functions to update it. It then passes this state down to its child UI components. It also uses specialized hooks like `useCSSClassManager` and `useGutenbergEditorControls` to manage the UI state of the editor itself, such as disabling controls when in read-only mode.
 
 ### 2.2. UI Components (`PresenceUI`, `MultiCursor`, `AvatarList`, etc.)
 
 These are pure, presentational components.
 
 -   **Responsibility**: To render a piece of the UI based on the props they receive. They should be stateless wherever possible.
--   **Data Flow**: They receive state as props from `CollaborativeEditing`. If they need to trigger a state change (e.g., user moves the cursor), they call a function (also received via props) from the `DataManager`'s API.
--   **Example (`MultiCursor`):**
-    ```javascript
-    // Receives syncAwareness function to report its own state
-    export const MultiCursor = ({ awarenessState, syncAwareness }) => {
-        // Logic to update its own cursor position and call syncAwareness
-        // ...
-
-        // Renders the cursors of other users from awarenessState
-        return (
-            <>
-                {Object.values(awarenessState.users).map(user => (
-                    <Cursor key={user.id} data={user.cursor} />
-                ))}
-            </>
-        )
-    };
-    ```
+-   **Data Flow**: They receive state as props from `CollaborativeEditing`. If they need to trigger a state change (e.g., user moves the cursor), they call a function (also received via props) that originates from one of the data manager hooks.
 
 #### 2.2.1 MultiCursor
 
-Don't modify the MultiCursor class, just report issues if you notice any in its logic (these would need to be tested separately before accepting). Just make changes how its used in useMultiCursor.js
+The multi-cursor feature is managed by a combination of the `useMultiCursor` hook and the `MultiCursor` vanilla JavaScript class. This separation allows the React component world to interact cleanly with the complex and performance-sensitive logic of calculating cursor positions and manipulating the DOM.
+
+-   **`useMultiCursor` (Hook)**:
+    -   **Responsibility**: Acts as a bridge between the React application and the `MultiCursor` class.
+    -   **Logic**:
+        -   It is used within the `PresenceUI` component.
+        -   It initializes and tears down the cursor overlay element in the DOM.
+        -   It instantiates the `MultiCursor` class, passing it the required DOM elements.
+        -   It uses `useCursorState` to track the local user's cursor position and broadcasts it to other users.
+        -   It receives the awareness state (containing cursor data from other users) and passes it to the `MultiCursor` instance for rendering.
+
+-   **`MultiCursor` (Class)**:
+    -   **Responsibility**: To perform the heavy lifting of calculating cursor and selection rectangle positions and rendering them on an overlay. It is designed to be independent of React.
+    -   **Logic**:
+        -   It maintains a map of active users and their cursor states.
+        -   Contains complex logic to traverse the DOM of the Gutenberg editor's rich text fields to find the precise pixel coordinates (`x`, `y`) for a given text offset.
+        -   It creates and appends `<div>` elements to the overlay to represent other users' cursors and selections.
+        -   It handles both single-point cursors and multi-line/multi-block selections.
+
+The documentation for this class states not to modify it directly but to report issues, as its logic is complex and requires careful testing. Changes to cursor behavior should primarily be made in how `useMultiCursor` interacts with it.
 
 ## 3. The `DataManager`
 
-The `DataManager` is not a single object but a collection of hooks and functions that form the data layer of the application. The primary entry point will be the `useDataManager` hook.
+The `DataManager` is not a single object but a concept representing the data layer of the application. It's implemented as a collection of custom React hooks that work together to manage state, synchronization, and communication with the backend. The primary entry point to this data layer is the `useDataManager` hook.
+
+This modular approach with multiple hooks allows for a clear separation of concerns, making the system easier to maintain and extend. Each hook has a specific responsibility.
 
 ### 3.1. `useDataManager` Hook
 
-This hook is the single source of truth for the client application.
+This hook acts as the central orchestrator for the client-side collaborative editing experience. It doesn't contain all the logic itself but rather integrates and coordinates the other specialized hooks.
 
--   **Signature**: `useDataManager(config)`
--   **Parameters**:
-    -   `config` (Object): An object for configuration. The most important property is `transport`, which specifies which transport layer to use (e.g., `'long-polling'`).
--   **Returns**: An object containing:
-    -   `state` (Object): The current shared state of the collaborative session.
-    -   `syncAwareness` (Function): A function to send the user's awareness state (cursor, etc.) to the server.
-    -   `syncContent` (Function): A function for the lock-holder to send content changes to the server.
+-   **Responsibility**:
+    -   Initialize and manage the transport layer via `useTransportManager`.
+    -   Use `useGutenbergState` to get data from the editor.
+    -   Coordinate data syncing with `useContentSyncer`.
+    -   Manage the central awareness state.
+    -   Provide the `CollaborativeEditing` component with all the necessary state and functions.
 
-### 3.2. State Management
+### 3.2. Specialized Hooks
 
-The internal state of the `DataManager` will be managed by a `useReducer` hook for predictable state transitions.
+These hooks encapsulate specific pieces of functionality. `useDataManager` uses them to build the complete collaborative experience.
 
--   **State Shape**:
-    ```typescript
-    interface CollaborativeState {
-        isReadOnly: boolean;
-        isSynced: boolean;
-        lockHolder: User | null;
-        awareness: {
-            [userId: string]: AwarenessInfo;
-        };
-        // ... other state properties
-    }
+-   **`useGutenbergState`**: Subscribes to the Gutenberg data store to get real-time information about the editor's state, such as post content, block list, and cursor position.
 
-    interface AwarenessInfo {
-        user: User;
-        cursor: {
-            x: number;
-            y: number;
-            selection?: any;
-        };
-        // ... other awareness properties
-    }
-    ```
+-   **`useTransportManager`**: Manages the transport layer (e.g., long-polling). It provides a simple `send` function and an `onDataReceived` callback, abstracting away the specifics of the communication protocol.
 
-### 3.3. Data Submission (`Data Sync`)
+-   **`useContentSyncer`**: Decides when to send content updates to the server. It tracks local changes and uses the transport layer to send them.
 
-This is the "outgoing" part of the `DataManager`. It provides a stable API for the UI to send data to the backend, regardless of the transport used.
+-   **`useCollaborationMode`**: Determines the current collaboration mode (e.g., 'READ-ONLY-FOLLOW' or 'BLOCK-LEVEL-LOCKS').
 
--   **API Functions**:
-    -   `syncAwareness(awarenessState)`: Takes the current user's awareness state and sends it via the active transport.
-    -   `syncContent(content)`: Takes the new post content and sends it.
-    -   `requestLock()`: Attempts to gain the editing lock for the post.
+-   **`useDerivedAwarenessState`**: Takes the raw awareness data from all connected users and computes useful derived state, such as lists of active and inactive users.
+
+-   **`useProactiveStalenessCheck`**: Periodically checks for users who might have disconnected without cleanly notifying the server (e.g., closed browser tab) and marks them as stale.
+
+-   **`useBlockLocking`**: Implements the logic for block-level locking, preventing multiple users from editing the same block simultaneously.
+
+-   **`useCSSClassManager`**: Manages CSS classes applied to the editor's body to visually reflect the collaboration state (e.g., adding a class to indicate other users are present).
+
+-   **`useGutenbergEditorControls`**: Enables or disables Gutenberg's UI controls based on the user's editing privileges (e.g., disables saving and publishing for users who are not the lock holder in read-only mode).
+
+### 3.3. State Management
+
+The internal state within `useDataManager` is managed by a `useReducer` hook for predictable state transitions related to awareness. However, much of the state is decentralized and managed within the specialized hooks or derived from the Gutenberg data store.
+
+### 3.4. Data Submission (`Data Sync`)
+
+This is the "outgoing" part of the `DataManager`. The `useTransportManager` provides a stable API for other hooks (like `useContentSyncer`) to send data to the backend, regardless of the transport used.
+
+-   **API Functions (exposed by hooks)**:
+    -   `syncAwareness(awarenessState)`: Called to send the user's current awareness state (e.g., cursor position) to the server.
+    -   `syncContent(content)`: Called by `useContentSyncer` to send content changes.
 
 ## 4. The Transport Layer
 
@@ -205,29 +251,16 @@ The `DataManager` will be responsible for instantiating the correct transport ba
 
 ## 5. Refactoring Plan
 
-To transition the existing codebase to this architecture, the following steps should be taken:
+This section outlines potential areas for future refactoring to improve the codebase's maintainability, testability, and robustness.
 
-1.  **Create `architecture.md`**: Establish this document as the source of truth. (Done)
-2.  **Implement the Transport Interface**:
-    -   Create a new directory `src/transports`.
-    -   Define the `ITransport` interface.
-    -   Refactor the existing polling logic from `usePollingForUpdates.js` into a new `src/transports/LongPollingTransport.js` that implements the interface.
-3.  **Create the `DataManager`**:
-    -   Create a new `src/hooks/useDataManager.js`.
-    -   Implement the `useReducer` for state management.
-    -   Implement the logic to instantiate and use the configured transport.
-    -   Expose the `state` and the `sync` functions.
-4.  **Refactor `CollaborativeEditing.js`**:
-    -   Update it to use the `useDataManager` hook.
-    -   Remove any direct calls to data-fetching hooks.
-    -   Pass state and sync functions down to child components as props.
-5.  **Refactor UI Components**:
-    -   Modify `MultiCursor` and other components to be "dumb." They should expect all data and functions via props.
-    -   Remove `useCollaborativeEditingData`, `useContentSync`, etc., from these components.
-6.  **Integrate Existing UI**:
-    -   Create the `PresenceUI` component.
-    -   Move `AvatarList` and the refactored `MultiCursor` inside `PresenceUI`.
-    -   Ensure the `awarenessState` is correctly passed down and rendered.
-7.  **Cleanup**:
-    -   Remove the old, now unused hooks (`usePollingForUpdates`, `useAwarenessSync`, `useContentSync`).
-    -   Delete any other redundant code.
+### 5.1. Decouple from Global `window.gce` Object
+
+-   **Problem**: Many hooks and components currently access configuration and state (e.g., `postId`, `currentUserId`, `collaborationMode`) directly from the global `window.gce` object. This creates a tight coupling to the global scope, making components harder to test in isolation and less reusable.
+-   **Proposed Solution**: Introduce a React Context (e.g., `CollaborativeEditingContext`) at the top level of the `CollaborativeEditing` component. This context would hold all the initial configuration data. Components and hooks would then use a `useCollaborativeEditingContext` hook to access this data instead of reading from the global `window` object. This would follow React best practices and improve dependency injection.
+
+### 5.2. Encapsulate Editor DOM Interactions
+
+-   **Problem**: Several hooks (`useMultiCursor`, `CollaborativeEditing`) perform direct queries and manipulation of the Gutenberg editor's DOM (e.g., `document.querySelector`). This is often necessary for integrating with a complex non-React environment like the editor, but it can be brittle if the editor's class names or structure change.
+-   **Proposed Solution**: Create a dedicated hook, such as `useEditorDOM`, whose sole responsibility is to manage interactions with the editor's DOM. This hook could provide stable references to key elements (like the editor wrapper, iframe document, etc.) and expose a clear API for other hooks to use. This would centralize the fragile DOM-related code, making it easier to update if the editor's markup changes.
+
+

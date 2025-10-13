@@ -19,26 +19,30 @@ This plugin adds a settings page under `Settings > Collaborative Editing` in the
 
 - **Collaboration Mode**:
     - **Read-only Follow**: The first user to open a post gets editing rights, and subsequent users can only view the post in real-time.
-    - **Block-level Locks**: Multiple users can edit the same post, just not the same block. (🚧Work in Progress)
+    - **Block-level Locks**: Multiple users can edit the same post, just not the same block. (🚧Functional, but still a Work in Progress)
 
 ## Screenshots
 ![Example](.wporg/screenshot-1.png)
 
 ## How to run this locally?
-- After cloning the GIT repo locally, run `nvm use`, `npm install`
-- Run `npm run build` once or can also run `npm run start`
+- After cloning the GIT repo locally, run `nvm use`, `npm install`.
+- Run `npm run build` once or can also run `npm run start`.
 - Run `npm run wp-env start` (you will need docker running).
-- Login into WordPress ([http://localhost:8888/wp-admin](http://localhost:8888/wp-admin)) with username `admin` and password as `password`
-- Create one or more users & login from these user accounts in separate browser instances.
-- Edit the same post for editing. First user will get edit access as usual and other users would be able to follow along in a read-only manner.
+- Login into WordPress ([http://localhost:8888/wp-admin](http://localhost:8888/wp-admin)) with username `admin` and password as `password`.
+- Configure the collaboration mode on `Settings > Collaborative Editing`.
+- Create two or more users and log in from these user accounts in separate browser instances.
+- Edit the same post or page for editing.
 - Being on a call, these users can meaningfully participate already as of today.
+
+## How to get the plugin zip file?
+- Run `nvm use`, `npm run package` to generate the zip file in the `dist` directory.
 
 ## Frequently Asked Questions
 
 ### How do I use it?
-Install this plugin and have more than one user edit the same post or page.
+Install this plugin, configure the collaboration mode and have more than one user edit the same post or page.
 
-### Can I programmatically control what post or page have this enabled?
+### Can I programmatically control what post or page I have this enabled on?
 Not yet. I need to figure out a good way to enable that. But eventually I would like it to be configurable as follows:
 
 ~~~php
