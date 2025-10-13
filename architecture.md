@@ -90,14 +90,14 @@ This approach decouples the UI from the data layer, allowing either to be change
 This is the top-level React component, registered as a plugin in the Gutenberg editor.
 
 -   **Responsibility**: Orchestrate the entire collaborative experience.
--   **Logic**: It will use the main `useDataManager` hook to get the shared state and the functions to update it. It will then pass this state down to its child UI components.
+-   **Logic**: It will use the main `useDataManager` hook to get the shared state and the functions to update it. It then passes this state down to its child UI components. It also uses specialized hooks like `useCSSClassManager` and `useGutenbergEditorControls` to manage the UI state of the editor itself, such as disabling controls when in read-only mode.
 
 ### 2.2. UI Components (`PresenceUI`, `MultiCursor`, `AvatarList`, etc.)
 
 These are pure, presentational components.
 
 -   **Responsibility**: To render a piece of the UI based on the props they receive. They should be stateless wherever possible.
--   **Data Flow**: They receive state as props from `CollaborativeEditing`. If they need to trigger a state change (e.g., user moves the cursor), they call a function (also received via props) from the `DataManager`'s API.
+-   **Data Flow**: They receive state as props from `CollaborativeEditing`. If they need to trigger a state change (e.g., user moves the cursor), they call a function (also received via props) that originates from one of the data manager hooks.
 
 #### 2.2.1 MultiCursor
 
@@ -105,32 +105,54 @@ Don't modify the MultiCursor class, just report issues if you notice any in its 
 
 ## 3. The `DataManager`
 
-The `DataManager` is not a single object but a collection of hooks and functions that form the data layer of the application. The primary entry point will be the `useDataManager` hook.
+The `DataManager` is not a single object but a concept representing the data layer of the application. It's implemented as a collection of custom React hooks that work together to manage state, synchronization, and communication with the backend. The primary entry point to this data layer is the `useDataManager` hook.
+
+This modular approach with multiple hooks allows for a clear separation of concerns, making the system easier to maintain and extend. Each hook has a specific responsibility.
 
 ### 3.1. `useDataManager` Hook
 
-This hook is the single source of truth for the client application.
+This hook acts as the central orchestrator for the client-side collaborative editing experience. It doesn't contain all the logic itself but rather integrates and coordinates the other specialized hooks.
 
--   **Signature**: `useDataManager(config)`
--   **Parameters**:
-    -   `config` (Object): An object for configuration. The most important property is `transport`, which specifies which transport layer to use (e.g., `'long-polling'`).
--   **Returns**: An object containing:
-    -   `state` (Object): The current shared state of the collaborative session.
-    -   `syncAwareness` (Function): A function to send the user's awareness state (cursor, etc.) to the server.
-    -   `syncContent` (Function): A function for the lock-holder to send content changes to the server.
+-   **Responsibility**:
+    -   Initialize and manage the transport layer via `useTransportManager`.
+    -   Use `useGutenbergState` to get data from the editor.
+    -   Coordinate data syncing with `useContentSyncer`.
+    -   Manage the central awareness state.
+    -   Provide the `CollaborativeEditing` component with all the necessary state and functions.
 
-### 3.2. State Management
+### 3.2. Specialized Hooks
 
-The internal state of the `DataManager` will be managed by a `useReducer` hook for predictable state transitions.
+These hooks encapsulate specific pieces of functionality. `useDataManager` uses them to build the complete collaborative experience.
 
-### 3.3. Data Submission (`Data Sync`)
+-   **`useGutenbergState`**: Subscribes to the Gutenberg data store to get real-time information about the editor's state, such as post content, block list, and cursor position.
 
-This is the "outgoing" part of the `DataManager`. It provides a stable API for the UI to send data to the backend, regardless of the transport used.
+-   **`useTransportManager`**: Manages the transport layer (e.g., long-polling). It provides a simple `send` function and an `onDataReceived` callback, abstracting away the specifics of the communication protocol.
 
--   **API Functions**:
-    -   `syncAwareness(awarenessState)`: Takes the current user's awareness state and sends it via the active transport.
-    -   `syncContent(content)`: Takes the new post content and sends it.
-    -   `requestLock()`: Attempts to gain the editing lock for the post.
+-   **`useContentSyncer`**: Decides when to send content updates to the server. It tracks local changes and uses the transport layer to send them.
+
+-   **`useCollaborationMode`**: Determines the current collaboration mode (e.g., 'READ-ONLY-FOLLOW' or 'BLOCK-LEVEL-LOCKS').
+
+-   **`useDerivedAwarenessState`**: Takes the raw awareness data from all connected users and computes useful derived state, such as lists of active and inactive users.
+
+-   **`useProactiveStalenessCheck`**: Periodically checks for users who might have disconnected without cleanly notifying the server (e.g., closed browser tab) and marks them as stale.
+
+-   **`useBlockLocking`**: Implements the logic for block-level locking, preventing multiple users from editing the same block simultaneously.
+
+-   **`useCSSClassManager`**: Manages CSS classes applied to the editor's body to visually reflect the collaboration state (e.g., adding a class to indicate other users are present).
+
+-   **`useGutenbergEditorControls`**: Enables or disables Gutenberg's UI controls based on the user's editing privileges (e.g., disables saving and publishing for users who are not the lock holder in read-only mode).
+
+### 3.3. State Management
+
+The internal state within `useDataManager` is managed by a `useReducer` hook for predictable state transitions related to awareness. However, much of the state is decentralized and managed within the specialized hooks or derived from the Gutenberg data store.
+
+### 3.4. Data Submission (`Data Sync`)
+
+This is the "outgoing" part of the `DataManager`. The `useTransportManager` provides a stable API for other hooks (like `useContentSyncer`) to send data to the backend, regardless of the transport used.
+
+-   **API Functions (exposed by hooks)**:
+    -   `syncAwareness(awarenessState)`: Called to send the user's current awareness state (e.g., cursor position) to the server.
+    -   `syncContent(content)`: Called by `useContentSyncer` to send content changes.
 
 ## 4. The Transport Layer
 
