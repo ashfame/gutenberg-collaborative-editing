@@ -37,8 +37,25 @@ graph TD
         A[Gutenberg Editor] --> B(CollaborativeEditing Component);
 
         subgraph "UI Components"
-            C(PresenceUI)
-            D(MultiCursor)
+            direction TB
+            
+            subgraph "Presence"
+                direction LR
+                C(PresenceUI) --> AL(AvatarList)
+                AL --> UA(UserAvatar)
+            end
+            
+            subgraph "Multi-Cursor Display"
+                 direction TB
+                 UMC_Hook(useMultiCursor)
+                 MC_Class(MultiCursor Class)
+                 UCS_Hook(useCursorState)
+                 UMC_Hook -- "instantiates" --> MC_Class
+                 UMC_Hook -- "uses" --> UCS_Hook
+            end
+
+            C -- "uses" --> UMC_Hook
+            
             E(ReadOnlyUI)
         end
 
