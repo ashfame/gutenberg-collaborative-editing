@@ -33,37 +33,56 @@ This allows us to cater to every kind of hosting environment. Long polling enabl
 
 ```mermaid
 graph TD
-    subgraph Client-Side Application
+    subgraph "Client-Side Application"
         A[Gutenberg Editor] --> B(CollaborativeEditing Component);
 
-        subgraph UI Components
-            direction LR
+        subgraph "UI Components"
             C(PresenceUI)
             D(MultiCursor)
             E(ReadOnlyUI)
-            F(SuggestionModeUI - Future)
         end
 
-        subgraph DataManager
-            direction TB
-            G(State Management <br/> e.g., useReducer)
-            H(Data Sync API <br/> for sending updates)
-            I(Data Provider <br/> for receiving updates)
-            J(Transport Layer <br/> Pluggable: Long Poll, WebSocket, etc.)
-
-            I --> G;
-            H --> J;
-            I --> J;
+        subgraph "DataManager (Conceptual Group of Hooks)"
+            UDM(useDataManager - Orchestrator)
+            
+            subgraph "Specialized Data Hooks"
+                direction TB
+                UGS(useGutenbergState)
+                UTM(useTransportManager)
+                UCS(useContentSyncer)
+                UBL(useBlockLocking)
+                UDAS(useDerivedAwarenessState)
+            end
+        end
+        
+        subgraph "UI Logic Hooks"
+             UCCM(useCSSClassManager)
+             UGEC(useGutenbergEditorControls)
+        end
+        
+        subgraph "Transport Layer"
+             J(Pluggable: Long Poll, etc.)
         end
 
-        B --> DataManager;
-        DataManager -- State --> C;
-        DataManager -- State --> D;
-        DataManager -- State --> E;
-        DataManager -- State --> F;
+        B -- "uses" --> UDM;
+        B -- "uses" --> UCCM;
+        B -- "uses" --> UGEC;
+        
+        UDM -- "State & Callbacks" --> B;
 
-        C -- User Actions --> H;
-        D -- User Actions --> H;
+        B -- "Props" --> C;
+        B -- "Props" --> D;
+        B -- "Props" --> E;
+
+        UDM -- "composes" --> UGS;
+        UDM -- "composes" --> UTM;
+        UDM -- "composes" --> UCS;
+        UDM -- "composes" --> UBL;
+        UDM -- "composes" --> UDAS;
+        
+        A -- "Editor State" --> UGS;
+        UCS -- "sends updates via" --> UTM;
+        UTM -- "manages" --> J;
     end
 
     subgraph Backend
@@ -72,7 +91,7 @@ graph TD
 
     J <--> K;
 
-    style DataManager fill:#f9f,stroke:#333,stroke-width:2px
+    style UDM fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
 ## 2. Core Components & Concepts
