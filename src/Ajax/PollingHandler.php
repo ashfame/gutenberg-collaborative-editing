@@ -35,7 +35,10 @@ class PollingHandler {
 		}
 
 		// Long polling implementation
-		$max_wait          = apply_filters( 'gce_long_poll_max_wait', 30, $post_id );
+		$available_time = $this->get_available_execution_time( $post_id );
+		$desired_wait   = apply_filters( 'gce_long_poll_max_wait', $available_time, $post_id );
+		$max_wait       = min( $desired_wait, $available_time );
+
 		$check_interval_ms = apply_filters( 'gce_long_poll_check_interval', 100, $post_id ); // Check every 100ms
 		$start_time        = microtime( true );                                              // Use microtime for better precision
 
@@ -92,5 +95,42 @@ class PollingHandler {
 
 		// No update found within timeout window, let client re-connect
 		wp_send_json_success( null, 204 );
+	}
+
+	/**
+	 * Calculates the available execution time for the request.
+	 *
+	 * @return int The available time in seconds.
+	 */
+	private function get_available_execution_time() : int {
+		$max_execution_time = (int) ini_get( 'max_execution_time' );
+
+		// If there's no execution time limit, we can theoretically wait forever.
+		// Return a very large number to represent this.
+		if ( $max_execution_time <= 0 ) {
+			return PHP_INT_MAX;
+		}
+
+		// Leave a few seconds of buffer to allow for shutdown tasks.
+		$safety_buffer = apply_filters( 'gce_long_poll_safety_buffer', 5 );
+
+		// Determine the request start time.
+		$request_start_time = filter_var( $_SERVER['REQUEST_TIME_FLOAT'], FILTER_VALIDATE_FLOAT );
+		$request_start_time = $request_start_time ?: microtime( true );
+
+		// If we couldn't determine the start time, we can't safely calculate the remaining time.
+		// In this case, we conservatively return 0.
+		if ( ! $request_start_time ) {
+			return 0;
+		}
+
+		// Calculate elapsed time since the request started.
+		$elapsed_time = microtime( true ) - $request_start_time;
+
+		// Calculate the maximum time we can wait from now on.
+		$available_time = $max_execution_time - $elapsed_time - $safety_buffer;
+
+		// Ensure we don't have a negative wait time.
+		return (int) max( 0, $available_time );
 	}
 }
