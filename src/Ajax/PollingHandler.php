@@ -100,10 +100,9 @@ class PollingHandler {
 	/**
 	 * Calculates the available execution time for the request.
 	 *
-	 * @param int $post_id The post ID, for filters.
 	 * @return int The available time in seconds.
 	 */
-	private function get_available_execution_time( $post_id ) {
+	private function get_available_execution_time() : int {
 		$max_execution_time = (int) ini_get( 'max_execution_time' );
 
 		// If there's no execution time limit, we can theoretically wait forever.
@@ -113,15 +112,11 @@ class PollingHandler {
 		}
 
 		// Leave a few seconds of buffer to allow for shutdown tasks.
-		$safety_buffer = apply_filters( 'gce_long_poll_safety_buffer', 5, $post_id );
+		$safety_buffer = apply_filters( 'gce_long_poll_safety_buffer', 5 );
 
 		// Determine the request start time.
-		$request_start_time = 0;
-		if ( defined( 'TIMER_START' ) && is_float( TIMER_START ) ) {
-			$request_start_time = TIMER_START;
-		} elseif ( isset( $_SERVER['REQUEST_TIME_FLOAT'] ) ) {
-			$request_start_time = $_SERVER['REQUEST_TIME_FLOAT'];
-		}
+		$request_start_time = filter_var( $_SERVER['REQUEST_TIME_FLOAT'], FILTER_VALIDATE_FLOAT );
+		$request_start_time = $request_start_time ?: microtime( true );
 
 		// If we couldn't determine the start time, we can't safely calculate the remaining time.
 		// In this case, we conservatively return 0.
