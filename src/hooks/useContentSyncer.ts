@@ -13,6 +13,7 @@ import {
 	TitleSyncPayload,
 	FullContentSyncPayload,
 } from '@/transports/types';
+import { UndoHistoryItem } from '@/undo/types';
 
 interface UseContentSyncerConfig {
 	collaborationMode: string;
@@ -24,6 +25,7 @@ interface UseContentSyncerConfig {
 	cursorState: CursorState | null;
 	onSync: ( payload: ContentSyncPayload ) => void;
 	tracker: React.RefObject< BlockChangeTracker >;
+	record: ( item: UndoHistoryItem ) => void;
 }
 
 /**
@@ -41,6 +43,7 @@ interface UseContentSyncerConfig {
  * @param root0.cursorState
  * @param root0.onSync
  * @param root0.tracker
+ * @param root0.record
  */
 export const useContentSyncer = ( {
 	collaborationMode,
@@ -52,6 +55,7 @@ export const useContentSyncer = ( {
 	cursorState,
 	onSync,
 	tracker,
+	record,
 }: UseContentSyncerConfig ) => {
 	const syncState = useRef( {
 		timeoutId: null as number | null,
@@ -158,6 +162,11 @@ export const useContentSyncer = ( {
 								timestamp,
 							};
 							ops.push( payload );
+							record( {
+								clientId: op.block.clientId,
+								before: null,
+								after: { ...op.block, index: op.index },
+							} );
 							break;
 						}
 						case 'update': {
@@ -168,6 +177,14 @@ export const useContentSyncer = ( {
 								timestamp,
 							};
 							ops.push( payload );
+							record( {
+								clientId: op.block.clientId,
+								before: {
+									...op.previousBlock,
+									index: op.index,
+								},
+								after: { ...op.block, index: op.index },
+							} );
 							break;
 						}
 						case 'delete': {
@@ -177,6 +194,11 @@ export const useContentSyncer = ( {
 								timestamp,
 							};
 							ops.push( payload );
+							record( {
+								clientId: op.block.clientId,
+								before: { ...op.block, index: op.index },
+								after: null,
+							} );
 							break;
 						}
 						case 'move': {
@@ -230,6 +252,7 @@ export const useContentSyncer = ( {
 		collaborationMode,
 		blocks,
 		tracker,
+		record,
 	] );
 
 	// Separate title sync for block-level collaboration mode
