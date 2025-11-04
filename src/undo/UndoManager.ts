@@ -27,6 +27,8 @@ export class UndoManager {
 	}
 
 	public invalidate( clientId: string ) {
+		// eslint-disable-next-line no-console
+		console.log( 'invalidate block from stack', clientId );
 		this.undoStack = this.undoStack.filter(
 			( item ) => item.clientId !== clientId
 		);

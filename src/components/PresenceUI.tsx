@@ -27,30 +27,29 @@ export const PresenceUI = ( {
 
 	useMultiCursor( currentUserId, otherUsers, syncAwareness );
 
-	if ( ! otherUsers || Object.keys( otherUsers ).length === 0 ) {
-		return null;
-	}
+	const centerHeaderTarget = document.querySelector(
+		'.editor-header__center'
+	);
+	const toolbarHeaderTarget = document.querySelector(
+		'.editor-header__toolbar'
+	);
 
-	const headerTarget = document.querySelector( '.editor-header__center' );
 	return (
 		<>
-			{ headerTarget &&
+			{ centerHeaderTarget &&
 				createPortal(
-					<div
-						style={ {
-							display: 'flex',
-							alignItems: 'center',
-						} }
-					>
-						<UndoRedoControl
-							undo={ undo }
-							redo={ redo }
-							canUndo={ canUndo }
-							canRedo={ canRedo }
-						/>
-						<AvatarList users={ otherUsers } />
-					</div>,
-					headerTarget
+					<AvatarList users={ otherUsers } />,
+					centerHeaderTarget
+				) }
+			{ toolbarHeaderTarget &&
+				createPortal(
+					<UndoRedoControl
+						undo={ undo }
+						redo={ redo }
+						canUndo={ canUndo }
+						canRedo={ canRedo }
+					/>,
+					toolbarHeaderTarget
 				) }
 		</>
 	);

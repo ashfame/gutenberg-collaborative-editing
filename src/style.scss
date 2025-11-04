@@ -13,6 +13,20 @@ body.gutenberg-collaborative-editing {
 	}
 }
 
+// Hide the native Gutenberg undo/redo buttons for the active collaborator.
+// This is done to replace them with our custom, collaboration-aware buttons.
+// We don't hide them for read-only users, allowing default behavior to apply.
+body.gutenberg-collaborative-editing:not(
+.gutenberg-collaborative-editing-readonly
+)
+.editor-history__undo,
+body.gutenberg-collaborative-editing:not(
+.gutenberg-collaborative-editing-readonly
+)
+.editor-history__redo {
+	display: none !important;
+}
+
 /* Read-only styles */
 body.gutenberg-collaborative-editing-readonly {
 
