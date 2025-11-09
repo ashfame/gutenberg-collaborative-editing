@@ -275,8 +275,10 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	const [ recalcTrigger, forceRecalculate ] = useReducer( ( x ) => x + 1, 0 );
 
 	const tracker = useRef( new BlockChangeTracker() );
-	const { record, invalidate, undo, redo, canUndo, canRedo } =
-		useUndoManager();
+	const isUndoOrRedoInProgress = useRef( false );
+	const { record, invalidate, undo, redo, canUndo, canRedo } = useUndoManager(
+		isUndoOrRedoInProgress
+	);
 
 	// Override the default undo/redo shortcuts.
 	useCustomUndoRedoShortcuts( { undo, redo, canUndo, canRedo } );
@@ -333,6 +335,7 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		onSync: syncContent,
 		tracker,
 		record,
+		isUndoOrRedoInProgress,
 	} );
 
 	const { awareness } = state;

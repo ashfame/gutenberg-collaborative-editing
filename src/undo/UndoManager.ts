@@ -37,6 +37,17 @@ export class UndoManager {
 		);
 	}
 
+	public updateClientId( oldId: string, newId: string ) {
+		const mapItem = ( item: UndoHistoryItem ) => {
+			if ( item.clientId === oldId ) {
+				return { ...item, clientId: newId };
+			}
+			return item;
+		};
+		this.undoStack = this.undoStack.map( mapItem );
+		this.redoStack = this.redoStack.map( mapItem );
+	}
+
 	public canUndo(): boolean {
 		return this.undoStack.length > 0;
 	}

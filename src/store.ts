@@ -5,7 +5,7 @@ const DEFAULT_STATE = {
 };
 
 const store = createReduxStore( 'gce', {
-	reducer( state = DEFAULT_STATE, action ) {
+	reducer( state = DEFAULT_STATE, action: any ) {
 		switch ( action.type ) {
 			case 'SET_LOCKED_BLOCKS':
 				return {
