@@ -6,13 +6,15 @@ import {
 } from './useTransportManager';
 import { useContentSyncer } from './useContentSyncer';
 import { useDispatch } from '@wordpress/data';
-import { parse, serialize } from '@wordpress/blocks';
+import { parse, serialize, BlockInstance } from '@wordpress/blocks';
 import { useCollaborationMode } from './useCollaborationMode';
 import { mergeBlocks } from '@/utils';
 import { CursorState, AwarenessState, DataManagerState } from './types';
 import { TransportReceivedData, ContentSyncPayload } from '@/transports/types';
 import { useProactiveStalenessCheck } from './useProactiveStalenessCheck';
 import { BlockChangeTracker, Block } from '@/block-sync';
+import { useUndoManager } from '@/undo/useUndoManager';
+import { useCustomUndoRedoShortcuts } from './useCustomUndoRedoShortcuts';
 import { useBlockLocking } from './useBlockLocking';
 import { useDerivedAwarenessState } from './useDerivedAwarenessState';
 
@@ -99,8 +101,14 @@ const handleDataReceived = (
 	}
 
 	const { awareness, content, modified } = data;
-	const { editPost, resetBlocks, resetSelection, dispatch, tracker } =
-		dependencies;
+	const {
+		editPost,
+		resetBlocks,
+		resetSelection,
+		dispatch,
+		tracker,
+		invalidate,
+	} = dependencies;
 
 	if ( modified && content && content.content ) {
 		const receivedContent = content.content;
@@ -128,6 +136,30 @@ const handleDataReceived = (
 				cursorState && 'blockIndex' in cursorState
 					? cursorState.blockIndex
 					: undefined;
+			const engagedBlockClientId =
+				engagedBlockIndex !== undefined
+					? existingBlocks[ engagedBlockIndex ]?.clientId
+					: undefined;
+
+			// Invalidate history for blocks changed by others.
+			receivedBlocks.forEach( ( receivedBlock: BlockInstance ) => {
+				// Don't invalidate the block the current user is editing.
+				if ( receivedBlock.clientId === engagedBlockClientId ) {
+					return;
+				}
+				const existingBlock = existingBlocks.find(
+					( b: BlockInstance ) =>
+						b.clientId === receivedBlock.clientId
+				);
+				// If block exists and content differs, invalidate its history.
+				if (
+					existingBlock &&
+					serialize( [ existingBlock ] ) !==
+						serialize( [ receivedBlock ] )
+				) {
+					invalidate( receivedBlock.clientId );
+				}
+			} );
 
 			// The tracker expects a simplified `Block` object.
 			const mappedBlocks: Block[] = receivedBlocks.map( ( block ) => ( {
@@ -243,6 +275,13 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 	const [ recalcTrigger, forceRecalculate ] = useReducer( ( x ) => x + 1, 0 );
 
 	const tracker = useRef( new BlockChangeTracker() );
+	const isUndoOrRedoInProgress = useRef( false );
+	const { record, invalidate, undo, redo, canUndo, canRedo } = useUndoManager(
+		isUndoOrRedoInProgress
+	);
+
+	// Override the default undo/redo shortcuts.
+	useCustomUndoRedoShortcuts( { undo, redo, canUndo, canRedo } );
 
 	const onDataReceived = useCallback(
 		( data: TransportReceivedData ) => {
@@ -254,11 +293,12 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 					resetSelection,
 					dispatch,
 					tracker,
+					invalidate,
 				},
 				cursorStateRef.current
 			);
 		},
-		[ editPost, resetBlocks, resetSelection, dispatch, tracker ]
+		[ editPost, resetBlocks, resetSelection, dispatch, tracker, invalidate ]
 	);
 
 	const { send } = useTransportManager( {
@@ -294,6 +334,8 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 		cursorState,
 		onSync: syncContent,
 		tracker,
+		record,
+		isUndoOrRedoInProgress,
 	} );
 
 	const { awareness } = state;
@@ -323,8 +365,13 @@ export const useDataManager = ( transport = 'ajax-with-long-polling' ) => {
 
 	return {
 		currentUserId,
+		cursorState,
 		collaborationMode,
 		state: { ...state, ...derivedState },
 		syncAwareness,
+		undo,
+		redo,
+		canUndo,
+		canRedo,
 	};
 };
